@@ -1,0 +1,187 @@
+#!/bin/sh
+# We always use 'set -e' because it works "as expected" on the vast majority of
+# POSIX shells out there .. BASH being the only exception.  Each library must
+# find its own ways of working around Bash issues.
+set -e
+
+##
+# It tends to be faster to call these as functions vs searching the PATH and
+# then fork/exec'ing them.  On the flip side, we only supply very low-level
+# routines as part of the core shlib.  Everything else MUST be supplied via
+# 'import' libraries.
+true() { :; }
+false() { ! :; }
+dirname()
+{
+	case "${1}" in (.*);; (/*);; (*) set -- "./${1}";; esac
+	set -- "${1%/*}"
+	test -z "${1}" && set -- '/'
+	echo "${1}"
+}
+basename()
+{
+	set -- "${1%/}"
+	set -- "${1##*/}"
+	test -z "${1}" && set -- '/'
+	echo "${1}"
+}
+pathname()
+{(
+	if ! test -d "${1}"; then
+		set -- "`dirname "${1}"`" "`basename "${1}"`"
+	fi
+	cd "${1}"
+	if pwd -P > /dev/null 2>&1; then
+		echo "`pwd -P`/${2}"
+	else
+		echo "`pwd`/${2}"
+	fi
+)}
+hascmd() { test -e "`command -v "${1}"`" > /dev/null 2>&1; }
+pathcmd() { hascmd "${1}" && command -v "${1}"; }
+error() { echo "error: $*" >&2; }
+die() { error "$*"; exit 1; }
+import()
+{
+	shlib_import_lib="${*}"
+	shlib_import_ifs="${IFS}"
+	IFS=':'
+	set -- ${SHLIB_PATH}
+	IFS="${shlib_import_ifs}"
+	unset shlib_import_ifs
+
+	shlib_import_file=
+	for shlib_import_path; do
+		if test -f "${shlib_import_path}/${shlib_import_lib}.shlib"; then
+			shlib_import_file="${shlib_import_path}/${shlib_import_lib}.shlib"
+		fi
+
+		if test -e "${shlib_import_path}/${shlib_import_lib}/__init__.shlib"; then
+			shlib_import_file="${shlib_import_path}/${shlib_import_lib}/__init__.shlib"
+		fi
+		test -z "${shlib_import_file}" || break
+	done
+	test -z "${shlib_import_file}" && die "library does not exist '${shlib_import_lib}'"
+	set -- "${shlib_import_lib}" "`pathname "${shlib_import_file}"`" "${PWD}"
+	unset shlib_import_lib
+	unset shlib_import_file
+
+	# Only allow a library to be imported once per-scope
+	eval "test -z \"\${SHLIB_IMPORT_${1}}\" || return"
+
+	# Mostly some fun debugging data
+	cd "${2%/*}"
+	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}" . "${2}"
+	cd "${3}"
+	eval "SHLIB_IMPORT_${1}=\"${2}\""
+	if test -z "${SHLIB_IMPORTED}"; then
+		SHLIB_IMPORTED="${1}"
+	else
+		SHLIB_IMPORTED="${SHLIB_IMPORTED} ${1}"
+	fi
+}
+
+##
+# These routines are pretty shlib specific.
+shlib_version() { echo '0.01'; }
+shlib_main() { test "${SHLIB_CALL_STACK}" = '__main__'; }
+shlib_usage()
+{
+	if test "$#" -gt '0'; then
+		error "${2}"
+		echo "try '${1} --help'" >&2
+		exit 1
+	fi
+cat << EOF
+usage: shlib [options] [file]
+
+ options:
+   -L, --libdir=LIBDIR
+   -v, --verbose	Enable verbose execution
+   -V, --version	Display shlib version
+   -h, --help		Display this help
+
+ shell opts:
+   -c STRING		Execute commands given in STRING
+   -x			Trace script execution
+
+EOF
+}
+
+# If we where not "installed" then this variable will not have been
+# substituted, and the libexecdir in which we find the 'shlib' front-end will
+# not exist at which point we expect libdir to be relative to ${0}.
+# e.g. <path to shlib>/shlib, <path to shlib>/libexec/.
+# Alternatively, an environment may set the SHLIB_PATH to place shlib in
+# disparate locations.
+# e.g. SHLIB_PATH="${TOPDIR}/utils/shlib/libexec" while 'shlib' exists as a
+# symlink in "${TOPDIR}/bin/shlib"
+if test -z "${SHLIB_PATH}"; then
+	SHLIB_PATH="@shlib_libexecdir@"
+	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}/libexec"; then
+			SHLIB_PATH="`pathname "${0%/*}/libexec"`"
+	fi
+
+	# Note: Checking for library validity is done at import(), this allows
+	# setting SHLIB_PATH dynamically at runtime.
+fi
+
+# If our basename is 'shlib' then we are the master program, else we are likely
+# being 'sourced' by some other script which wants to utilize shlib as a
+# library.
+if test "`basename "${0}"`" = 'shlib'; then
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(-h|-help|--help)
+			shlib_usage; exit 0;;
+
+		(-V|-version|--version)
+			echo "shlib version `shlib_version`"; exit 0;;
+
+		(-L|-libdir|--libdir|--libdir=*)
+			shlib_arg=
+			if test "${1#--libdir=}" != "${1}"; then
+				shlib_arg="${1#--libdir=}"
+			else
+				case "${2}" in (-*);; (*) shlib_arg="${2}";; esac
+				shift
+			fi
+
+			if test -z "${shlib_arg}"; then
+				shlib_usage 'shlib' "option '${1#--libdir=}' requires an argument"
+			fi
+			test -e "${shlib_arg}" || die "no such directory '${shlib_arg}'"
+			test -d "${shlib_arg}" || die "not a directory '${shlib_arg}'"
+			SHLIB_PATH="${shlib_arg}:${SHLIB_PATH}";;
+
+		# Support some traditional sh arguments.
+		(-v)	set -v;;
+		(-x)	set -x;;
+		(-c)	test "$#" -gt '1' || \
+				shlib_usage 'shlib' "option '${1}' requires an argument"
+			SHLIB_COMMAND="${2}"
+			shift;;
+
+		# Our standard argument handling
+		(--)	shift; break;;
+		(-*)	shlib_usage 'shlib' "unknown option '${1}'";;
+		(*)	break;;
+		esac
+		shift
+	done
+
+	# Handle being called as 'shlib -c "<cmd>"'
+	if ! test -z "${SHLIB_COMMAND}"; then
+		SHLIB_CALL_STACK='__main__' eval "${SHLIB_COMMAND}"
+	else # We are being "executed", so lets check our argument list.
+		test "$#" -ne '0' || shlib_usage 'shlib' 'no script specified'
+		test -f "`realpath "${1}"`" || die "file does not exist '${1}'"
+
+		SHLIB_SCRIPT="${1}"
+		PROGNAME="`basename "${1}"`"
+		export SHLIB_SCRIPT PROGNAME
+		shift
+
+		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
+	fi
+fi
