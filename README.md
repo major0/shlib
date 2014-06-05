@@ -39,15 +39,20 @@ of [shlib][shlib].
 hash/bang
 ---------
 
-You can make [shlib][shlib] the interpretter for an existing shell script by
-simply changing the `#!/bin/sh` to `#!/usr/bin/env shlib`. (_warning: not all
-OS's support scripts being used as the interpretter for a file in this way_).
+You can make [shlib][shlib] the interpretter for an existing shell script.
 
-. /path/to/shlib
-----------------
+	#!/usr/bin/env shlib
+
+(_warning: not all OS's support scripts being used as the interpretter for a
+file in this way_).
+
+Source in shlib
+---------------
 
 When all else fails, you can simply source in the [shlib][shlib] top-level
-script into your existing `/bin/sh` scripts. E.g. `. /path/to/shlib`
+script into your existing `/bin/sh` scripts.
+
+	. /path/to/shlib
 
 Core API
 ========
@@ -106,8 +111,12 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 	if hascmd seq; then
 		eval "seq() { \"`pathcmd seq`\" \"\${@}\"; }"
 	else
-		# no seq cmd available, load our POSIX shell version.
-		. seq.sh
+		# no seq cmd available then attempt to load the bash version
+		# which uses a c-for style itterator, else use one written in
+		# pure POSIX shell.
+		if ! . seq.bash > /dev/null 2>&1; then
+			. seq.sh
+		fi
 	fi
 	
 	if shlib_main; then
