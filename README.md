@@ -4,14 +4,15 @@ shlib
 One of the great drawbacks to the POSIX shell environment is that, like the C
 programming language, it has very little in the way of builtin high-level
 functionality.  This has lead to a number of variations of the POSIX shell
-(Korne Shell, Z Shell, Bash, etc..) which implement various high-level features
-in their own proprietary way.  [shlib][shlib] aims to supply many (all?) of
-these high-level features using only pure POSIX shell syntax, while optimizing
-the core of any interface via shell-specific enhancements under the covers.
-Further more, [shlib][shlib] is self-optimizing at *load-time*, meaning that it
-does not spend time checking the shell environment every time an interface is
-called.  The end result is fast and portable shell scripts which work right
-regardless of which flavor of /bin/sh is interpretting them.
+([Korne Shell][ksh], [Z Shell][zsh], [Bash][bash], etc..) which implement
+various high-level features in their own proprietary way.  [shlib][shlib] aims
+to supply many (all?) of these high-level features using only pure POSIX shell
+syntax, while optimizing the core of any interface via shell-specific
+enhancements under the covers.  Further more, [shlib][shlib] is self-optimizing
+at *load-time*, meaning that it does not spend time checking the shell
+environment every time an interface is called.  The end result is fast and
+portable shell scripts which work right regardless of which flavor of `/bin/sh`
+is interpretting them.
 
 Usage
 =====
@@ -116,3 +117,8 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 From here a program only need to `import seq` to gain access to a `seq()`
 function which will call the native `seq` command if available, otherwise it
 will use one implemented in POSIX shell.
+
+[shlib]: http://github.com/major0/shlib "shlib"
+[ksh]: http://www.kornshell.com/ "Korne Shell"
+[bash]: http://www.gnu.org/software/bash/ "Borne Again Shell"
+[zsh]: http://www.zsh.org/ "Z Shell"
