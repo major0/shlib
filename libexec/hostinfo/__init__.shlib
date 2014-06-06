@@ -1,0 +1,54 @@
+#!/usr/bin/env shlib
+
+HOSTINFO="`./config.guess`"
+HOSTINFO_ARCH="${HOSTINFO%%-*}"
+HOSTINFO_VENDOR="${HOSTINFO#*-}"
+HOSTINFO_VENDOR="${HOSTINFO_VENDOR%%-*}"
+HOSTINFO_OS="${HOSTINFO#*-*-}"
+HOSTINFO_OS="${HOSTINFO_OS%%-*}"
+HOSTINFO_LIBC="${HOSTINFO##*-}"
+if test "${HOSTINFO_LIBC}" = "${HOSTINFO_OS}"; then
+	HOSTINFO_LIBC=
+	eval "hostinfo_full() { echo '${HOSTINFO_ARCH}-${HOSTINFO_VENDOR}-${HOSTINFO_OS}'; }"
+else
+	eval "hostinfo_full() { echo '${HOSTINFO_ARCH}-${HOSTINFO_VENDOR}-${HOSTINFO_OS}-${HOSTINFO_LIBC}'; }"
+fi
+eval "hostinfo_arch() { echo '${HOSTINFO_ARCH}'; }"
+eval "hostinfo_vendor() { echo '${HOSTINFO_VENDOR}'; }"
+eval "hostinfo_os() { echo '${HOSTINFO_OS}'; }"
+eval "hostinfo_libc() { echo '${HOSTINFO_LIBC}'; }"
+
+# Number of procossors on system
+case "${HOSTINFO}" in
+(*linux*)	eval "hostinfo_nproc() { echo `nproc`; }";;
+
+# Default to returning 1 CPU if we do not know how to handle the platform.
+(*)	eval 'hostinfo_nproc() { echo 1; }';;
+esac
+
+hostinfo()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(-h|-help|--help) echo 'usage: hostinfo';;
+		(-a|--arch)	hostinfo_arch; return;;
+		(-v|--vendor)	hostinfo_vendor; return;;
+		(-o|--os)	hostinfo_os; return;;
+		(-l|--libc)	hostinfo_libc; return;;
+		(-n|--nproc)	hostinfo_nproc; return;;
+		(-*)		error "unknown option '${1}'"
+				echo "try 'hostinfo --help'" >&2
+				return 1;;
+		(--)		shift; break;;
+		(*)		break;;
+		esac
+	done
+
+	hostinfo_full
+}
+
+if shlib_main; then
+	hostinfo "$@"
+fi
+
+# vim: filetype=sh
