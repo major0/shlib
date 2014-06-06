@@ -1,0 +1,13 @@
+#!/usr/bin/env shlib
+
+if hascmd seq; then
+	eval "seq() { `pathcmd seq` \"\$@\"; }"
+else
+	. seq.sh
+fi
+
+if shlib_main; then
+	seq "$@"
+fi
+
+# vim: filetype=sh
