@@ -31,7 +31,7 @@ Examples:
 
  1. Run an shlib: `shlib program.shlib`
  2. Run a shell script: `shlib program.sh`
- 3. Shell-like `-c` syntax: `shlib -c 'cmd1; cmd2; cmd3'`
+ 3. Shell-like `-c` syntax: `shlib -c 'import hostinfo;hostinfo'
 
 See `shlib --help` for various command-line options which change the behavior
 of [shlib][shlib].
