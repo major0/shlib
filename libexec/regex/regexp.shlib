@@ -1,0 +1,21 @@
+#!/usr/bin/env shlib
+
+regexp()
+{
+	test "$#" -eq '0' && die 'no string specified'
+	test "$#" -eq '1' && die 'no pattern specified'
+	# FIXME grep may not support -E
+	printf '%s\n' "${2}"|grep -Eq "${1}"
+}
+
+if shlib_main; then
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: regexp <pattern> <string>'
+			exit 0
+		esac
+	done
+	regexp "${1}" "${2}"
+fi
+
+# vim: filetype=sh
