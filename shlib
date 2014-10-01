@@ -1,7 +1,7 @@
 #!/bin/sh
 # We always use 'set -e' because it works "as expected" on the vast majority of
-# POSIX shells out there .. BASH being the only exception.  Each library must
-# find its own ways of working around Bash issues.
+# POSIX shells out there .. BASH being the only exception. That said, it hurts
+# nothing to use 'set -e' and then ignore its existance.
 set -e
 
 ##
@@ -9,8 +9,6 @@ set -e
 # then fork/exec'ing them.  On the flip side, we only supply very low-level
 # routines as part of the core shlib.  Everything else MUST be supplied via
 # 'import' libraries.
-true() { :; }
-false() { ! :; }
 dirname()
 {
 	case "${1}" in (.*);; (/*);; (*) set -- "./${1}";; esac
@@ -61,7 +59,7 @@ import()
 		fi
 		test -z "${shlib_import_file}" || break
 	done
-	test -z "${shlib_import_file}" && die "library does not exist '${shlib_import_lib}'"
+	test -z "${shlib_import_file}" && die "invalid library '${shlib_import_lib}'"
 	set -- "${shlib_import_lib}" "`pathname "${shlib_import_file}"`" "${PWD}"
 	unset shlib_import_lib
 	unset shlib_import_file
@@ -120,6 +118,7 @@ if test -z "${SHLIB_PATH}"; then
 	SHLIB_PATH="@shlib_libexecdir@"
 	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}/libexec"; then
 			SHLIB_PATH="`pathname "${0%/*}/libexec"`"
+			SHLIB_PATH="${SHLIB_PATH%/}"
 	fi
 
 	# Note: Checking for library validity is done at import(), this allows
