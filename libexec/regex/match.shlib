@@ -1,0 +1,15 @@
+#!/usr/bin/env shlib
+
+match() { eval "case \"${2}\" in ($1) return 0;;esac;return 1"; }
+
+if shlib_main; then
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: match <pattern> <string>'
+			exit 0
+		esac
+	done
+	match "${1}" "${2}"
+fi
+
+# vim: filetype=sh
