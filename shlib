@@ -89,7 +89,7 @@ import()
 	unset shlib_import_file
 
 	# Only allow a library to be imported once per-scope
-	if imported "${1}"; then return; fi
+	! imported "${1}" || return 0
 
 	# Mostly some fun debugging data
 	cd "${2%/*}"
