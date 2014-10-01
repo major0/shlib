@@ -47,8 +47,8 @@ hostinfo()
 	hostinfo_full
 }
 
-if shlib_main; then
+shlib_main {
 	hostinfo "$@"
-fi
+}
 
 # vim: filetype=sh
