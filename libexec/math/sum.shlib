@@ -4,8 +4,14 @@ import math/calc
 
 sum() { IFS='+' calc "$@"; }
 
-if shlib_main; then
+shlib_main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: sum <numbers>'
+			exit 0
+		esac
+	done
 	sum "$@"
-fi
+}
 
 # vim: filetype=sh

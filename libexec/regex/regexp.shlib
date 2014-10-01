@@ -8,7 +8,7 @@ regexp()
 	printf '%s\n' "${2}"|grep -Eq "${1}"
 }
 
-if shlib_main; then
+shlib_main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help)
 			echo 'usage: regexp <pattern> <string>'
@@ -16,6 +16,6 @@ if shlib_main; then
 		esac
 	done
 	regexp "${1}" "${2}"
-fi
+}
 
 # vim: filetype=sh

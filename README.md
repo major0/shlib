@@ -100,9 +100,9 @@ The following is a simple program which simply prints every argument back to std
 		done
 	}
 	
-	if shlib_main; then
+	shlib_main {
 		args "${@}"
-	fi
+	}
 
 Due to the nature of POSIX shell, libraries can perform tests _when_ they are imported.
 
@@ -119,9 +119,9 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 		fi
 	fi
 	
-	if shlib_main; then
+	shlib_main {
 		seq "${@}"
-	fi
+	}
 
 From here a program only need to `import seq` to gain access to a `seq()`
 function which will call the native `seq` command if available, otherwise it

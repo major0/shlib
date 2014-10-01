@@ -10,4 +10,14 @@ else
 	die 'no suitable method for doing math'
 fi
 
+shlib_main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: calc <expression>'
+			exit 0
+		esac
+	done
+	calc "${@}"
+}
+
 # vim: filetype=sh

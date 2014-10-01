@@ -1,4 +1,11 @@
 #!/bin/sh
+# WARNING: shlib tends to highlight some areas in which Bash deviates from
+# POSIX.  For this reason it is recommended that you use a POSIX compliant
+# shell (of which I know of no version of Bash which is 100% POSIX, and thus no
+# version of Bash which will run shlib).
+POSIXLY_CORRECT=posix
+export POSIXCLY_CORRECT
+
 # We always use 'set -e' because it works "as expected" on the vast majority of
 # POSIX shells out there .. BASH being the only exception. That said, it hurts
 # nothing to use 'set -e' and then ignore its existance.
@@ -98,8 +105,10 @@ import()
 
 ##
 # These routines are pretty shlib specific.
+# NOTE: This sort of abuse of alias totally breaks Bash unless we are
+# running w/ # POSIXLY_CORRECT
+alias shlib_main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
 shlib_version() { echo '0.01'; }
-shlib_main() { test "${SHLIB_CALL_STACK}" = '__main__'; }
 shlib_usage()
 {
 	if test "$#" -gt '0'; then

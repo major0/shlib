@@ -6,8 +6,8 @@ else
 	. seq.sh
 fi
 
-if shlib_main; then
+shlib_main {
 	seq "$@"
-fi
+}
 
 # vim: filetype=sh
