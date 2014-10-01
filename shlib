@@ -86,7 +86,10 @@ import()
 
 	# Mostly some fun debugging data
 	cd "${2%/*}"
+	SHLIB_CALL_STACK_OLD="${SHLIB_CALL_STACK}"
 	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}" . "${2}"
+	SHLIB_CALL_STACK="${SHLIB_CALL_STACK_OLD}"
+	unset SHLIB_CALL_STACK_OLD
 	cd "${3}"
 
 	# Record that we imported the library
