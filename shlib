@@ -174,7 +174,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 		SHLIB_CALL_STACK='__main__' eval "${SHLIB_COMMAND}"
 	else # We are being "executed", so lets check our argument list.
 		test "$#" -ne '0' || shlib_usage 'shlib' 'no script specified'
-		test -f "`realpath "${1}"`" || die "file does not exist '${1}'"
+		test -f "`pathname "${1}"`" || die "file does not exist '${1}'"
 
 		SHLIB_SCRIPT="${1}"
 		PROGNAME="`basename "${1}"`"
