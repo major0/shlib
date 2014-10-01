@@ -39,6 +39,23 @@ hascmd() { test -e "`command -v "${1}"`" > /dev/null 2>&1; }
 pathcmd() { hascmd "${1}" && command -v "${1}"; }
 error() { echo "error: $*" >&2; }
 die() { error "$*"; exit 1; }
+imported()
+{
+	shlib_imported_lib="$(printf '%s\n' "$1"|tr '/' '_')"
+	shift
+	set -- "${shlib_imported_lib}" "$@"
+	unset shlib_imported_lib
+
+	case "$#" in
+	(1)	"shlib_import_$1" > /dev/null 2>&1 || return 1;;
+	(2)	eval "shlib_import_$1() { echo '$2'; }";;
+	(*)	return 1;;
+	esac
+
+	# We only get this far if $# == 2
+	eval "shlib_imports() { echo '$(shlib_imports) $1'; }"
+	return 0
+}
 import()
 {
 	shlib_import_lib="${*}"
@@ -65,18 +82,15 @@ import()
 	unset shlib_import_file
 
 	# Only allow a library to be imported once per-scope
-	eval "test -z \"\${SHLIB_IMPORT_${1}}\" || return"
+	if imported "${1}"; then return; fi
 
 	# Mostly some fun debugging data
 	cd "${2%/*}"
 	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}" . "${2}"
 	cd "${3}"
-	eval "SHLIB_IMPORT_${1}=\"${2}\""
-	if test -z "${SHLIB_IMPORTED}"; then
-		SHLIB_IMPORTED="${1}"
-	else
-		SHLIB_IMPORTED="${SHLIB_IMPORTED} ${1}"
-	fi
+
+	# Record that we imported the library
+	imported "${1}" "${2}"
 }
 
 ##
@@ -168,6 +182,8 @@ if test "`basename "${0}"`" = 'shlib'; then
 		esac
 		shift
 	done
+
+	eval 'shlib_imports() { :; }'
 
 	# Handle being called as 'shlib -c "<cmd>"'
 	if ! test -z "${SHLIB_COMMAND}"; then
