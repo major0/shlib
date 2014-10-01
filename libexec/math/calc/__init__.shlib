@@ -1,0 +1,13 @@
+#!/usr/bin/env shlib
+
+if echo "$((1+1))" > /dev/null 2>&1; then
+	calc() { printf '%s\n' "$(($*))"; }
+elif hascmd awk; then
+	calc() { eval awk "BEGIN{ print $*; }"; }
+elif hascmd bc; then
+	calc() { printf '%s\n' "$*" | bc; }
+else
+	die 'no suitable method for doing math'
+fi
+
+# vim: filetype=sh
