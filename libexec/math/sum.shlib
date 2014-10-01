@@ -1,0 +1,11 @@
+#!/usr/bin/env shlib
+
+import math/calc
+
+sum() { IFS='+' calc "$@"; }
+
+if shlib_main; then
+	sum "$@"
+fi
+
+# vim: filetype=sh

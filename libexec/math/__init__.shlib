@@ -3,3 +3,4 @@
 # NOTE: it would be nice if 'import' automagically imported everything below a path
 import math/seq
 import math/calc
+import math/sum
