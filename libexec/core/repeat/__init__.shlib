@@ -1,0 +1,40 @@
+#!/usr/bin/env shlib
+
+# This implements the 'repeat' keyword, similar to that found in zsh
+# usage: repeat N; do ...; done
+
+# WARNING: This will run into an infinite loop if repeat is nested w/in repeat
+# A Useful fix would be to use LINENO to resolve different instances of the
+# alias, unfortunately the Ash variants of shells do not support this variable:
+# http://pubs.opengroup.org/onlinepubs/009604599/utilities/xcu_chap02.html
+
+# WARNING2: the below use of LINENO does not work on ksh
+
+# Note: we only define repeat if it does not already exist (zsh)
+if ! repeat 1 true > /dev/null 2>&1; then
+alias repeat='
+eval "__repeat${LINENO}()
+{
+	if ! test \$# -gt 0; then
+		echo \"error: missing argument\" >&2
+		return 1
+	fi
+	while type __repeat${LINENO}_\$1 > /dev/null 2>&1; do set -- \$((\$1 - 1)); done
+	if ! test \$1 -gt 0; then
+		set -- \$((\$1 + 1))
+		while type __repeat${LINENO}_\$1 > /dev/null 2>&1; do
+			unset -f __repeat${LINENO}_\$1
+			set -- \$((\$1 + 1))
+		done
+		unset -f __repeat${LINENO}
+		return 1
+	fi
+	eval \"__repeat${LINENO}_\$1() { :; }\"
+}"; while __repeat${LINENO}'
+fi
+
+shlib_main {
+	die 'cannot be executed directly'
+}
+
+# vim: filetype=sh
