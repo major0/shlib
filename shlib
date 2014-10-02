@@ -39,10 +39,16 @@ pathname()
 		echo "`pwd`/${2}"
 	fi
 )}
-hascmd() { test -e "`command -v "${1}"`" > /dev/null 2>&1; }
-pathcmd() { hascmd "${1}" && command -v "${1}"; }
+
+##
+# useful utility routines
 error() { echo "error: $*" >&2; }
 die() { error "$*"; exit 1; }
+hascmd() { test -e "`command -v "${1}"`" > /dev/null 2>&1; }
+pathcmd() { hascmd "${1}" && command -v "${1}"; }
+
+##
+# shlib library routines
 imported()
 {
 	shlib_imported_lib="$(printf '%s\n' "$1"|tr '/' '_')"
