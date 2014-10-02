@@ -1,0 +1,29 @@
+#!/usr/bin/env shlib
+
+# This implements the 'repeat' keyword, similar to that found in zsh
+# usage: repeat N; do ...; done
+alias repeat='
+__repeat()
+{
+	if ! test "$#" -gt 0; then
+		echo "error: missing argument" >&2
+		return 1
+	fi
+	while type "__repeat$1" > /dev/null 2>&1; do set -- $(($1 - 1)); done
+	if ! test "$1" -gt 0; then
+		set -- $(($1 + 1))
+		while type "__repeat$1" > /dev/null 2>&1; do
+			unset -f "__repeat$1"
+			set -- $(($1 + 1))
+		done
+		unset __repeat
+		return 1
+	fi
+	eval "__repeat$1() { :; }"
+}; while __repeat '
+
+shlib_main {
+	die 'cannot be executed directly'
+}
+
+# vim: filetype=sh
