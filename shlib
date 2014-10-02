@@ -1,8 +1,5 @@
 #!/bin/sh
-# WARNING: shlib tends to highlight some areas in which Bash deviates from
-# POSIX.  For this reason it is recommended that you use a POSIX compliant
-# shell (of which I know of no version of Bash which is 100% POSIX, and thus no
-# version of Bash which will run shlib).
+# Always request the shell obey POSIX
 POSIXLY_CORRECT=posix
 export POSIXCLY_CORRECT
 
@@ -105,8 +102,6 @@ import()
 
 ##
 # These routines are pretty shlib specific.
-# NOTE: This sort of abuse of alias totally breaks Bash unless we are
-# running w/ # POSIXLY_CORRECT
 alias shlib_main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
 shlib_version() { echo '0.01'; }
 shlib_usage()
@@ -195,7 +190,9 @@ if test "`basename "${0}"`" = 'shlib'; then
 		shift
 	done
 
+	# Initialize our 'core'
 	eval 'shlib_imports() { :; }'
+	import core
 
 	# Handle being called as 'shlib -c "<cmd>"'
 	if ! test -z "${SHLIB_COMMAND}"; then
