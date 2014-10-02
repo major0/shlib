@@ -2,6 +2,12 @@
 
 # This implements the 'repeat' keyword, similar to that found in zsh
 # usage: repeat N; do ...; done
+# Note: due to the nature of POSIX aliases, the repeat directive cannot be
+# nested within multiple calls to repeat.
+#
+# POSIX 2.3.1 To prevent infinite loops in recursive aliasing, if the shell is
+# not currently processing an alias of the same name, the word shall be
+# replaced by the value of the alias; otherwise, it shall not be replaced.
 alias repeat='
 __repeat()
 {
