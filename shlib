@@ -85,7 +85,7 @@ imported()
 }
 import()
 {
-	shlib_import_lib="${*}"
+	SHLIB_IMPORT_LIB="${*}"
 	shlib_import_ifs="${IFS}"
 	IFS=':'
 	set -- ${SHLIB_PATH}
@@ -94,30 +94,38 @@ import()
 
 	shlib_import_file=
 	for shlib_import_path; do
-		if test -f "${shlib_import_path}/${shlib_import_lib}.shlib"; then
-			shlib_import_file="${shlib_import_path}/${shlib_import_lib}.shlib"
+		if test -f "${shlib_import_path}/${SHLIB_IMPORT_LIB}.shlib"; then
+			shlib_import_file="${shlib_import_path}/${SHLIB_IMPORT_LIB}.shlib"
 		fi
 
-		if test -e "${shlib_import_path}/${shlib_import_lib}/__init__.shlib"; then
-			shlib_import_file="${shlib_import_path}/${shlib_import_lib}/__init__.shlib"
+		if test -e "${shlib_import_path}/${SHLIB_IMPORT_LIB}/__init__.shlib"; then
+			shlib_import_file="${shlib_import_path}/${SHLIB_IMPORT_LIB}/__init__.shlib"
 		fi
 		test -z "${shlib_import_file}" || break
 	done
-	test -z "${shlib_import_file}" && die "invalid library '${shlib_import_lib}'"
-	set -- "${shlib_import_lib}" "`pathname "${shlib_import_file}"`" "${PWD}"
-	unset shlib_import_lib
+	test -z "${shlib_import_file}" && die "invalid library '${SHLIB_IMPORT_LIB}'"
+	SHLIB_IMPORT_FILE="`pathname "${shlib_import_file}"`"
+	SHLIB_IMPORT_DIR="${SHLIB_IMPORT_FILE%/*}"
 	unset shlib_import_file
+	unset shlib_import_path
 
 	# Only allow a library to be imported once per-scope
 	! imported "${1}" || return 0
 
 	# Mostly some fun debugging data
-	cd "${2%/*}"
+	SHLIB_IMPORT_OPWD="${PWD}"
+	cd "${SHLIB_IMPORT_DIR}"
+
 	SHLIB_CALL_STACK_OLD="${SHLIB_CALL_STACK}"
-	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}" . "${2}"
+	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${SHLIB_IMPORT_LIB}"
+	. "${SHLIB_IMPORT_FILE}"
 	SHLIB_CALL_STACK="${SHLIB_CALL_STACK_OLD}"
+	cd "${SHLIB_IMPORT_OPWD}"
+
 	unset SHLIB_CALL_STACK_OLD
-	cd "${3}"
+	unset SHLIB_IMPORT_FILE
+	unset SHLIB_IMPORT_DIR
+	unset SHLIB_IMPORT_OPWD
 
 	# Record that we imported the library
 	imported "${1}" "${2}"
@@ -213,9 +221,8 @@ if test "`basename "${0}"`" = 'shlib'; then
 		shift
 	done
 
-	# Initialize our 'core'
+	# Initialize our 'imports' hash
 	eval 'shlib_imports() { :; }'
-	import core
 
 	# Handle being called as 'shlib -c "<cmd>"'
 	if ! test -z "${SHLIB_COMMAND}"; then
@@ -224,9 +231,11 @@ if test "`basename "${0}"`" = 'shlib'; then
 		test "$#" -ne '0' || shlib_usage 'shlib' 'no script specified'
 		test -f "`pathname "${1}"`" || die "file does not exist '${1}'"
 
-		SHLIB_SCRIPT="${1}"
 		PROGNAME="`basename "${1}"`"
-		export SHLIB_SCRIPT PROGNAME
+		SHLIB_SCRIPT="${1}"
+		SHLIB_IMPORT_FILE="${SHLIB_SCRIPT}"
+		SHLIB_IMPORT_DIR="${SHLIB_SCRIPT%/*}"
+		SHLIB_IMPORT_PWD="${PWD}"
 		shift
 
 		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
