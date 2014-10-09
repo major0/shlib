@@ -109,7 +109,7 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 	#!/usr/bin/env shlib
 	
 	if hascmd seq; then
-		eval "seq() { \"`pathcmd seq`\" \"\${@}\"; }"
+		seq() { command seq "${@}"; }
 	else
 		# no seq cmd available then attempt to load the bash version
 		# which uses a c-for style itterator, else use one written in
