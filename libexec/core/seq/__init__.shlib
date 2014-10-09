@@ -1,7 +1,7 @@
 #!/usr/bin/env shlib
 
 if hascmd seq; then
-	eval "seq() { `pathcmd seq` \"\$@\"; }"
+	seq() { command seq "$@"; }
 else
 	. seq.sh
 fi
