@@ -1,12 +1,29 @@
 #!/bin/sh
-# Always request the shell obey POSIX
-POSIXLY_CORRECT=posix
-export POSIXCLY_CORRECT
-
 # We always use 'set -e' because it works "as expected" on the vast majority of
 # POSIX shells out there .. BASH being the only exception. That said, it hurts
 # nothing to use 'set -e' and then ignore its existance.
 set -e
+
+# Allow 'readonly' to work, even if it wont do what we want
+if ! command -v readonly > /dev/null 2>&1; then
+	alias readonly=' '
+fi
+
+# Find the shell-flavor we are using
+if ! ${ZSH_VERSION+false}; then
+	readonly SHLIB_SHELL='zsh'
+	emulate ksh
+elif ! ${KSH_VERSION+false}; then
+	readonly SHLIB_SHELL='ksh'
+	alias type > /dev/null 2>&1 || alias type='whence -v'
+elif ! ${BASH_VERSION+false}; then
+	readonly SHLIB_SHELL='bash'
+else
+	readonly SHLIB_SHELL='sh'
+fi
+
+# Always request the shell obey POSIX
+readonly POSIXLY_CORRECT=posix
 
 ##
 # It tends to be faster to call these as functions vs searching the PATH and
@@ -145,7 +162,7 @@ if test -z "${SHLIB_PATH}"; then
 	SHLIB_PATH="@shlib_libexecdir@"
 	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}/libexec"; then
 			SHLIB_PATH="`pathname "${0%/*}/libexec"`"
-			SHLIB_PATH="${SHLIB_PATH%/}"
+			readonly SHLIB_PATH="${SHLIB_PATH%/}"
 	fi
 
 	# Note: Checking for library validity is done at import(), this allows
