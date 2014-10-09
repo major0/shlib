@@ -1,12 +1,16 @@
 #!/usr/bin/env shlib
 
-regexp()
-{
-	test "$#" -eq '0' && die 'no string specified'
-	test "$#" -eq '1' && die 'no pattern specified'
-	# FIXME grep may not support -E
-	printf '%s\n' "${2}"|grep -Eq "${1}"
-}
+if [[ '[Hh]ello [Ww].*' = 'Hello World' ]] > /dev/null 2>&1; then
+	regexp() { [[ "${1}" = "${2}" ]]; }
+else
+	regexp()
+	{
+		test "$#" -eq '0' && die 'no string specified'
+		test "$#" -eq '1' && die 'no pattern specified'
+		# FIXME grep may not support -E
+		printf '%s\n' "${2}"|grep -Eq "${1}"
+	}
+fi
 
 shlib_main {
 	for arg; do
