@@ -2,35 +2,34 @@
 
 # This implements the 'repeat' keyword, similar to that found in zsh
 # usage: repeat N; do ...; done
-
-# WARNING: This will run into an infinite loop if repeat is nested w/in repeat
-# A Useful fix would be to use LINENO to resolve different instances of the
-# alias, unfortunately the Ash variants of shells do not support this variable:
-# http://pubs.opengroup.org/onlinepubs/009604599/utilities/xcu_chap02.html
-
-# WARNING2: the below use of LINENO does not work on ksh
+# WARNING: due to the usage of LINENO, this will NOT work safely with nested
+# repeats on the same line.
 
 # Note: we only define repeat if it does not already exist (zsh)
 if ! repeat 1 true > /dev/null 2>&1; then
-alias repeat='
-eval "__repeat${LINENO}()
+__repeat()
 {
-	if ! test \$# -gt 0; then
-		echo \"error: missing argument\" >&2
+	if test "$#" -lt '2'; then
+		error "missing argument"
 		return 1
 	fi
-	while type __repeat${LINENO}_\$1 > /dev/null 2>&1; do set -- \$((\$1 - 1)); done
-	if ! test \$1 -gt 0; then
-		set -- \$((\$1 + 1))
-		while type __repeat${LINENO}_\$1 > /dev/null 2>&1; do
-			unset -f __repeat${LINENO}_\$1
-			set -- \$((\$1 + 1))
-		done
-		unset -f __repeat${LINENO}
+	if test -z "${LINENO}"; then
+		if test -z "${__repeat_warning}"; then
+			__repeat_warning=1
+			error "repeat not safe with this flavor of ${SHLIB_SHELL}"
+			return 0
+		fi
 		return 1
 	fi
-	eval \"__repeat${LINENO}_\$1() { :; }\"
-}"; while __repeat${LINENO}'
+	! eval "test -z \${__repeat${1}}" || eval "__repeat${1}=${2}"
+	if ! eval "test \${__repeat${1}} -gt '0'"; then
+		eval "unset __repeat${1}"
+		return 1
+	fi
+	eval "__repeat${1}=\$((\${__repeat${1}} - 1))"
+	return 0
+}
+alias repeat='while __repeat ${LINENO} '
 fi
 
 shlib_main {
