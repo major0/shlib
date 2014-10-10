@@ -59,6 +59,8 @@ pathname()
 
 ##
 # useful utility routines
+hascmd() { test -e "`command -v "${1}"`" > /dev/null 2>&1; }
+pathcmd() { hascmd "${1}" && command -v "${1}"; }
 if ! hascmd let; then let() { IFS=, command eval test '$(($*))' -ne 0; }; fi
 if hascmd seq; then
 	seq() { command seq "$@"; }
@@ -83,8 +85,6 @@ else
 fi
 error() { echo "error: $*" >&2; }
 die() { error "$*"; exit 1; }
-hascmd() { test -e "`command -v "${1}"`" > /dev/null 2>&1; }
-pathcmd() { hascmd "${1}" && command -v "${1}"; }
 
 ##
 # shlib library routines
