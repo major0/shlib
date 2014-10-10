@@ -5,9 +5,7 @@
 set -e
 
 # Allow 'readonly' to work, even if it wont do what we want
-if ! command -v readonly > /dev/null 2>&1; then
-	alias readonly=' '
-fi
+if ! command -v readonly > /dev/null 2>&1; then alias readonly=' ';fi
 
 # Find the shell-flavor we are using
 if ! ${ZSH_VERSION+false}; then
