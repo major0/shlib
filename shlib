@@ -285,7 +285,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 		PROGNAME="`basename "${1}"`"
 		SHLIB_SCRIPT="${1}"
 		SHLIB_IMPORT_FILE="${SHLIB_SCRIPT}"
-		SHLIB_IMPORT_DIR="${SHLIB_SCRIPT%/*}"
+		SHLIB_IMPORT_DIR="$(dirname ${SHLIB_SCRIPT})"
 		SHLIB_IMPORT_PWD="${PWD}"
 		shift
 
