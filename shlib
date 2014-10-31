@@ -17,7 +17,7 @@ if ! ${ZSH_VERSION+false}; then
 	emulate ksh
 elif ! ${KSH_VERSION+false}; then
 	readonly SHLIB_SHELL='ksh'
-	alias type > /dev/null 2>&1 || alias type='whence -v'
+	alias type > /dev/null 2>&1 || alias type='whence -v '
 elif ! ${BASH_VERSION+false}; then
 	readonly SHLIB_SHELL='bash'
 else
