@@ -209,7 +209,7 @@ shlib_init()
 	unset -f shlib_init
 }
 
-# If we where not "installed" then this variable will not have been
+# If we were not "installed" then this variable will not have been
 # substituted, and the libexecdir in which we find the 'shlib' front-end will
 # not exist at which point we expect libdir to be relative to ${0}.
 # e.g. <path to shlib>/shlib, <path to shlib>/libexec/.
