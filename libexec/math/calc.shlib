@@ -1,23 +1,24 @@
 #!/usr/bin/env shlib
 
 if echo "$((1+1))" > /dev/null 2>&1; then
-	calc() { printf '%s\n' "$(($*))"; }
+	__shlib_math_calc() { printf '%s\n' "$(($*))"; }
 elif hascmd awk; then
-	calc() { eval awk "BEGIN{ print $*; }"; }
+	__shlib_math_calc() { eval awk "BEGIN{ print $*; }"; }
 elif hascmd bc; then
-	calc() { printf '%s\n' "$*" | bc; }
+	__shlib_math_calc() { printf '%s\n' "$*" | bc; }
 else
 	die 'no suitable method for doing math'
 fi
+alias math.calc='__shlib_math_calc '
 
-shlib_main {
+shlib.main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help)
 			echo 'usage: calc <expression>'
 			exit 0
 		esac
 	done
-	calc "${@}"
+	math.calc "${@}"
 }
 
 # vim: filetype=sh
