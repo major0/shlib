@@ -285,6 +285,9 @@ if test "`basename "${0}"`" = 'shlib'; then
 	# Initialize shlib
 	__shlib_init
 
+	# We would do this within __shlib_init, except it causes ksh to segfault
+	unset -f __shlib_init
+
 	# Handle being called as 'shlib -c "<cmd>"'
 	if ! test -z "${SHLIB_COMMAND}"; then
 		SHLIB_CALL_STACK='__main__' eval "${SHLIB_COMMAND}"
