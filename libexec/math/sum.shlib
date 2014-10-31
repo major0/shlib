@@ -2,16 +2,17 @@
 
 import math/calc
 
-sum() { IFS='+' calc "$@"; }
+__shlib_math_sum() { IFS='+' calc "$@"; }
+alias math.sum='__shlib_math_sum '
 
-shlib_main {
+shlib.main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help)
 			echo 'usage: sum <numbers>'
 			exit 0
 		esac
 	done
-	sum "$@"
+	math.sum "$@"
 }
 
 # vim: filetype=sh

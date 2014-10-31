@@ -34,7 +34,6 @@ readonly POSIXLY_CORRECT=posix
 # 'import' libraries.
 if ! hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; } fi
 float() { awk "BEGIN{ exit !($*); }"; }
-calc() { awk "BEGIN{ printf(\"%0.1f\n\", $*); }"; }
 dirname()
 {
 	case "${1}" in (.*);; (/*);; (*) set -- "./${1}";; esac
