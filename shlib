@@ -68,7 +68,39 @@ die() { error "$*"; exit 1; }
 
 ##
 # shlib library routines
-imported()
+__shlib_lib_resolv()
+{
+	__shlib_lib_resolv_lib="${1}"
+	__shlib_lib_resolv_ifs="${IFS}"
+	IFS=':'
+	set -- ${SHLIB_PATH}
+	IFS="${__shlib_lib_resolv_ifs}"
+	unset __shlib_lib_resolv_ifs
+
+	__shlib_lib_resolv_file=
+	for __shlib_lib_resolv_path; do
+		if test -f "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}.shlib"; then
+			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}.shlib"
+		fi
+
+		if test -e "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}/__init__.shlib"; then
+			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}/__init__.shlib"
+		fi
+		if ! test -z "${__shlib_lib_resolv_file}"; then
+			pathname "${__shlib_lib_resolv_file}"
+			break
+		fi
+	done
+	unset __shlib_lib_resolv_path
+	unset __shlib_lib_resolv_lib
+	unset __shlib_lib_resolv_file
+}
+__shlib_lib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0; }
+alias shlib.resolv='__shlib_lib_resolv'
+alias shlib.resolve='__shlib_lib_resolv'
+alias shlib.valid='__shlib_lib_valid'
+
+__shlib_imported()
 {
 	shlib_imported_lib="$(printf '%s\n' "$1"|tr '/' '_')"
 	shift
@@ -85,53 +117,41 @@ imported()
 	eval "shlib_imports() { echo '$(shlib_imports) $1'; }"
 	return 0
 }
-import()
+
+__shlib_import()
 {
-	SHLIB_IMPORT_LIB="${*}"
-	shlib_import_ifs="${IFS}"
-	IFS=':'
-	set -- ${SHLIB_PATH}
-	IFS="${shlib_import_ifs}"
-	unset shlib_import_ifs
-
-	shlib_import_file=
-	for shlib_import_path; do
-		if test -f "${shlib_import_path}/${SHLIB_IMPORT_LIB}.shlib"; then
-			shlib_import_file="${shlib_import_path}/${SHLIB_IMPORT_LIB}.shlib"
+	for __shlib_import_lib; do
+		if ! lib.valid "${shlib_import_lib}"; then
+			die "invalid library '${SHLIB_IMPORT_LIB}'"
 		fi
 
-		if test -e "${shlib_import_path}/${SHLIB_IMPORT_LIB}/__init__.shlib"; then
-			shlib_import_file="${shlib_import_path}/${SHLIB_IMPORT_LIB}/__init__.shlib"
-		fi
-		test -z "${shlib_import_file}" || break
+		SHLIB_IMPORT_FILE="$(lib.file "${shlib_import_lib}")"
+
+		# Only allow a library to be imported once per-scope
+		! __shlib_imported "${shlib_import_lib}" || return 0
+
+		# Mostly some fun debugging data
+		SHLIB_IMPORT_OPWD="${PWD}"
+		cd "$(dirname "${SHLIB_IMPORT_FILE}")"
+
+		SHLIB_CALL_STACK_OLD="${SHLIB_CALL_STACK}"
+		SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${SHLIB_IMPORT_LIB}"
+		. "${SHLIB_IMPORT_FILE}"
+		SHLIB_CALL_STACK="${SHLIB_CALL_STACK_OLD}"
+		unset SHLIB_CALL_STACK_OLD
+
+		cd "${SHLIB_IMPORT_OPWD}"
+		unset SHLIB_IMPORT_OPWD
+
+		# Record that we imported the library
+		__shlib_imported "${shlib_import_lib}" "${SHLIB_IMPORT_FILE}"
+		unset SHLIB_IMPORT_FILE
 	done
-	test -z "${shlib_import_file}" && die "invalid library '${SHLIB_IMPORT_LIB}'"
-	SHLIB_IMPORT_FILE="`pathname "${shlib_import_file}"`"
-	SHLIB_IMPORT_DIR="${SHLIB_IMPORT_FILE%/*}"
-	unset shlib_import_file
-	unset shlib_import_path
+	unset __shlib_import_lib
 
-	# Only allow a library to be imported once per-scope
-	! imported "${1}" || return 0
-
-	# Mostly some fun debugging data
-	SHLIB_IMPORT_OPWD="${PWD}"
-	cd "${SHLIB_IMPORT_DIR}"
-
-	SHLIB_CALL_STACK_OLD="${SHLIB_CALL_STACK}"
-	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${SHLIB_IMPORT_LIB}"
-	. "${SHLIB_IMPORT_FILE}"
-	SHLIB_CALL_STACK="${SHLIB_CALL_STACK_OLD}"
-	cd "${SHLIB_IMPORT_OPWD}"
-
-	unset SHLIB_CALL_STACK_OLD
-	unset SHLIB_IMPORT_FILE
-	unset SHLIB_IMPORT_DIR
-	unset SHLIB_IMPORT_OPWD
-
-	# Record that we imported the library
-	imported "${1}" "${2}"
 }
+alias shlib.import='__shlib_import'
+alias import='__shlib_import'
 
 ##
 # These routines are pretty shlib specific.
