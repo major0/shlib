@@ -97,62 +97,64 @@ __shlib_lib_resolv()
 	unset __shlib_lib_resolv_file
 }
 __shlib_lib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0; }
-alias shlib.resolv='__shlib_lib_resolv'
-alias shlib.resolve='__shlib_lib_resolv'
-alias shlib.valid='__shlib_lib_valid'
+alias shlib.resolv='__shlib_lib_resolv '
+alias shlib.resolve='__shlib_lib_resolv '
+alias shlib.valid='__shlib_lib_valid '
 
 __shlib_imported()
 {
-	shlib_imported_lib="$(printf '%s\n' "$1"|tr '/' '_')"
+	: "__shlib_imported($#): $*" >&2
+	__shlib_imported_lib="$(printf '%s' "$1"|tr '/' '_')"
 	shift
-	set -- "${shlib_imported_lib}" "$@"
-	unset shlib_imported_lib
+	set -- "${__shlib_imported_lib}" "$@"
+	unset __shlib_imported_lib
+	: "__shlib_imported($#): $*" >&2
 
 	case "$#" in
-	(1)	"shlib_import_$1" > /dev/null 2>&1 || return 1;;
-	(2)	eval "shlib_import_$1() { echo '$2'; }";;
+	(1)	"__shlib_imported_$1" > /dev/null 2>&1 || return 1;;
+	(2)	eval "__shlib_imported_$1() { :; }";;
 	(*)	return 1;;
 	esac
 
 	# We only get this far if $# == 2
-	eval "shlib_imports() { echo '$(shlib_imports) $1'; }"
+	eval "__shlib_imports() { echo '$(__shlib_imports) $1'; }"
 	return 0
 }
 
-__shlib_import()
+__shlib_import_lib()
 {
-	for __shlib_import_lib; do
-		if ! lib.valid "${shlib_import_lib}"; then
-			die "invalid library '${SHLIB_IMPORT_LIB}'"
-		fi
+	if ! shlib.valid "${1}"; then
+		die "invalid library '${1}'"
+	fi
 
-		SHLIB_IMPORT_FILE="$(lib.file "${shlib_import_lib}")"
+	# name file
+	set -- "${1}" "$(shlib.resolv "${1}")"
 
-		# Only allow a library to be imported once per-scope
-		! __shlib_imported "${shlib_import_lib}" || return 0
+	# Only allow a library to be imported once per-scope
+	! __shlib_imported "${1}" || return 0
 
-		# Mostly some fun debugging data
-		SHLIB_IMPORT_OPWD="${PWD}"
-		cd "$(dirname "${SHLIB_IMPORT_FILE}")"
+	# name file opwd
+	set -- "${1}" "${2}" "${PWD}"
+	cd "$(dirname "${2}")"
 
-		SHLIB_CALL_STACK_OLD="${SHLIB_CALL_STACK}"
-		SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${SHLIB_IMPORT_LIB}"
-		. "${SHLIB_IMPORT_FILE}"
-		SHLIB_CALL_STACK="${SHLIB_CALL_STACK_OLD}"
-		unset SHLIB_CALL_STACK_OLD
+	# name file opwd old_stack
+	set -- "${1}" "${2}" "${3}" "${SHLIB_CALL_STACK}"
+	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}"
+	__shlib_imported "${1}" "${2}"
+	. "${2}"
+	SHLIB_CALL_STACK="${4}"
 
-		cd "${SHLIB_IMPORT_OPWD}"
-		unset SHLIB_IMPORT_OPWD
+	cd "${3}"
+}
 
-		# Record that we imported the library
-		__shlib_imported "${shlib_import_lib}" "${SHLIB_IMPORT_FILE}"
-		unset SHLIB_IMPORT_FILE
-	done
-	unset __shlib_import_lib
+# FIXME support 'import <routine> from <lib>'
+import()
+{
+	for __shlib_import_arg; do __shlib_import_lib "${__shlib_import_arg}"; done
+	unset __shlib_import_arg
 
 }
-alias shlib.import='__shlib_import'
-alias import='__shlib_import'
+alias shlib.import='import '
 
 ##
 # These routines are pretty shlib specific.
@@ -165,49 +167,22 @@ __shlib_usage()
 		echo "try '${1} --help'" >&2
 		exit 1
 	fi
-cat << EOF
-usage: shlib [options] [file]
+	sed -e 's/	//' << EOF
+	usage: shlib [options] [file]
 
- options:
-   -L, --libdir=LIBDIR
-   -v, --verbose	Enable verbose execution
-   -V, --version	Display shlib version
-   -h, --help		Display this help
+	 options:
+	   -L, --libdir=LIBDIR		Path to SHLIB libraries
+	   -I, --import=LIB		Import specified lib(s)
+	   -v, --verbose		Enable verbose execution
+	   -V, --version		Display shlib version
+	   -h, --help			Display this help
 
- shell opts:
-   -c STRING		Execute commands given in STRING
-   -x			Trace script execution
-   --shlib-only		Only use shlib versions of commands
+	 shell opts:
+	   -c STRING			Execute commands given in STRING
+	   -x				Trace script execution
+	   --shlib-only			Only use shlib versions of commands
 
 EOF
-}
-
-__shlib_init()
-{
-	eval 'shlib_imports() { :; }'
-	if ! hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; }; fi
-	if hascmd seq; then
-		seq() { command seq "$@"; }
-	else
-		seq()
-		{
-			test "$#" -eq 1 && set -- 1 "${1}"
-			test "$#" -eq 2 && set -- "${1}" 1 "${2}"
-			test "$#" -gt 3 && die "seq: extra operand '${4}'"
-			while true; do
-				if test "${2}" -gt '0'; then
-					test "${1}" -lt "${3}" || break
-				else
-					test "${1}" -gt "${3}" || break
-				fi
-				echo "${1}"
-				set -- "$((${1} + ${2}))" "${2}" "${3}"
-				test "${1}" != "${3}" || break
-			done
-		}
-	fi
-	unset -f __shlib_version
-	unset -f __shlib_usage
 }
 
 # If we were not "installed" then this variable will not have been
@@ -237,7 +212,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 	for shlib_arg; do
 		case "${shlib_arg}" in
 		(-h|-help|--help)
-			shlib_usage; exit 0;;
+			__shlib_usage; exit 0;;
 		(--) break;;
 		esac
 	done
@@ -271,13 +246,13 @@ if test "`basename "${0}"`" = 'shlib'; then
 		(-v)	set -v;;
 		(-x)	set -x;;
 		(-c)	test "$#" -gt '1' || \
-				shlib_usage 'shlib' "option '${1}' requires an argument"
+				__shlib_usage 'shlib' "option '${1}' requires an argument"
 			SHLIB_COMMAND="${2}"
 			shift;;
 
 		# Our standard argument handling
 		(--)	shift; break;;
-		(-*)	shlib_usage 'shlib' "unknown option '${1}'";;
+		(-*)	__shlib_usage 'shlib' "unknown option '${1}'";;
 		(*)	break;;
 		esac
 		shift
