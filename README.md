@@ -109,7 +109,7 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 	#!/usr/bin/env shlib
 	
 	if hascmd seq; then
-		seq() { command seq "${@}"; }
+		__math_seq() { command seq "${@}"; }
 	else
 		# no seq cmd available then attempt to load the bash version
 		# which uses a c-for style itterator, else use one written in
@@ -118,10 +118,9 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 			. seq.sh
 		fi
 	fi
+	alias math.seq='__math_seq '
 	
-	shlib_main {
-		seq "${@}"
-	}
+	shlib_main { math.seq "${@}"; }
 
 From here a program only need to `import seq` to gain access to a `seq()`
 function which will call the native `seq` command if available, otherwise it
