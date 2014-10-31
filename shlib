@@ -232,11 +232,18 @@ fi
 # being 'sourced' by some other script which wants to utilize shlib as a
 # library.
 if test "`basename "${0}"`" = 'shlib'; then
-	while test "$#" -gt '0'; do
-		case "${1}" in
+	# Look for cries for help before parsing arguments
+	for shlib_arg; do
+		case "${shlib_arg}" in
 		(-h|-help|--help)
 			shlib_usage; exit 0;;
+		(--) break;;
+		esac
+	done
+	unset shlib_arg
 
+	while test "$#" -gt '0'; do
+		case "${1}" in
 		(-V|-version|--version)
 			echo "shlib version `shlib_version`"; exit 0;;
 
