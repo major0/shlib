@@ -32,6 +32,8 @@ readonly POSIXLY_CORRECT=posix
 # then fork/exec'ing them.  On the flip side, we only supply very low-level
 # routines as part of the core shlib.  Everything else MUST be supplied via
 # 'import' libraries.
+float() { awk "BEGIN{ exit !($*); }"; }
+calc() { awk "BEGIN{ printf(\"%0.1f\n\", $*); }"; }
 dirname()
 {
 	case "${1}" in (.*);; (/*);; (*) set -- "./${1}";; esac
