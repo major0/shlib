@@ -183,7 +183,7 @@ EOF
 shlib_init()
 {
 	eval 'shlib_imports() { :; }'
-	if ! hascmd let; then let() { IFS=, command eval test '$(($*))' -ne 0; }; fi
+	if ! hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; }; fi
 	if hascmd seq; then
 		seq() { command seq "$@"; }
 	else
