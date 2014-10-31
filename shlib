@@ -155,9 +155,9 @@ alias import='__shlib_import'
 
 ##
 # These routines are pretty shlib specific.
-alias shlib_main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
-shlib_version() { echo '0.01'; }
-shlib_usage()
+alias shlib.main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
+__shlib_version() { echo 0.01; }
+__shlib_usage()
 {
 	if test "$#" -gt '0'; then
 		error "${2}"
@@ -180,7 +180,8 @@ usage: shlib [options] [file]
 
 EOF
 }
-shlib_init()
+
+__shlib_init()
 {
 	eval 'shlib_imports() { :; }'
 	if ! hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; }; fi
@@ -204,9 +205,8 @@ shlib_init()
 			done
 		}
 	fi
-	unset -f shlib_version
-	unset -f shlib_usage
-	unset -f shlib_init
+	unset -f __shlib_version
+	unset -f __shlib_usage
 }
 
 # If we were not "installed" then this variable will not have been
@@ -283,7 +283,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 	done
 
 	# Initialize shlib
-	shlib_init
+	__shlib_init
 
 	# Handle being called as 'shlib -c "<cmd>"'
 	if ! test -z "${SHLIB_COMMAND}"; then
