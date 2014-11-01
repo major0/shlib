@@ -1,6 +1,7 @@
 #!/usr/bin/env shlib
 
 # NOTE: it would be nice if 'import' automagically imported everything below a path
+import math/cmp
 import math/calc
 import math/sum
 import math/seq
