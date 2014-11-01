@@ -1,0 +1,30 @@
+#!/usr/bin/env shlib
+
+if test "${SHLIB_SHELL}" = 'ksh'; then
+	__shlib_math_cos() { echo "$((cos($*)))"; }
+elif test "${SHLIB_SHELL}" = 'zsh'; then
+	__shlib_math_cos() { set -- "$((cos($*)))"; echo "${1%.}"; }
+elif hascmd 'gawk'; then
+	__shlib_math_cos() { command gawk "BEGIN{ print cos($*); }"; }
+elif hascmd 'awk'; then
+	__shlib_math_cos() { command awk "BEGIN{ print cos($*); }"; }
+elif hascmd 'ksh'; then
+	__shlib_math_cos() { command ksh -c "echo \$((cos($*)))"; }
+elif hascmd 'zsh'; then
+	__shlib_math_cos() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
+else
+	die 'no suitable method for doing cos'
+fi
+alias math.cos='__shlib_math_cos '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo "usage: ${0} <expression>"
+			exit 0
+		esac
+	done
+	math.cos "${@}"
+}
+
+# vim: filetype=sh

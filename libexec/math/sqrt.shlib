@@ -1,0 +1,30 @@
+#!/usr/bin/env shlib
+
+if test "${SHLIB_SHELL}" = 'ksh'; then
+	__shlib_math_sqrt() { echo "$((sqrt($*)))"; }
+elif test "${SHLIB_SHELL}" = 'zsh'; then
+	__shlib_math_sqrt() { set -- "$((sqrt($*)))"; echo "${1%.}"; }
+elif hascmd 'gawk'; then
+	__shlib_math_sqrt() { command gawk "BEGIN{ print sqrt($*); }"; }
+elif hascmd 'awk'; then
+	__shlib_math_sqrt() { command awk "BEGIN{ print sqrt($*); }"; }
+elif hascmd 'ksh'; then
+	__shlib_math_sqrt() { command ksh -c "echo \$((sqrt($*)))"; }
+elif hascmd 'zsh'; then
+	__shlib_math_sqrt() { command zsh -c "result=\$((sqrt($*)));echo \${result%.}"; }
+else
+	die 'no suitable method for doing sqrt'
+fi
+alias math.sqrt='__shlib_math_sqrt '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo "usage: ${0} <expression>"
+			exit 0
+		esac
+	done
+	math.sqrt "${@}"
+}
+
+# vim: filetype=sh
