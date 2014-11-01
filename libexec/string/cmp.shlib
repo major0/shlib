@@ -1,0 +1,17 @@
+#!/usr/bin/env
+
+__shlib_string_cmp() { test "${1}" = "${2}"; }
+alias string.cmp='__shlib_string_cmp'
+alias string.compare='__shlib_string_cmp'
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo "usage: ${0} <string1> <string2>"
+			exit 0
+		esac
+	done
+	string.cmp "${@}"
+}
+
+# vim: filetype=sh
