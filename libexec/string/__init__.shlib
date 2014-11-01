@@ -1,4 +1,5 @@
 #!/usr/bin/env
 
-import string/regexp
+import string/index
 import string/match
+import string/regexp
