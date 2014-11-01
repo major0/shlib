@@ -15,6 +15,7 @@ if ! hascmd readonly > /dev/null 2>&1; then alias readonly=' ';fi
 if ! ${ZSH_VERSION+false}; then
 	readonly SHLIB_SHELL='zsh'
 	emulate ksh
+	zmodload zsh/mathfunc
 elif ! ${KSH_VERSION+false}; then
 	readonly SHLIB_SHELL='ksh'
 	alias type > /dev/null 2>&1 || alias type='whence -v '
