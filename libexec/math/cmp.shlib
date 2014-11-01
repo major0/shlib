@@ -1,0 +1,26 @@
+#!/usr/bin/env shlib
+
+if ((0.01 < 0.1)) 2> /dev/null; then
+	__shlib_math_cmp() { (($*)); }
+elif hascmd ksh; then
+	__shlib_math_cmp() { ksh -c "(($*))"; }
+elif hascmd zsh; then
+	__shlib_math_cmp() { ksh -c "(($*))"; }
+elif hascmd awk; then
+	__shlib_math_cmp() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
+else
+	die 'no suitable method for float equality'
+fi
+alias math.cmp='__shlib_math_cmp'
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: cmp <expression>'
+			exit 0
+		esac
+	done
+	math.cmp "${@}"
+}
+
+# vim: filetype=sh
