@@ -5,8 +5,16 @@
 set -e
 
 SHLIB_ONLY='false'
-hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "`command -v "${1}"`" > /dev/null 2>&1; }
-pathcmd() { hascmd "${1}" && command -v "${1}"; }
+# BusyBox may have builtins which can prevent 'command -v' from returning the
+# expected output, this can be detected by asking 'command -v' for the path to
+# 'sh', which in busybox returns as 'sh'.
+if test "$(command -v sh)" = 'sh'; then
+	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "`which "${1}"`" > /dev/null 2>&1; }
+	pathcmd() { hascmd "${1}" && which "${1}"; }
+else
+	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "`command -v "${1}"`" > /dev/null 2>&1; }
+	pathcmd() { hascmd "${1}" && command -v "${1}"; }
+fi
 
 # Allow 'readonly' to work, even if it wont do what we want
 if ! hascmd readonly > /dev/null 2>&1; then alias readonly=' ';fi
