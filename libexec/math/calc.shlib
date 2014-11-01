@@ -1,7 +1,13 @@
 #!/usr/bin/env shlib
 
-if hascmd awk; then
-	__shlib_math_calc() { eval awk "BEGIN{ print $*; }"; }
+if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
+	__shlib_math_calc() { echo "$(($*))"; }
+elif hascmd awk; then
+	__shlib_math_calc() { command awk "BEGIN{ print $*; }"; }
+elif hascmd ksh; then
+	__shlib_math_calc() { command ksh -c "echo \$(($*))"; }
+elif hascmd zsh; then
+	__shlib_math_calc() { command zsh -c "echo \$(($*))"; }
 elif hascmd bc; then
 	__shlib_math_calc() { printf '%s\n' "$*" | bc; }
 else
