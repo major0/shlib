@@ -1,17 +1,22 @@
 #!/usr/bin/env shlib
 
-if [[ '[Hh]ello [Ww].*' = 'Hello World' ]] > /dev/null 2>&1; then
-	__shlib_string_regexp() { [[ "${1}" = "${2}" ]]; }
+__shlib_string_regexp()
+{
+	test "$#" -eq '0' && die 'no string specified'
+	test "$#" -eq '1' && die 'no pattern specified'
+	__shlib_string_regexp_cmd "${@}"
+}
+
+if hascmd awk; then
+	__shlib_string_regexp_cmd() {
+	awk "BEGIN{found=1;};/${1}/{found=0;};END{exit found;}" <<EOF
+${2}"
+EOF
+}
 else
-	__shlib_string_regexp()
-	{
-		test "$#" -eq '0' && die 'no string specified'
-		test "$#" -eq '1' && die 'no pattern specified'
-		# FIXME grep may not support -E
-		printf '%s\n' "${2}"|grep -q "${1}"
-	}
+	die 'no way to implement string.regexp'
 fi
-alias string.regexp='__string_regexp'
+alias string.regexp='__shlib_string_regexp'
 
 shlib.main {
 	for arg; do
