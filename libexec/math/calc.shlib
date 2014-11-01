@@ -1,8 +1,6 @@
 #!/usr/bin/env shlib
 
-if echo "$((1+1))" > /dev/null 2>&1; then
-	__shlib_math_calc() { printf '%s\n' "$(($*))"; }
-elif hascmd awk; then
+if hascmd awk; then
 	__shlib_math_calc() { eval awk "BEGIN{ print $*; }"; }
 elif hascmd bc; then
 	__shlib_math_calc() { printf '%s\n' "$*" | bc; }
