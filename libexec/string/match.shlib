@@ -1,12 +1,17 @@
 #!/usr/bin/env shlib
 
-__regex_match() { eval "case \"${2}\" in ($1) return 0;;esac;return 1"; }
-alias regex.match='__regex_match'
+if hascmd gawk; then
+	__shlib_string_match() { command awk "BEGIN{ print match(\"${2}\", \"${1}\"); }"; }
+else
+	die "no way to implement match"
+fi
+alias string.match='__shlib_string_match '
 
 shlib.main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help)
 			echo "usage: ${0} <pattern> <string>"
+			echo "returns the index of the first occurance of pattern"
 			exit 0
 		esac
 	done
