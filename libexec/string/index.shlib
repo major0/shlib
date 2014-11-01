@@ -1,0 +1,25 @@
+#!/usr/bin/env shlib
+
+__shlib_string_index()
+{
+	set -- "${2%%${1}*}" "${@}"
+	if test "${1}" = "${3}"; then
+		echo 0
+	else
+		echo $((${#1} + 1))
+	fi
+}
+alias string.index='__shlib_string_index '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo "usage: ${0} <substring> <string>"
+			echo "returns the index of the first occurance of substring in string"
+			exit 0
+		esac
+	done
+	string.index "${1}" "${2}"
+}
+
+# vim: filetype=sh
