@@ -1,17 +1,17 @@
 #!/usr/bin/env shlib
 
 if [[ '[Hh]ello [Ww].*' = 'Hello World' ]] > /dev/null 2>&1; then
-	__regex_regexp() { [[ "${1}" = "${2}" ]]; }
+	__shlib_string_regexp() { [[ "${1}" = "${2}" ]]; }
 else
-	__regex_regexp()
+	__shlib_string_regexp()
 	{
 		test "$#" -eq '0' && die 'no string specified'
 		test "$#" -eq '1' && die 'no pattern specified'
 		# FIXME grep may not support -E
-		printf '%s\n' "${2}"|grep -Eq "${1}"
+		printf '%s\n' "${2}"|grep -q "${1}"
 	}
 fi
-alias regex.regexp='__regex_regexp'
+alias string.regexp='__string_regexp'
 
 shlib.main {
 	for arg; do
@@ -20,7 +20,7 @@ shlib.main {
 			exit 0
 		esac
 	done
-	regex.regexp "${1}" "${2}"
+	string.regexp "${1}" "${2}"
 }
 
 # vim: filetype=sh

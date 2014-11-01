@@ -10,7 +10,7 @@ shlib.main {
 			exit 0
 		esac
 	done
-	regex.match "${1}" "${2}"
+	string.match "${1}" "${2}"
 }
 
 # vim: filetype=sh
