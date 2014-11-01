@@ -2,7 +2,7 @@
 
 import math/cmp math/calc
 
-if ! hascmd seq; then
+if hascmd seq; then
 	__shlib_math_seq() { command seq "${@}"; }
 else
 	__shlib_math_seq() {
