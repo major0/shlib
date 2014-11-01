@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if ((0.01 < 0.1)) 2> /dev/null; then
+if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_cmp() { (($*)); }
 elif hascmd ksh; then
 	__shlib_math_cmp() { ksh -c "(($*))"; }
