@@ -1,13 +1,39 @@
 #!/usr/bin/env shlib
 
-if hascmd seq; then
-	__shlib_math_seq() { command seq "$@"; }
+import math/cmp math/calc
+
+if ! hascmd seq; then
+	__shlib_math_seq() { command seq "${@}"; }
 else
-	__shlib_math_seq()
-	{
+	__shlib_math_seq() {
 		test "$#" -eq 1 && set -- 1 "${1}"
 		test "$#" -eq 2 && set -- "${1}" 1 "${2}"
 		test "$#" -gt 3 && die "seq: extra operand '${4}'"
+		case "${1}|${2}|${3}" in
+		(*.*)	__shlib_math_seq_float "${@}";;
+		(*)	__shlib_math_seq_int "${@}";;
+		esac
+	}
+
+	__shlib_math_seq_float()
+	{
+		set -- "${2#*.}" "${@}"
+		set -- "${@}" "${#1}"
+		shift
+		while true; do
+			if math.cmp "${2} > 0"; then
+				math.cmp "${1} <= ${3}" || break
+			else
+				math.cmp "${1} >= ${3}" || break
+			fi
+			printf "%0.0${4}f\n" "${1}"
+			set -- "$(math.calc "${1} + ${2}")" "${2}" "${3}" "${4}"
+			math.cmp "${2} != 0" || break
+		done
+	}
+
+	__shlib_math_seq_int()
+	{
 		while true; do
 			if test "${2}" -gt '0'; then
 				test "${1}" -le "${3}" || break
