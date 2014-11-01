@@ -1,4 +1,4 @@
 #!/usr/bin/env
 
-import regex/regexp
-import regex/match
+import string/regexp
+import string/match
