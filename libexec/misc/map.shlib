@@ -1,0 +1,31 @@
+#!/usr/bin/env shlib
+
+# Based on a bash map() function by Reddit user downdiagonal
+# http://www.reddit.com/r/bashtricks/comments/aks3u/a_functional_programming_style_map_function_for/
+# edited for portability, (read dash compat, the others: ksh93, bash, zsh) worked out of the box.
+
+__shlib_misc_map(){
+    if [ $# -lt 2 ] || [[ ! "$@" =~ :[[:space:]] ]];then
+        echo "Invalid syntax." >&2; return 1 
+    fi
+    until [[ $1 =~ : ]]; do
+        command="$command $1"; shift
+    done
+    command="$command ${1%:}"; shift
+    for i in "$@"; do
+        eval "${command//\\/\\\\} \"${i//\\/\\\\}\""
+    done
+}
+alias misc.map='__shlib_misc_map'
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: map <command>: <expression> <...> <...>'
+			exit 0
+		esac
+	done
+	misc.map "${@}"
+}
+
+# vim: filetype=sh
