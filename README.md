@@ -100,7 +100,7 @@ The following is a simple program which simply prints every argument back to std
 		done
 	}
 	
-	shlib.main {
+	shlib.main() {
 		args "${@}"
 	}
 
@@ -120,7 +120,7 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 	fi
 	alias math.seq='__math_seq '
 	
-	shlib.main { math.seq "${@}"; }
+	shlib.main() { math.seq "${@}"; }
 
 From here a program only need to `import seq` to gain access to a `seq()`
 function which will call the native `seq` command if available, otherwise it
