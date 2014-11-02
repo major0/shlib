@@ -80,7 +80,7 @@ some shell-magic, a given library can only be imported once (attempting to
 source the same library in a second time silently returns), and a library
 "knows" if it is being sourced in vs being executed directly.
 
-`shlib_main()`
+`shlib.main()`
 ------------
 
 Test if the current library is being executed directly.
@@ -100,7 +100,7 @@ The following is a simple program which simply prints every argument back to std
 		done
 	}
 	
-	shlib_main {
+	shlib.main {
 		args "${@}"
 	}
 
@@ -120,7 +120,7 @@ Due to the nature of POSIX shell, libraries can perform tests _when_ they are im
 	fi
 	alias math.seq='__math_seq '
 	
-	shlib_main { math.seq "${@}"; }
+	shlib.main { math.seq "${@}"; }
 
 From here a program only need to `import seq` to gain access to a `seq()`
 function which will call the native `seq` command if available, otherwise it
