@@ -1,0 +1,24 @@
+#!/usr/bin/env shlib
+
+if hascmd awk; then
+	__shlib_string_sub() {
+		awk "{ sub(\"$1\", \"$2\"); print(\$0); }" <<EOF
+$3
+EOF
+	}
+else
+	die 'no way to implement sub'
+fi
+alias string.sub='__shlib_string_sub '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo "usage: ${0} <pattern> <repl> <string>"
+			exit 0
+		esac
+	done
+	string.sub "$@"
+}
+
+# vim: filetype=sh
