@@ -7,3 +7,4 @@ import string/toupper
 import string/tolower
 import string/cmp
 import string/casecmp
+import string/sub
