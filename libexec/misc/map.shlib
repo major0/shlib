@@ -4,9 +4,6 @@
 # http://www.reddit.com/r/bashtricks/comments/aks3u/a_functional_programming_style_map_function_for/
 # edited for portability, (read dash compat, the others: ksh93, bash, zsh) worked out of the box.
 
-# TODO: use the other shlib funcs to replace the string handling
-#       fix dash [[ issue
-
 import string/match
 
 __shlib_misc_map(){
