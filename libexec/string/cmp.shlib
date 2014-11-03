@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env shlib
 
 __shlib_string_cmp() { test "${1}" = "${2}"; }
 alias string.cmp='__shlib_string_cmp'
