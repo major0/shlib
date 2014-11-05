@@ -159,8 +159,8 @@ __shlib_doc_resolv()
 			__shlib_doc_resolv_file="${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}.md"
 		fi
 
-		if test -e "${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}/__init__.md"; then
-			__shlib_doc_resolv_file="${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}/__init__.md"
+		if test -e "${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}/__index__.md"; then
+			__shlib_doc_resolv_file="${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}/__index__.md"
 		fi
 		if ! test -z "${__shlib_doc_resolv_file}"; then
 			pathname "${__shlib_doc_resolv_file}"
