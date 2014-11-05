@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-import math/calc
+import math.calc
 
 __shlib_math_sum() { IFS='+' calc "$@"; }
 alias math.sum='__shlib_math_sum '

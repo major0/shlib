@@ -105,7 +105,11 @@ alias die='__shlib_die '
 
 __shlib_lib_resolv()
 {
-	__shlib_lib_resolv_lib="${1}"
+	if test "${1%.*}" != "${1}"; then
+		__shlib_lib_resolv_lib="${1%.*}/${1##*.}"
+	else
+		__shlib_lib_resolv_lib="${1}"
+	fi
 	__shlib_lib_resolv_ifs="${IFS}"
 	IFS=':'
 	set -- ${SHLIB_PATH}

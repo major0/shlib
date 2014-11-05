@@ -1,15 +1,15 @@
 #!/usr/bin/env shlib
 
 # NOTE: it would be nice if 'import' automagically imported everything below a path
-import math/atan2
-import math/calc
-import math/cmp
-import math/cos
-import math/exp
-import math/int
-import math/log
-import math/rand
-import math/seq
-import math/sin
-import math/sqrt
-import math/sum
+import math.atan2
+import math.calc
+import math.cmp
+import math.cos
+import math.exp
+import math.int
+import math.log
+import math.rand
+import math.seq
+import math.sin
+import math.sqrt
+import math.sum
