@@ -16,9 +16,9 @@ a specific interface use `shlib --help <library>.<interface>`.
 
 ## shlib routines ##
 
- error  die  hascmd  pathcmd import
+ error die hascmd pathcmd import
 
 ## shlib libraries ##
 
- math  string  experimental
+ math string experimental
 
