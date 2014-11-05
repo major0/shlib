@@ -154,12 +154,12 @@ alias shlib.doc='__shlib_doc '
 
 __shlib_imported()
 {
-	: "__shlib_imported($#): $*" >&2
+	: "__shlib_imported($#): $*"
 	__shlib_imported_lib="$(printf '%s' "$1"|tr '/' '_')"
 	shift
 	set -- "${__shlib_imported_lib}" "$@"
 	unset __shlib_imported_lib
-	: "__shlib_imported($#): $*" >&2
+	: "__shlib_imported($#): $*"
 
 	case "$#" in
 	(1)	"__shlib_imported_$1" > /dev/null 2>&1 || return 1;;
@@ -315,7 +315,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 	unset -f __shlib_version
 	unset -f __shlib_usage
 
-	# Handle being called as 'shlib -c "<cmd>"'
+	# FIXME write SHLIB_COMMAND to a temp SHLIB_SCRIPT to avoid the use of 'eval'
 	if ! test -z "${SHLIB_COMMAND}"; then
 		SHLIB_CALL_STACK='__main__' eval "${SHLIB_COMMAND}"
 	else # We are being "executed", so lets check our argument list.
