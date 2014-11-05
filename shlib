@@ -244,6 +244,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 	unset shlib_arg
 
 	SHLIB_IMPORTS=
+	SHLIB_COMMAND=
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(-V|-version|--version)
@@ -269,6 +270,8 @@ if test "`basename "${0}"`" = 'shlib'; then
 		(-x)	set -x;;
 		(-c)	test "$#" -gt '1' || \
 				__shlib_usage 'shlib' "option '${1}' requires an argument"
+			test -z "${SHLIB_COMMAND}" ||
+				__shlib_usage 'shlib' "option '${1}' already specified"
 			SHLIB_COMMAND="${2}"
 			shift;;
 
