@@ -1,4 +1,4 @@
-# shlib.main
+## shlib.main
 
 Special test condition which inhibits code execution unless the script being
 executed is the top-level script. This is useful for adding special self-test

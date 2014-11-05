@@ -1,4 +1,5 @@
-# shlib #
+shlib
+-----
 
 The core of the shlib API implements only that which is deemed necessary to
 implement the shlib framework. In short, if it was necessary to implement the
