@@ -16,11 +16,11 @@ a specific interface use `shlib --help <library>.<interface>`.
 
 ## shlib routines ##
 
- [error] [die] [getarg] [hascmd] [import] [pathcmd] [main] [optarg]
+ [error][], [die][], [getarg][], [hascmd][], [import][], [pathcmd][], [main][], [optarg][]
 
 ## shlib libraries ##
 
- [math] [string] [experimental]
+ [math][], [string][], [experimental][]
 
 [error]: error.md
 [die]: die.md
