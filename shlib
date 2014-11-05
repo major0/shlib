@@ -125,6 +125,20 @@ __shlib_lib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; retu
 alias shlib.resolv='__shlib_lib_resolv '
 alias shlib.resolve='__shlib_lib_resolv '
 alias shlib.valid='__shlib_lib_valid '
+__shlib_doc()
+{
+	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
+	if test -z "${2}"; then
+		die "invalid library '${1}'"
+	fi
+
+	test -e "${2%.shlib}.md" || die "no documentation for '${1}'"
+
+	# FIXME If we are requesting docs for a library, list all the existing
+	# routines.
+	cat "${2%.shlib}.md"
+}
+alias shlib.doc='__shlib_doc '
 
 __shlib_imported()
 {
@@ -210,6 +224,7 @@ __shlib_usage()
 	   --shlib-only			Only use shlib versions of commands
 
 EOF
+	exit 0
 }
 
 # If we were not "installed" then this variable will not have been
@@ -235,20 +250,14 @@ fi
 # being 'sourced' by some other script which wants to utilize shlib as a
 # library.
 if test "`basename "${0}"`" = 'shlib'; then
-	# Look for cries for help before parsing arguments
-	for shlib_arg; do
-		case "${shlib_arg}" in
-		(-h|-help|--help)
-			__shlib_usage; exit 0;;
-		(--) break;;
-		esac
-	done
-	unset shlib_arg
-
 	SHLIB_IMPORTS=
 	SHLIB_COMMAND=
 	while test "$#" -gt '0'; do
 		case "${1}" in
+		(-h|-help|--help)
+			shlib_arg="$(optarg "${1}" "${2}")"
+			test -z "${shlib_arg}" || __shlib_doc "${shlib_arg}"
+			__shlib_usage;;
 		(-V|-version|--version)
 			echo "shlib version `shlib_version`"; exit 0;;
 
