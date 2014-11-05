@@ -57,7 +57,7 @@ script into your existing `/bin/sh` scripts.
 See Also
 ========
 
- * [Examples](examples/index.md)
+ * [Examples](examples/)
  * [shlib API](libexec/shlib/__init__.md)
  * [Development](CONTRIB.md)
  * [License](LICENSE)
