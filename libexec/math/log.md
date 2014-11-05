@@ -1,3 +1,3 @@
-## log <number>
+## math.log `<number>`
 
-Return the natural logarithm of <number>.
+Return the natural logarithm of `<number>`.

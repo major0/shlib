@@ -1,3 +1,3 @@
-## sin <radians>
+## math.sin `<radians>`
 
-Return the sine of <radians>.
+Return the sine of `<radians>`.

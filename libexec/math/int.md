@@ -1,3 +1,3 @@
-## int <float>
+## math.int `<float>`
 
-Convert the specified <float> to an int.
+Convert the specified `<float>` to an int.

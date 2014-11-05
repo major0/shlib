@@ -1,3 +1,3 @@
-## calc <expression>
+## math.calc `<expression>`
 
-Calculate the and return result of <expression>.
+Calculate the and return result of `<expression>`.

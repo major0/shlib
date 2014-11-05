@@ -1,3 +1,3 @@
-## sqrt <number>
+## math.sqrt `<number>`
 
-Return the square-root of <number>.
+Return the square-root of `<number>`.

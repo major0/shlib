@@ -1,3 +1,3 @@
-## sum <number> <number> [<number> ...]
+## math.sum `<number> <number> [<number> ...]`
 
-Sum all the numbers together and return the result.
+Sum all the `<numbers>` together and return the result.
