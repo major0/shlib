@@ -181,7 +181,6 @@ __shlib_doc()
 
 	exit 0
 }
-alias shlib.doc='__shlib_doc '
 
 __shlib_imported()
 {
@@ -244,6 +243,10 @@ alias import='__shlib_import '
 ##
 # These routines are pretty shlib specific.
 alias shlib.main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
+alias shlib.hascmd='hascmd '
+alias shlib.pathcmd='pathcmd '
+alias shlib.pathname='pathname '
+
 __shlib_version() { echo 0.01; }
 __shlib_usage()
 {
@@ -343,6 +346,8 @@ if test "`basename "${0}"`" = 'shlib'; then
 	for shlib_lib_to_import in ${SHLIB_IMPORTS}; do
 		import "${shlib_lib_to_import}"
 	done
+	unset -f __shlib_doc_resolv
+	unset -f __shlib_doc
 	unset -f __shlib_version
 	unset -f __shlib_usage
 
