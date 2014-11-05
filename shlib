@@ -148,6 +148,7 @@ __shlib_doc()
 	# FIXME If we are requesting docs for a library, list all the existing
 	# routines.
 	cat "${2%.shlib}.md"
+	exit 0
 }
 alias shlib.doc='__shlib_doc '
 
