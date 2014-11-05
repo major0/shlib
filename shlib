@@ -142,16 +142,63 @@ alias shlib.valid='__shlib_lib_valid '
 
 __shlib_doc()
 {
-	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
-	if test -z "${2}"; then
-		die "invalid library '${1}'"
+	set -- "${1}" "${1%.*}" "${1##*.}" "$(__shlib_lib_resolv "${1}")"
+	! test -z "${4}" || die "invalid library '${1}'"
+
+	__shlib_doc_opwd="${PWD}"
+	cd "$(dirname "${4}")"
+
+	if test "${2}" != "${3}"; then
+		test -e "${4%.shlib}.md" || die "no documentation for '${1}'"
 	fi
 
-	test -e "${2%.shlib}.md" || die "no documentation for '${1}'"
+	! test -e "${4%.shlib}.md" || cat "${4%.shlib}.md"
 
-	# FIXME If we are requesting docs for a library, list all the existing
-	# routines.
-	cat "${2%.shlib}.md"
+	# Do not try to hunt for sub-sub-routines
+	test "${2}" = "${3}" || return 0
+
+	__shlib_doc_routines=
+	for __shlib_doc_file in $(echo *.shlib); do
+		test -e "${__shlib_doc_file}" || continue
+		! test "${__shlib_doc_file}" = '__init__.shlib' || continue
+		__shlib_doc_routines="${__shlib_doc_routines} ${__shlib_doc_file}"
+	done
+
+	if ! test -z "${__shlib_doc_routines}"; then
+		: __shlib_doc_routines="'${__shlib_doc_routines}'"
+		__shlib_doc_len="${1} routines"
+		echo "${__shlib_doc_len}"
+
+		# Draw an Horizontal bar
+		__shlib_doc_len="${#__shlib_doc_len}"
+		while test "${__shlib_doc_len}" -gt '0'; do
+			printf '%s' '-'
+			__shlib_doc_len="$((${__shlib_doc_len} - 1))"
+		done
+		printf '\n'
+		unset __shlib_doc_len
+
+		# List the routines
+		__shlib_doc_width='0'
+		for __shlib_doc_routine in ${__shlib_doc_routines}; do
+			__shlib_doc_routine="${__shlib_doc_routine%.shlib}"
+			printf ' %s' "${__shlib_doc_routine}"
+			__shlib_doc_width="$((${__shlib_doc_width} + ${#__shlib_doc_routine} + 1))"
+
+			if test "${__shlib_doc_width}" -ge '78'; then
+				printf '\n'
+				__shlib_doc_width='0'
+			fi
+		done
+		printf '\n'
+		unset __shlib_doc_routine
+	fi
+
+	unset __shlib_doc_routines
+
+	cd "${shlib_doc_opwd}"
+	unset __shlib_doc_opwd
+
 	exit 0
 }
 alias shlib.doc='__shlib_doc '
