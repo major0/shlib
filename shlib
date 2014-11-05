@@ -56,6 +56,7 @@ basename()
 	test -z "${1}" && set -- '/'
 	echo "${1}"
 }
+# FIXME this is not remotely portable, and it beaks our coding style guidelines
 pathname()
 {(
 	if ! test -d "${1}"; then
@@ -230,7 +231,7 @@ __shlib_import_lib()
 	cd "${3}"
 }
 
-# FIXME support 'import <routine> from <lib>'
+# FIXME support 'import <routine> from <lib>'?
 __shlib_import()
 {
 	for __shlib_import_arg; do __shlib_import_lib "${__shlib_import_arg}"; done
