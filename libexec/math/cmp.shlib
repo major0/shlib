@@ -11,7 +11,7 @@ elif hascmd awk; then
 else
 	die 'no suitable method for float equality'
 fi
-alias math.cmp='__shlib_math_cmp'
+alias math.cmp='__shlib_math_cmp '
 
 shlib.main {
 	for arg; do

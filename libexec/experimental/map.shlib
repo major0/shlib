@@ -19,7 +19,7 @@ __shlib_misc_map(){
                 eval "${command} \"${i}\""
         done
 }
-alias misc.map='__shlib_misc_map'
+alias misc.map='__shlib_misc_map '
 
 shlib.main {
 	for arg; do

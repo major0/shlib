@@ -3,7 +3,7 @@
 import string.toupper
 
 __shlib_string_casecmp() { test "$(string.toupper "${1}")" = "$(string.toupper "${2}")"; }
-alias string.casecmp='__shlib_string_casecmp'
+alias string.casecmp='__shlib_string_casecmp '
 
 shlib.main {
 	for arg; do
