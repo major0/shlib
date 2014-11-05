@@ -1,0 +1,18 @@
+#!/usr/bin/env shlib
+# The following is a simple program which simply prints every argument back to
+# stdout.  This is in some ways a slightly more useful version of
+# `hello world`.
+
+args()
+{
+	while test "$#" -gt '0'; do
+		echo "${1}"
+		shift
+	done
+}
+
+shlib.main() {
+	args "${@}"
+}
+
+# vim: filetype=sh

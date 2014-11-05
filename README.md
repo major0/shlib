@@ -54,77 +54,13 @@ script into your existing `/bin/sh` scripts.
 
 	. /path/to/shlib
 
-Core API
+See Also
 ========
 
-At the heart of [shlib's][shlib] core interfaces are some basic helper routines.
-
-error()
--------
-
-Display the given message to stderr.
-
-die()
------
-
-Display the given message to stderr and terminte program execution.
-
-import()
---------
-
-Import the specified library into the current environment.  This was inspired
-by the `import` command found in Python and acts as a replacement to the
-`source` or `.` command used in the POSIX shell environment.  This interface
-searches for the named library in `SHLIB_PATH` and sources it in.  Thanks to
-some shell-magic, a given library can only be imported once (attempting to
-source the same library in a second time silently returns), and a library
-"knows" if it is being sourced in vs being executed directly.
-
-`shlib.main()`
-------------
-
-Test if the current library is being executed directly.
-
-Example Programs
-----------------
-
-The following is a simple program which simply prints every argument back to stdout.
-
-	#!/usr/bin/env shlib
-	
-	args()
-	{
-		while test "$#" -gt '0'; do
-			echo "${1}"
-			shift
-		done
-	}
-	
-	shlib.main() {
-		args "${@}"
-	}
-
-Due to the nature of POSIX shell, libraries can perform tests _when_ they are imported.
-
-	#!/usr/bin/env shlib
-	
-	if hascmd seq; then
-		__math_seq() { command seq "${@}"; }
-	else
-		# no seq cmd available then attempt to load the bash version
-		# which uses a c-for style itterator, else use one written in
-		# pure POSIX shell.
-		if ! . seq.bash > /dev/null 2>&1; then
-			. seq.sh
-		fi
-	fi
-	alias math.seq='__math_seq '
-	
-	shlib.main() { math.seq "${@}"; }
-
-From here a program only need to `import seq` to gain access to a `seq()`
-function which will call the native `seq` command if available, otherwise it
-will use one implemented in POSIX shell.
+ * [Examples](examples/index.md)
+ * [shlib API](libexec/shlib/__init__.md)
+ * [Development](CONTRIB.md)
+ * [License](LICENSE)
 
 [shlib]: http://github.com/major0/shlib "shlib"
 [ksh]: http://www.kornshell.com/ "Korne Shell"
