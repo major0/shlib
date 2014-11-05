@@ -1,17 +1,17 @@
 ## Philosphy ##
 
-[shlib] is written around the goal of providing a portable /dumping ground/ for
-various shell tricks and hacks produced throughout the ages.  Such things as
-floating point arithematic, string manipulation, and even just overly common
+[shlib] is written around the goal of providing a portable **dumping ground**
+for various shell tricks and hacks produced throughout the ages.  Such things
+as floating point arithematic, string manipulation, and even just overly common
 routines used by programmers on a day-to-day basis.  With that in mind, shlib
 attempts to implement an interface via as many methods as possible to try and
 achieve maximum portability.
 
 ## What shlib is not ##
 
-[shlib][shlib] is not in and of itself a scripting language, or a replacement
-to existing shells.  While various libaries w/in shlib may implement an
-interface using external utilities are shell-specific features, the interfaces
+[shlib] is not in and of itself a scripting language, or a replacement to
+existing shells.  While various libaries w/in shlib may implement an interface
+using external utilities are shell-specific features, the interfaces
 provided conform to the [Shell Command Language](http://pubs.opengroup.org/onlinepubs/007904975/utilities/xcu_chap02.html)
 as defined by the [OpenGroup](http://www.opengroup.org/).
 
@@ -19,8 +19,8 @@ as defined by the [OpenGroup](http://www.opengroup.org/).
 
 Due to the nature of POSIX shell, libraries can perform tests _when_ they are
 imported, as opposed to doing a test every time an interface is called.  This
-allows [shlib][shlib] to implement a single interface via a variety of methods,
-and select the method which best fits the local platform.
+allows [shlib] to implement a single interface via a variety of methods, and
+select the method which best fits the local platform.
 
 For example:
 
@@ -71,7 +71,7 @@ defined by [git][git].
 	esac
 ```
 
- * Use `$( ... )` for command substitution.  Do not use ``"` ... `"``.
+ * Use `$( ... )` for command substitution.  Do not use *\` ... \`*.
 
  * Feel free to use `$(( ... ))` for arithmetic expansion.
 
