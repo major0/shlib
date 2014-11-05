@@ -17,7 +17,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 
 ## shlib routines ##
 
- [error][], [die][], [getarg][], [hascmd][], [import][], [pathcmd][], [main][], [optarg][]
+ [error][], [die][], [getarg][], [hascmd][], [import][], [main][], [optarg][], [pathcmd][] [realpath][]
 
 ## shlib libraries ##
 
@@ -31,6 +31,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 [pathcmd]: pathcmd.md
 [main]: main.md
 [optarg]: optarg.md
+[realpath]: realpath.md
 [math]: ../math/__index__.md
 [string]: ../string/__index__.md
 [experimental]: ../experimental/__index__.md
