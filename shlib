@@ -69,13 +69,18 @@ pathname()
 		echo "`pwd`/${2}"
 	fi
 )}
-getarg()
+optarg()
 {
 	if test "${1#*=}" != "${1}"; then
 		set -- "${1}" "${2}" "${1#*=}"
 	else
 		case "${2}" in (-*);; (*) set -- "${1}" "${2}" "${2}";; esac
 	fi
+	test -z "${3}" || echo "${3}"
+}
+getarg()
+{
+	set -- "${1}" "${2}" "$(optarg "${@}")"
 	if test -z "${3}"; then
 		__shlib_usage 'shlib' "option '${1%=*}' requires an argument"
 	fi
