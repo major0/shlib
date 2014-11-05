@@ -58,8 +58,8 @@ See Also
 ========
 
  * [Examples](examples/)
- * [shlib API](libexec/shlib/__init__.md)
  * [Development](CONTRIB.md)
+ * [API](libexec/shlib/__index__.md)
  * [License](LICENSE)
 
 [shlib]: http://github.com/major0/shlib "shlib"
