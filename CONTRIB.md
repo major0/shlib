@@ -71,7 +71,7 @@ defined by [git][git].
 	esac
 ```
 
- * Use `$( ... )` for command substitution.  Do not use ``` ... ```.
+ * Use `$( ... )` for command substitution.  Do not use ``"` ... `"``.
 
  * Feel free to use `$(( ... ))` for arithmetic expansion.
 
