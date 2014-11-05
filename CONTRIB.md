@@ -84,11 +84,19 @@ defined by [git][git].
  * Do not use `-a` or `-o` with `test`, use `&&` or `||` instead.
 
  * Parameter expansion on both left and right side is performed regardless of
-  the result of the left-side during `-o`: `test "$(cmd1)" = 'success' -o "$(cmd2)" = 'success'`
+   the result of the left-side during `-o`:
+
+```sh
+	test "$(cmd1)" = 'success' -o "$(cmd2)" = 'success'
+```
 
  * The `-a` condition can become painfully confused depending on the data,
    for example: `test -n "${a}" -a "${a}" = "${b}"` can break if `a='='`.
-   Using `&&` will have no such problem: `test -n "${a}" && test "${a}" = "${b}"`
+   Using `&&` will have no such problem:
+
+```sh
+	test -n "${a}" && test "${a}" = "${b}"
+```
 
 #### Do not confuse what constitutes a Basic Regular Expression ####
 
