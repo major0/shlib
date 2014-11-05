@@ -69,7 +69,10 @@ pathname()
 		echo "`pwd`/${2}"
 	fi
 )}
-optarg()
+
+##
+# shlib library routines
+__shlib_optarg()
 {
 	if test "${1#*=}" != "${1}"; then
 		set -- "${1}" "${2}" "${1#*=}"
@@ -78,22 +81,28 @@ optarg()
 	fi
 	test -z "${3}" || echo "${3}"
 }
-getarg()
+alias shlib.optarg='__shlib_optarg '
+
+__shlib_getarg()
 {
-	set -- "${1}" "${2}" "$(optarg "${@}")"
+	set -- "${1}" "${2}" "$(__shlib_optarg "${@}")"
 	if test -z "${3}"; then
 		__shlib_usage 'shlib' "option '${1%=*}' requires an argument"
 	fi
 	echo "${3}"
 }
+alias shlib.getarg='__shlib_getarg '
 
-##
-# useful utility routines
-error() { echo "error: $*" >&2; }
-die() { error "$*"; exit 1; }
 
-##
-# shlib library routines
+__shlib_error() { echo "error: $*" >&2; }
+alias shlib.error='__shlib_error '
+alias error='__shlib_error '
+
+__shlib_die() { error "$*"; exit 1; }
+alias shlib.die='__shlib_die '
+alias die='__shlib_die '
+
+
 __shlib_lib_resolv()
 {
 	__shlib_lib_resolv_lib="${1}"
@@ -121,10 +130,12 @@ __shlib_lib_resolv()
 	unset __shlib_lib_resolv_lib
 	unset __shlib_lib_resolv_file
 }
-__shlib_lib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0; }
 alias shlib.resolv='__shlib_lib_resolv '
 alias shlib.resolve='__shlib_lib_resolv '
+
+__shlib_lib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0; }
 alias shlib.valid='__shlib_lib_valid '
+
 __shlib_doc()
 {
 	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
@@ -189,13 +200,14 @@ __shlib_import_lib()
 }
 
 # FIXME support 'import <routine> from <lib>'
-import()
+__shlib_import()
 {
 	for __shlib_import_arg; do __shlib_import_lib "${__shlib_import_arg}"; done
 	unset __shlib_import_arg
 
 }
-alias shlib.import='import '
+alias shlib.import='__shlib_import '
+alias import='__shlib_import '
 
 ##
 # These routines are pretty shlib specific.
@@ -255,14 +267,14 @@ if test "`basename "${0}"`" = 'shlib'; then
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(-h|-help|--help)
-			shlib_arg="$(optarg "${1}" "${2}")"
+			shlib_arg="$(__shlib_optarg "${1}" "${2}")"
 			test -z "${shlib_arg}" || __shlib_doc "${shlib_arg}"
 			__shlib_usage;;
 		(-V|-version|--version)
 			echo "shlib version `shlib_version`"; exit 0;;
 
 		(-L|-libdir|--libdir|--libdir=*)
-			shlib_arg="$(getarg "${1}" "${2}")"
+			shlib_arg="$(__shlib_getarg "${1}" "${2}")"
 			test -e "${shlib_arg}" || die "no such directory '${shlib_arg}'"
 			test -d "${shlib_arg}" || die "not a directory '${shlib_arg}'"
 			SHLIB_PATH="${shlib_arg}:${SHLIB_PATH}"
@@ -270,7 +282,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 			case "${1}" in (*=*);;(*) shift;;esac;;
 
 		(-I|--import|--import=*)
-			SHLIB_IMPORTS="${SHLIB_IMPORTS} $(getarg "${1}" "${2}")"
+			SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")"
 			case "${1}" in (*=*);;(*) shift;;esac;;
 
 		(--shlib-only)
