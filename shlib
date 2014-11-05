@@ -148,6 +148,8 @@ __shlib_imported()
 
 __shlib_import_lib()
 {
+	# FIXME perhaps we should perform imports as 'lib.iface' instead of
+	# 'lib/iface' .. just a thought.
 	if ! shlib.valid "${1}"; then
 		die "invalid library '${1}'"
 	fi
