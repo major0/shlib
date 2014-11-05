@@ -1,4 +1,0 @@
-#!/usr/bin/env shlib
-
-import core.seq
-import core.repeat
