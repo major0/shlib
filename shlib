@@ -192,27 +192,25 @@ __shlib_doc()
 __shlib_imported()
 {
 	: "__shlib_imported($#): $*"
-	__shlib_imported_lib="$(printf '%s' "$1"|tr '/' '_')"
+	__shlib_imported_lib="$(printf '%s' "$1"|tr '[/.]' '_')"
 	shift
 	set -- "${__shlib_imported_lib}" "$@"
 	unset __shlib_imported_lib
 	: "__shlib_imported($#): $*"
 
 	case "$#" in
-	(1)	"__shlib_imported_$1" > /dev/null 2>&1 || return 1;;
-	(2)	eval "__shlib_imported_$1() { :; }";;
+	(1)	"__shlib_${1}_imported" > /dev/null 2>&1 || return 1;;
+	(2)	eval "__shlib_${1}_imported() { :; }";;
 	(*)	return 1;;
 	esac
 
 	# We only get this far if $# == 2
-	eval "__shlib_imports() { echo '$(__shlib_imports) $1'; }"
+	eval "__shlib_imports() { echo '$(__shlib_imports) ${1}'; }"
 	return 0
 }
 
 __shlib_import_lib()
 {
-	# FIXME perhaps we should perform imports as 'lib.iface' instead of
-	# 'lib/iface' .. just a thought.
 	if ! __shlib_valid "${1}"; then
 		die "invalid library '${1}'"
 	fi
@@ -240,7 +238,11 @@ __shlib_import_lib()
 # FIXME support 'import <routine> from <lib>'?
 __shlib_import()
 {
-	for __shlib_import_arg; do __shlib_import_lib "${__shlib_import_arg}"; done
+	for __shlib_import_arg; do
+		if ! eval "${__shlib_import_arg}_imported" 2>/dev/null; then
+			__shlib_import_lib "${__shlib_import_arg}"
+		fi
+	done
 	unset __shlib_import_arg
 
 }
