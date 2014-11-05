@@ -5,7 +5,7 @@ if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
 elif hascmd ksh; then
 	__shlib_math_cmp() { ksh -c "(($*))"; }
 elif hascmd zsh; then
-	__shlib_math_cmp() { ksh -c "(($*))"; }
+	__shlib_math_cmp() { zsh -c "(($*))"; }
 elif hascmd awk; then
 	__shlib_math_cmp() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
 else
