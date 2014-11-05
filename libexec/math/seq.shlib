@@ -1,6 +1,7 @@
 #!/usr/bin/env shlib
 
-import math.cmp math/calc
+import math.cmp
+import math.calc
 
 if hascmd seq; then
 	__shlib_math_seq() { command seq "${@}"; }
