@@ -134,11 +134,8 @@ __shlib_lib_resolv()
 	unset __shlib_lib_resolv_lib
 	unset __shlib_lib_resolv_file
 }
-alias shlib.resolv='__shlib_lib_resolv '
-alias shlib.resolve='__shlib_lib_resolv '
 
 __shlib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0; }
-alias shlib.valid='__shlib_valid '
 
 __shlib_doc_resolv()
 {
@@ -213,12 +210,12 @@ __shlib_import_lib()
 {
 	# FIXME perhaps we should perform imports as 'lib.iface' instead of
 	# 'lib/iface' .. just a thought.
-	if ! shlib.valid "${1}"; then
+	if ! __shlib_valid "${1}"; then
 		die "invalid library '${1}'"
 	fi
 
 	# name file
-	set -- "${1}" "$(shlib.resolv "${1}")"
+	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
 
 	# Only allow a library to be imported once per-scope
 	! __shlib_imported "${1}" || return 0
