@@ -22,14 +22,14 @@ a specific interface use `shlib --help <library>.<interface>`.
 
  [math] [string] [experimental]
 
-[error]: libexec/shlib/error.md
-[die]: libexec/shlib/error.md
-[getarg]: libexec/shlib/getarg.md
-[hascmd]: libexec/shlib/hascmd.md
-[import]: libexec/shlib/import.md
-[pathcmd]: libexec/shlib/pathcmd.md
-[main]: libexec/shlib/main.md
-[optarg]: libexec/shlib/optarg.md
-[math]: libexec/math/__index__.md
-[string]: libexec/string/__index__.md
-[experimental]: libexec/experimental/__index__.md
+[error]: error.md
+[die]: die.md
+[getarg]: getarg.md
+[hascmd]: hascmd.md
+[import]: import.md
+[pathcmd]: pathcmd.md
+[main]: main.md
+[optarg]: optarg.md
+[math]: ../math/__index__.md
+[string]: ../string/__index__.md
+[experimental]: ../experimental/__index__.md
