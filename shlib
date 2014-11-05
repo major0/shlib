@@ -177,46 +177,8 @@ __shlib_doc()
 	if test "${2}" != "${3}"; then
 		test -e "${4}" || die "no documentation for '${1}'"
 	fi
-	! test -e "${4}" || cat "${4%}"
 
-	# Do not try to hunt for sub-sub-routines
-	test "${2}" = "${3}" || exit 0
-
-	set -- "${@}" "$(__shlib_lib_resolv "${1}")"
-	__shlib_doc_opwd="${PWD}"
-	cd "$(dirname "${5}")"
-
-	__shlib_doc_routines=
-	for __shlib_doc_file in $(echo *.shlib); do
-		test -e "${__shlib_doc_file}" || continue
-		! test "${__shlib_doc_file}" = '__init__.shlib' || continue
-		__shlib_doc_routines="${__shlib_doc_routines} ${__shlib_doc_file}"
-	done
-
-	if ! test -z "${__shlib_doc_routines}"; then
-		: __shlib_doc_routines="'${__shlib_doc_routines}'"
-		printf "## %s routines ##\n\n" "${1}"
-
-		# List the routines
-		__shlib_doc_width='0'
-		for __shlib_doc_routine in ${__shlib_doc_routines}; do
-			__shlib_doc_routine="${__shlib_doc_routine%.shlib}"
-			printf ' %s' "${__shlib_doc_routine}"
-			__shlib_doc_width="$((${__shlib_doc_width} + ${#__shlib_doc_routine} + 1))"
-
-			if test "${__shlib_doc_width}" -ge '78'; then
-				printf '\n'
-				__shlib_doc_width='0'
-			fi
-		done
-		printf '\n'
-		unset __shlib_doc_routine
-	fi
-
-	unset __shlib_doc_routines
-
-	cd "${shlib_doc_opwd}"
-	unset __shlib_doc_opwd
+	! test -e "${4}" || sed -e '/^[[[]/d' "${4%}"
 
 	exit 0
 }
