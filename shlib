@@ -178,7 +178,7 @@ __shlib_doc()
 		test -e "${4}" || die "no documentation for '${1}'"
 	fi
 
-	! test -e "${4}" || sed -e '/^[[[]/d' "${4%}"
+	! test -e "${4}" || sed -e '/^[[[]/d' -e 's/[[]\([^]]\{1,\}\)[]][[][]]/\1/g' "${4%}"
 
 	exit 0
 }
