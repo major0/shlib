@@ -73,13 +73,45 @@ defined by [git][git].
 
  * Use `$( ... )` for command substitution.  Do not use ``` ... ```.
 
- * Avoid shell-ism's outside of shell-specific code.
+ * Feel free to use `$(( ... ))` for arithmetic expansion.
 
-  * Accepted Parameter Substitutions
+ * Do not use process substition `<( )` or `>( )`.
+
+ * Use 'test' over `[ ... ]`
+
+#### Rethink your understanding of `test` ####
+
+ * Do not use `-a` or `-o` with `test`, use `&&` or `||` instead.
+
+ * Parameter expansion on both left and right side is performed regardless of
+  the result of the left-side during `-o`: `test "$(cmd1)" = 'success' -o "$(cmd2)" = 'success'`
+
+ * The `-a` condition can become painfully confused depending on the data,
+   for example: `test -n "${a}" -a "${a}" = "${b}"` can break if `a='='`.
+   Using `&&` will have no such problem: `test -n "${a}" && test "${a}" = "${b}"`
+
+#### Do not confuse what constitutes a Basic Regular Expression ####
+
+  * `?` and `+` are not part of the BRE definition, GNU just made them
+    accessible when in BRE.
+
+  * Do not use `?`, this is an ERE, use `\{0,1\}` instead.
+
+  * Do not use '+', this is an ERE, use `\{1,\}` instead.
+
+  * Do not use `grep -E` unless you know the current flavor of grep supports
+    it, it isn't portable.
+
+
+#### Avoid shell-ism's outside of shell-specific code. #####
+
+##### Accepted Parameter Substitutions #####
 
    * `${parameter-word}` and its [-=?+] siblings, and their colon'ed "unset or null" form.
 
    * `${parameter#word}` and its [#%] siblings and their doubled "longest matching" form.
+
+##### Unacceptable shell-ism's #####
 
   * Do not use any of these w/out knowledge of the current shell-flavour (i.e.
     hide it inside of an if, or some other source-file to be sourced in).
@@ -91,32 +123,5 @@ defined by [git][git].
    * strlen substitution: `${#parameter}`
 
    * Pattern replacement: `${parameter/pattern/string}`
-
-  * Feel free to use `$(( ... ))` for arithmetic expansion.
-
-  * Do not use process substition `<( )` or `>( )`.
-
-  * Use 'test' over `[ ... ]`
-
-  * Do not use `-a` or `-o` with `test`, use `&&` or `||` instead.
-
-   * Parameter expansion on both left and right side is performed regardless of
-     the result of the left-side during `-o`: `test "$(cmd1)" = 'success' -o "$(cmd2)" = 'success'`
-
-   * The `-a` condition can become painfully confused depending on the data,
-     for example: `test -n "${a}" -a "${a}" = "${b}"` can break if `a='='`.
-     Using `&&` will have no such problem: `test -n "${a}" && test "${a}" = "${b}"`
-
- * Do not confuse what constitutes a Basic Regular Expression:
-
-  * `?` and `+` are not part of the BRE definition, GNU just made them
-    accessible when in BRE.
-
-  * Do not use `?`, this is an ERE, use `\{0,1\}` instead.
-
-  * Do not use '+', this is an ERE, use `\{1,\}` instead.
-
-  * Do not use `grep -E` unless you know the current flavor of grep supports
-    it, it isn't portable.
 
 [shlib]: http://github.com/major0/shlib "shlib"
