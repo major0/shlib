@@ -16,9 +16,20 @@ a specific interface use `shlib --help <library>.<interface>`.
 
 ## shlib routines ##
 
- error die hascmd pathcmd import
+ [error] [die] [getarg] [hascmd] [import] [pathcmd] [main] [optarg]
 
 ## shlib libraries ##
 
- math string experimental
+ [math] [string] [experimental]
 
+[error](libexec/shlib/error.md)
+[die](libexec/shlib/error.md)
+[getarg](libexec/shlib/getarg.md)
+[hascmd](libexec/shlib/hascmd.md)
+[import](libexec/shlib/import.md)
+[pathcmd](libexec/shlib/pathcmd.md)
+[main](libexec/shlib/main.md)
+[optarg](libexec/shlib/optarg.md)
+[math](libexec/math/__index__.md)
+[string](libexec/string/__index__.md)
+[experimental](libexec/experimental/__index__.md)
