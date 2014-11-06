@@ -188,6 +188,7 @@ __shlib_doc()
 
 	exit 0
 }
+alias shlib.doc='__shlib_doc '
 
 __shlib_imported()
 {
@@ -281,6 +282,7 @@ __shlib_usage()
 EOF
 	exit 0
 }
+alias shlib.usage='__shlib_usage '
 
 # If we were not "installed" then this variable will not have been
 # substituted, and the libexecdir in which we find the 'shlib' front-end will
@@ -354,10 +356,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 	for shlib_lib_to_import in ${SHLIB_IMPORTS}; do
 		import "${shlib_lib_to_import}"
 	done
-	unset -f __shlib_doc_resolv
-	unset -f __shlib_doc
 	unset -f __shlib_version
-	unset -f __shlib_usage
 
 	# FIXME write SHLIB_COMMAND to a temp SHLIB_SCRIPT to avoid the use of 'eval'
 	if ! test -z "${SHLIB_COMMAND}"; then
