@@ -11,6 +11,11 @@ comparisons against floating point numbers.
 
  [atan2][], [calc][], [cmp][], [cos][], [exp][], [int][], [log][], [rand][], [seq][], [sin][], [sqrt][], [sum][]
 
+#### See also ####
+
+ [core][], [string][], [experimental][]
+
+
 [atan2]: atan2.md
 [calc]: calc.md
 [cmp]: cmp.md
@@ -23,5 +28,8 @@ comparisons against floating point numbers.
 [sin]: sin.md
 [sqrt]: sqrt.md
 [sum]: sum.md
-[shlib]: http://github.com/major0/shlib "shlib"
+[core]: ../shlib/__index__.md "core"
 [math]: __index__.md "math"
+[string]: ../string/__index__.md "string"
+[experimental]: ../experimental/__index__.md "experimental"
+[shlib]: http://github.com/major0/shlib "shlib"

@@ -21,11 +21,11 @@ a specific interface use `shlib --help <library>.<interface>`.
 
  [error][], [die][], [getarg][], [hascmd][], [import][], [main][], [optarg][], [pathcmd][] [realpath][]
 
-### shlib libraries ###
+### libraries ###
 
  [math][], [string][], [experimental][]
 
-[error]: error.md "error
+[error]: error.md "error"
 [die]: die.md "die"
 [getarg]: getarg.md "getarg"
 [hascmd]: hascmd.md "hascmd"
@@ -37,4 +37,5 @@ a specific interface use `shlib --help <library>.<interface>`.
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [experimental]: ../experimental/__index__.md "experimental"
+[core]: ../shlib/__index__.md "core"
 [shlib]: http://github.com/major0/shlib "shlib"
