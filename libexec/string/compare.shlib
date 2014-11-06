@@ -18,8 +18,8 @@ __shlib_string_compare()
 		esac
 		shift
 	done
-	! test '$#' -lt '2' || shlib.usage 'string.compare' 'missing arguments'
-	! test '$#' -gt '2' || shlib.usage 'string.compare' 'too many arguments'
+	! test "$#" -lt '2' || shlib.usage 'string.compare' 'missing arguments'
+	! test "$#" -gt '2' || shlib.usage 'string.compare' 'too many arguments'
 
 	if "${__shlib_string_compare_ignore}"; then
 		__shlib_string_casecmp_cmd "${@}"
