@@ -1,3 +1,5 @@
+[shlib][] / core
+
 shlib
 -----
 
@@ -11,27 +13,28 @@ routines are prefixed with `shlib.`.  E.g. `shlib.error "${message}"`.
 Routines found in the math library will be similarly prefixed, such as
 `math.sum 1 2 3 4 5`.
 
-You can get information about a library, and a list of the libraries provided
-interfaces, via the command `shlib --help <library>`.  To see documentation for
+You can get information about a library, and a list of the library's provided
+interfaces via the command `shlib --help <library>`.  To see documentation for
 a specific interface use `shlib --help <library>.<interface>`.
 
-## shlib routines ##
+### shlib routines ###
 
  [error][], [die][], [getarg][], [hascmd][], [import][], [main][], [optarg][], [pathcmd][] [realpath][]
 
-## shlib libraries ##
+### shlib libraries ###
 
  [math][], [string][], [experimental][]
 
-[error]: error.md
-[die]: die.md
-[getarg]: getarg.md
-[hascmd]: hascmd.md
-[import]: import.md
-[pathcmd]: pathcmd.md
-[main]: main.md
-[optarg]: optarg.md
-[realpath]: realpath.md
-[math]: ../math/__index__.md
-[string]: ../string/__index__.md
-[experimental]: ../experimental/__index__.md
+[error]: error.md "error
+[die]: die.md "die"
+[getarg]: getarg.md "getarg"
+[hascmd]: hascmd.md "hascmd"
+[import]: import.md "import"
+[pathcmd]: pathcmd.md "pathcmd"
+[main]: main.md "main"
+[optarg]: optarg.md "optarg"
+[realpath]: realpath.md "realpath"
+[math]: ../math/__index__.md "math"
+[string]: ../string/__index__.md "string"
+[experimental]: ../experimental/__index__.md "experimental"
+[shlib]: http://github.com/major0/shlib "shlib"

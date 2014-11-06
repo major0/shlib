@@ -1,3 +1,5 @@
+[shlib][] / [core][] / import()
+
 ## shlib.import `[<lib>|<lib>.<iface>]` ...
 
 Import the specified lib or lib.iface into the current environment.  This was
@@ -8,3 +10,6 @@ Thanks to some shell-magic, a given library can only be imported once
 (attempting to source the same library in a second time silently returns).
 
 aliases: shlib.import, import
+
+[shlib]: http://github.com/major0/shlib "shlib"
+[core]: __index__.md "core"

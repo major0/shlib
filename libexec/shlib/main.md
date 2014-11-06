@@ -1,3 +1,5 @@
+[shlib][] / [core][] / main()
+
 ## shlib.main
 
 Special test condition which inhibits code execution unless the script being
@@ -18,3 +20,6 @@ shlib.main { shlib.hello; }
 In this example the contents of the `shlib.main` block will not be executed
 during `import shlib.hello`, but instead will only be executed if the
 hello.shlib file is executed directly.
+
+[shlib]: http://github.com/major0/shlib "shlib"
+[core]: __index__.md "core"

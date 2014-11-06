@@ -1,3 +1,5 @@
+[shlib][] / [core][] / optarg()
+
 ## shlib.optarg <option> <argument>
 
 Given an option from the cmdline, extract the argument.  The idea here is that
@@ -25,3 +27,6 @@ evaluate `$2` to see if it starts with a `-`, if it does not, then optarg
 returns `$2`, else it returns nothing.
 
 See also: [getarg](getarg.md)
+
+[shlib]: http://github.com/major0/shlib "shlib"
+[core]: __index__.md "core"
