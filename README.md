@@ -3,16 +3,18 @@ shlib
 
 One of the great drawbacks to the POSIX shell environment is that, like the C
 programming language, it has very little in the way of builtin high-level
-functionality.  This has lead to a number of variations of the POSIX shell
-([Korne Shell][ksh], [Z Shell][zsh], [Bash][bash], etc..) which implement
+functionality.  To do many things often requires resorting to esoteric hacks
+which wrap other tools. This has lead to a number of variations of the POSIX
+shell ([Korne Shell][ksh], [Z Shell][zsh], [Bash][bash], etc..) which implement
 various high-level features in their own proprietary way.  [shlib][shlib] aims
 to supply many (all?) of these high-level features using only pure POSIX shell
 syntax, while optimizing the core of any interface via shell-specific
-enhancements under the covers.  Further more, [shlib][shlib] is self-optimizing
+enhancements under the covers (making afore mentioned esoteric hacks totally
+portable and useful for all).  Further more, [shlib][shlib] is self-optimizing
 at *load-time*, meaning that it does not spend time checking the shell
 environment every time an interface is called.  The end result is fast and
-portable shell scripts which work right regardless of which flavor of `/bin/sh`
-is interpretting them.
+portable shell scripts  which work right regardless of which flavor of
+`/bin/sh` is interpretting them.
 
 Usage
 =====
@@ -59,7 +61,7 @@ See Also
 
  * [Examples](examples/)
  * [Development](CONTRIB.md)
- * [API](libexec/shlib/__index__.md)
+ * [API Reference](libexec/shlib/__index__.md)
  * [License](LICENSE)
 
 [shlib]: http://github.com/major0/shlib "shlib"
