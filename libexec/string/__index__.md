@@ -8,14 +8,13 @@ and manipulation/editing.
 
 ### string routines ###
 
- [casecmp][], [cmp][], [index][], [match][], [regexp][], [sub][], [tolower][], [toupper][]
+ [compare][], [index][], [match][], [regexp][], [sub][], [tolower][], [toupper][]
 
 ### See also ###
 
  [core][], [math][], [experimental][]
 
-[casecmp]: casecmp.md
-[cmp]: cmp.md
+[compare]: compare.md
 [index]: index.md
 [match]: match.md
 [regexp]: regexp.md
