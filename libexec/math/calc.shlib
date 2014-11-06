@@ -1,30 +1,39 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_calc() { echo "$(($*))"; }
+	__shlib_math_calc_cmd() { echo "$(($*))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_calc() { set -- "$(($*))"; echo "${1%.}"; }
+	__shlib_math_calc_cmd() { set -- "$(($*))"; echo "${1%.}"; }
 elif hascmd awk; then
-	__shlib_math_calc() { command awk "BEGIN{ print $*; }"; }
+	__shlib_math_calc_cmd() { command awk "BEGIN{ print $*; }"; }
 elif hascmd ksh; then
-	__shlib_math_calc() { command ksh -c "echo \$(($*))"; }
+	__shlib_math_calc_cmd() { command ksh -c "echo \$(($*))"; }
 elif hascmd zsh; then
-	__shlib_math_calc() { command zsh -c "result=\$(($*));echo \${result%.}"; }
+	__shlib_math_calc_cmd() { command zsh -c "result=\$(($*));echo \${result%.}"; }
 elif hascmd bc; then
-	__shlib_math_calc() { printf '%s\n' "$*" | bc; }
+	__shlib_math_calc_cmd() { printf '%s\n' "$*" | bc; }
 else
 	die 'no suitable method for doing math'
 fi
+
+__shlib_math_calc()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	__shlib_math_calc_cmd "${@}"
+}
 alias math.calc='__shlib_math_calc '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo 'usage: calc <expression>'
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.calc';; esac
 	done
-	math.calc "${@}"
+	__shlib_math_calc "${@}"
 }
 
 # vim: filetype=sh

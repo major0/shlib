@@ -1,16 +1,9 @@
 #!/usr/bin/env shlib
 
-__shlib_string_regexp()
-{
-	test "$#" -eq '0' && die 'no string specified'
-	test "$#" -eq '1' && die 'no pattern specified'
-	__shlib_string_regexp_cmd "${@}"
-}
-
 if hascmd awk; then
 	__shlib_string_regexp_cmd() {
 	awk "BEGIN{found=1;};/${1}/{found=0;};END{exit found;}" <<EOF
-${2}"
+${2}
 EOF
 }
 else
@@ -18,14 +11,27 @@ else
 fi
 alias string.regexp='__shlib_string_regexp '
 
-shlib.main {
-	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <pattern> <string>"
-			exit 0
+__shlib_string_regexp()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(-*)	shlib.usage 'string.regexp' "unknown option '${1}'";;
+		(*)	break;;
 		esac
 	done
-	string.regexp "${1}" "${2}"
+	! test "$#" -lt '2' || shlib.usage 'string.regexp' 'too few arguments'
+	! test "$#" -gt '2' || shlib.usage 'string.regexp' 'too many arguments'
+
+	__shlib_string_regexp_cmd "$@"
+}
+alias string.regexp='__shlib_string_regexp '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help) string.doc 'string.regexp';; esac
+	done
+	__shlib_string_regexp "${1}" "${2}"
 }
 
 # vim: filetype=sh

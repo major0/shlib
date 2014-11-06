@@ -1,30 +1,42 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_log() { echo "$((log($*)))"; }
+	__shlib_math_log_cmd() { echo "$((log($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_log() { set -- "$((log($*)))"; echo "${1%.}"; }
+	__shlib_math_log_cmd() { set -- "$((log($*)))"; echo "${1%.}"; }
 elif hascmd 'gawk'; then
-	__shlib_math_log() { command gawk "BEGIN{ print log($*); }"; }
+	__shlib_math_log_cmd() { command gawk "BEGIN{ print log($*); }"; }
 elif hascmd 'awk'; then
-	__shlib_math_log() { command awk "BEGIN{ print log($*); }"; }
+	__shlib_math_log_cmd() { command awk "BEGIN{ print log($*); }"; }
 elif hascmd 'ksh'; then
-	__shlib_math_log() { command ksh -c "echo \$((log($*)))"; }
+	__shlib_math_log_cmd() { command ksh -c "echo \$((log($*)))"; }
 elif hascmd 'zsh'; then
-	__shlib_math_log() { command zsh -c "result=\$((log($*)));echo \${result%.}"; }
+	__shlib_math_log_cmd() { command zsh -c "result=\$((log($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing log'
 fi
+
+__shlib_math_log()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.log' 'too few arguments'
+	! test "$#" -gt '1' || shlib.usage 'math.log' 'too many arguments'
+
+	__shlib_math_log_cmd "${@}"
+}
 alias math.log='__shlib_math_log '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.log';; esac
 	done
-	math.log "${@}"
+	__shlib_math_log "${@}"
 }
 
 # vim: filetype=sh

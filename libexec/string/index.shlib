@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-__shlib_string_index()
+__shlib_string_index_cmd()
 {
 	set -- "${2%%${1}*}" "${@}"
 	if test "${1}" = "${3}"; then
@@ -9,17 +9,28 @@ __shlib_string_index()
 		echo $((${#1} + 1))
 	fi
 }
+
+__shlib_string_index()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(-*)	shlib.usage 'string.index' "unknown option '${1}'";;
+		(*)	break;;
+		esac
+	done
+	! test "$#" -lt '2' || shlib.usage 'string.index' 'too few arguments'
+	! test "$#" -gt '2' || shlib.usage 'string.index' 'too many arguments'
+
+	__shlib_string_index_cmd "$@"
+}
 alias string.index='__shlib_string_index '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <substring> <string>"
-			echo "returns the index of the first occurance of substring in string"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) string.doc 'string.index';; esac
 	done
-	string.index "${1}" "${2}"
+	__shlib_string_index "$@"
 }
 
 # vim: filetype=sh

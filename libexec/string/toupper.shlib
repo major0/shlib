@@ -1,26 +1,36 @@
 #!/usr/bin/env shlib
 
 if hascmd tr; then
-	__shlib_string_toupper() {
+	__shlib_string_toupper_cmd() {
 		tr '[a-z]' '[A-Z]' <<EOF
 $*
 EOF
 	}
 elif hascmd awk; then
-	__shlib_string_toupper() { awk "BEGIN{ print toupper(\"${*}\"); }"; }
+	__shlib_string_toupper_cmd() { awk "BEGIN{ print toupper(\"${*}\"); }"; }
 else
 	die "no way to implement toupper"
 fi
+
+__shlib_string_toupper()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+	! test "$#" -lt '1' || shlib.usage 'string.toupper' 'too few arguments'
+
+	__shlib_string_toupper_cmd "$@"
+}
 alias string.toupper='__shlib_string_toupper '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <string>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) string.doc 'string.toupper';; esac
 	done
-	string.toupper "${@}"
+	__shlib_string_toupper "${1}" "${2}"
 }
 
 # vim: filetype=sh

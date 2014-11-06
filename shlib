@@ -9,10 +9,10 @@ SHLIB_ONLY='false'
 # expected output, this can be detected by asking 'command -v' for the path to
 # 'sh', which in busybox returns as 'sh'.
 if test "$(command -v sh)" = 'sh'; then
-	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "`which "${1}"`" > /dev/null 2>&1; }
+	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(which "${1}")" > /dev/null 2>&1; }
 	pathcmd() { hascmd "${1}" && which "${1}"; }
 else
-	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "`command -v "${1}"`" > /dev/null 2>&1; }
+	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(command -v "${1}")" > /dev/null 2>&1; }
 	pathcmd() { hascmd "${1}" && command -v "${1}"; }
 fi
 
@@ -61,18 +61,17 @@ basename()
 # shlib library routines
 
 # FIXME this is not remotely portable, and it beaks our coding style guidelines
-__shlib_realpath()
-{(
+if pwd -P > /dev/null 2>&1; then
+	__shlib_realpath_pwd() {( cd "${1}" >/dev/null 2>&1 && echo "$(pwd -P)/${2}"; )}
+else
+	__shlib_realpath_pwd() {( cd "${1}" >/dev/null 2>&1 && echo "$(pwd)/${2}"; )}
+fi
+__shlib_realpath() {
 	if ! test -d "${1}"; then
-		set -- "`dirname "${1}"`" "`basename "${1}"`"
+		set -- "$(dirname "${1}")" "$(basename "${1}")"
 	fi
-	cd "${1}"
-	if pwd -P > /dev/null 2>&1; then
-		echo "`pwd -P`/${2}"
-	else
-		echo "`pwd`/${2}"
-	fi
-)}
+	__shlib_realpath_pwd "${@}"
+}
 alias shlib.realpath='__shlib_realpath '
 
 __shlib_optarg()
@@ -306,24 +305,24 @@ fi
 # If our basename is 'shlib' then we are the master program, else we are likely
 # being 'sourced' by some other script which wants to utilize shlib as a
 # library.
-if test "`basename "${0}"`" = 'shlib'; then
+if test "$(basename "${0}")" = 'shlib'; then
 	SHLIB_IMPORTS=
 	SHLIB_COMMAND=
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(-h|-help|--help)
-			shlib_arg="$(__shlib_optarg "${1}" "${2}")"
-			test -z "${shlib_arg}" || __shlib_doc "${shlib_arg}"
+			__shlib_arg="$(__shlib_optarg "${1}" "${2}")"
+			test -z "${__shlib_arg}" || __shlib_doc "${__shlib_arg}"
 			__shlib_usage;;
 		(-V|-version|--version)
-			echo "shlib version `shlib_version`"; exit 0;;
+			echo "shlib version $(__shlib_version)"; exit 0;;
 
 		(-L|-libdir|--libdir|--libdir=*)
-			shlib_arg="$(__shlib_getarg "${1}" "${2}")"
-			test -e "${shlib_arg}" || die "no such directory '${shlib_arg}'"
-			test -d "${shlib_arg}" || die "not a directory '${shlib_arg}'"
-			SHLIB_PATH="${shlib_arg}:${SHLIB_PATH}"
-			unset shlib_arg
+			__shlib_arg="$(__shlib_getarg "${1}" "${2}")"
+			test -e "${__shlib_arg}" || die "no such directory '${__shlib_arg}'"
+			test -d "${__shlib_arg}" || die "not a directory '${__shlib_arg}'"
+			SHLIB_PATH="${__shlib_arg}:${SHLIB_PATH}"
+			unset __shlib_arg
 			case "${1}" in (*=*);;(*) shift;;esac;;
 
 		(-I|--import|--import=*)
@@ -353,8 +352,8 @@ if test "`basename "${0}"`" = 'shlib'; then
 
 	# Initialize shlib
 	eval '__shlib_imports() { :; }'
-	for shlib_lib_to_import in ${SHLIB_IMPORTS}; do
-		import "${shlib_lib_to_import}"
+	for __shlib_lib_to_import in ${SHLIB_IMPORTS}; do
+		import "${__shlib_lib_to_import}"
 	done
 	unset -f __shlib_version
 
@@ -365,7 +364,7 @@ if test "`basename "${0}"`" = 'shlib'; then
 		test "$#" -ne '0' || die 'no script specified'
 		test -f "$(__shlib_realpath "${1}")" || die "file does not exist '${1}'"
 
-		PROGNAME="`basename "${1}"`"
+		PROGNAME="$(basename "${1}")"
 		SHLIB_SCRIPT="${1}"
 		SHLIB_IMPORT_FILE="${SHLIB_SCRIPT}"
 		SHLIB_IMPORT_DIR="$(dirname ${SHLIB_SCRIPT})"

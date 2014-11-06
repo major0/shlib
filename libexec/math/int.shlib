@@ -1,30 +1,42 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_int() { echo "$((int($*)))"; }
+	__shlib_math_int_cmd() { echo "$((int($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_int() { set -- "$((int($*)))"; echo "${1%.}"; }
+	__shlib_math_int_cmd() { set -- "$((int($*)))"; echo "${1%.}"; }
 elif hascmd 'gawk'; then
-	__shlib_math_int() { command gawk "BEGIN{ print int($*); }"; }
+	__shlib_math_int_cmd() { command gawk "BEGIN{ print int($*); }"; }
 elif hascmd 'awk'; then
-	__shlib_math_int() { command awk "BEGIN{ print int($*); }"; }
+	__shlib_math_int_cmd() { command awk "BEGIN{ print int($*); }"; }
 elif hascmd 'ksh'; then
-	__shlib_math_int() { command ksh -c "echo \$((int($*)))"; }
+	__shlib_math_int_cmd() { command ksh -c "echo \$((int($*)))"; }
 elif hascmd 'zsh'; then
-	__shlib_math_int() { command zsh -c "result=\$((int($*)));echo \${result%.}"; }
+	__shlib_math_int_cmd() { command zsh -c "result=\$((int($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing int'
 fi
+
+__shlib_math_int()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.int' 'too few arguments'
+	! test "$#" -gt '1' || shlib.usage 'math.int' 'too many arguments'
+
+	__shlib_math_int_cmd "${@}"
+}
 alias math.int='__shlib_math_int '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.int';; esac
 	done
-	math.int "${@}"
+	__shlib_math_int "${@}"
 }
 
 # vim: filetype=sh

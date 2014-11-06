@@ -1,30 +1,42 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_rand() { echo "$((rand($*)))"; }
+	__shlib_math_rand_cmd() { echo "$((rand($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_rand() { set -- "$((rand($*)))"; echo "${1%.}"; }
+	__shlib_math_rand_cmd() { set -- "$((rand($*)))"; echo "${1%.}"; }
 elif hascmd 'gawk'; then
-	__shlib_math_rand() { command gawk "BEGIN{ print rand($*); }"; }
+	__shlib_math_rand_cmd() { command gawk "BEGIN{ print rand($*); }"; }
 elif hascmd 'awk'; then
-	__shlib_math_rand() { command awk "BEGIN{ print rand($*); }"; }
+	__shlib_math_rand_cmd() { command awk "BEGIN{ print rand($*); }"; }
 elif hascmd 'ksh'; then
-	__shlib_math_rand() { command ksh -c "echo \$((rand($*)))"; }
+	__shlib_math_rand_cmd() { command ksh -c "echo \$((rand($*)))"; }
 elif hascmd 'zsh'; then
-	__shlib_math_rand() { command zsh -c "result=\$((rand($*)));echo \${result%.}"; }
+	__shlib_math_rand_cmd() { command zsh -c "result=\$((rand($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing rand'
 fi
+
+__shlib_math_rand()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '0' || shlib.usage 'math.rand' 'too few arguments'
+	! test "$#" -gt '0' || shlib.usage 'math.rand' 'too many arguments'
+
+	__shlib_math_rand_cmd "${@}"
+}
 alias math.rand='__shlib_math_rand '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.rand';; esac
 	done
-	math.rand "${@}"
+	__shlib_math_rand "${@}"
 }
 
 # vim: filetype=sh

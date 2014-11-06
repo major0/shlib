@@ -1,30 +1,42 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_sin() { echo "$((sin($*)))"; }
+	__shlib_math_sin_cmd() { echo "$((sin($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_sin() { set -- "$((sin($*)))"; echo "${1%.}"; }
+	__shlib_math_sin_cmd() { set -- "$((sin($*)))"; echo "${1%.}"; }
 elif hascmd 'gawk'; then
-	__shlib_math_sin() { command gawk "BEGIN{ print sin($*); }"; }
+	__shlib_math_sin_cmd() { command gawk "BEGIN{ print sin($*); }"; }
 elif hascmd 'awk'; then
-	__shlib_math_sin() { command awk "BEGIN{ print sin($*); }"; }
+	__shlib_math_sin_cmd() { command awk "BEGIN{ print sin($*); }"; }
 elif hascmd 'ksh'; then
-	__shlib_math_sin() { command ksh -c "echo \$((sin($*)))"; }
+	__shlib_math_sin_cmd() { command ksh -c "echo \$((sin($*)))"; }
 elif hascmd 'zsh'; then
-	__shlib_math_sin() { command zsh -c "result=\$((sin($*)));echo \${result%.}"; }
+	__shlib_math_sin_cmd() { command zsh -c "result=\$((sin($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing sin'
 fi
+
+__shlib_math_sin()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.sin' 'too few arguments'
+	! test "$#" -gt '1' || shlib.usage 'math.sin' 'too many arguments'
+
+	__shlib_math_sin_cmd "${@}"
+}
 alias math.sin='__shlib_math_sin '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sin';; esac
 	done
-	math.sin "${@}"
+	__shlib_math_sin "${@}"
 }
 
 # vim: filetype=sh

@@ -2,17 +2,30 @@
 
 import math.calc
 
-__shlib_math_sum() { IFS='+' calc "$@"; }
+
+__shlib_math_sum()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	if test "$#" -lt '1'; then
+		echo 0
+		return
+	fi
+
+	IFS='+' calc "$@"
+}
 alias math.sum='__shlib_math_sum '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo 'usage: sum <numbers>'
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sum';; esac
 	done
-	math.sum "$@"
+	__shlib_math_sum "${@}"
 }
 
 # vim: filetype=sh

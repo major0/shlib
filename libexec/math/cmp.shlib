@@ -1,26 +1,37 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cmp() { (($*)); }
+	__shlib_math_cmp_cmd() { (($*)); }
 elif hascmd ksh; then
-	__shlib_math_cmp() { ksh -c "(($*))"; }
+	__shlib_math_cmp_cmd() { ksh -c "(($*))"; }
 elif hascmd zsh; then
-	__shlib_math_cmp() { zsh -c "(($*))"; }
+	__shlib_math_cmp_cmd() { zsh -c "(($*))"; }
 elif hascmd awk; then
-	__shlib_math_cmp() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
+	__shlib_math_cmp_cmd() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
 else
 	die 'no suitable method for float equality'
 fi
+
+__shlib_math_cmp()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.cmp' 'too few arguments'
+
+	__shlib_math_cmp_cmd "${@}"
+}
 alias math.cmp='__shlib_math_cmp '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo 'usage: cmp <expression>'
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.cmp';; esac
 	done
-	math.cmp "${@}"
+	__shlib_math_cmp "${@}"
 }
 
 # vim: filetype=sh

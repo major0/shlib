@@ -4,18 +4,8 @@ import math.cmp
 import math.calc
 
 if hascmd seq; then
-	__shlib_math_seq() { command seq "${@}"; }
+	__shlib_math_seq_cmd() { command seq "${@}"; }
 else
-	__shlib_math_seq() {
-		test "$#" -eq 1 && set -- 1 "${1}"
-		test "$#" -eq 2 && set -- "${1}" 1 "${2}"
-		test "$#" -gt 3 && die "seq: extra operand '${4}'"
-		case "${1}|${2}|${3}" in
-		(*.*)	__shlib_math_seq_float "${@}";;
-		(*)	__shlib_math_seq_int "${@}";;
-		esac
-	}
-
 	__shlib_math_seq_float()
 	{
 		set -- "${2#*.}" "${@}"
@@ -46,9 +36,38 @@ else
 			test "${2}" -ne '0' || break
 		done
 	}
+	__shlib_math_seq_cmd() {
+		test "$#" -eq 1 && set -- 1 "${1}"
+		test "$#" -eq 2 && set -- "${1}" 1 "${2}"
+		case "${1}|${2}|${3}" in
+		(*.*)	__shlib_math_seq_float "${@}";;
+		(*)	__shlib_math_seq_int "${@}";;
+		esac
+	}
 fi
+
+__shlib_math_seq()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.seq' 'too few arguments'
+	! test "$#" -gt '3' || shlib.usage 'math.seq' 'too many arguments'
+
+	__shlib_math_seq_cmd "$@"
+}
 alias math.seq='__shlib_math_seq '
 
-shlib.main { math.seq "$@"; }
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.seq';; esac
+	done
+	__shlib_math_seq "${@}"
+}
+
 
 # vim: filetype=sh

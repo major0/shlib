@@ -1,21 +1,32 @@
 #!/usr/bin/env shlib
 
 if hascmd awk; then
-	__shlib_string_match() { command awk "BEGIN{ print match(\"${2}\", \"${1}\"); }"; }
+	__shlib_string_match_cmd() { command awk "BEGIN{ print match(\"${2}\", \"${1}\"); }"; }
 else
 	die "no way to implement match"
 fi
+
+__shlib_string_match()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(-*)	shlib.usage 'string.match' "unknown option '${1}'";;
+		(*)	break;;
+		esac
+	done
+	! test "$#" -lt '2' || shlib.usage 'string.match' 'too few arguments'
+	! test "$#" -gt '2' || shlib.usage 'string.match' 'too many arguments'
+
+	__shlib_string_match_cmd "$@"
+}
 alias string.match='__shlib_string_match '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <pattern> <string>"
-			echo "returns the index of the first occurance of pattern"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) string.doc 'string.match';; esac
 	done
-	string.match "${1}" "${2}"
+	__shlib_string_match "${1}" "${2}"
 }
 
 # vim: filetype=sh

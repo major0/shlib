@@ -10,7 +10,7 @@ and manipulation/editing.
 
  [compare][], [index][], [match][], [regexp][], [sub][], [tolower][], [toupper][]
 
-### See also ###
+#### See also ####
 
  [core][], [math][], [experimental][]
 

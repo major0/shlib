@@ -1,30 +1,42 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_exp() { echo "$((exp($*)))"; }
+	__shlib_math_exp_cmd() { echo "$((exp($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_exp() { set -- "$((exp($*)))"; echo "${1%.}"; }
+	__shlib_math_exp_cmd() { set -- "$((exp($*)))"; echo "${1%.}"; }
 elif hascmd 'gawk'; then
-	__shlib_math_exp() { command gawk "BEGIN{ print exp($*); }"; }
+	__shlib_math_exp_cmd() { command gawk "BEGIN{ print exp($*); }"; }
 elif hascmd 'awk'; then
-	__shlib_math_exp() { command awk "BEGIN{ print exp($*); }"; }
+	__shlib_math_exp_cmd() { command awk "BEGIN{ print exp($*); }"; }
 elif hascmd 'ksh'; then
-	__shlib_math_exp() { command ksh -c "echo \$((exp($*)))"; }
+	__shlib_math_exp_cmd() { command ksh -c "echo \$((exp($*)))"; }
 elif hascmd 'zsh'; then
-	__shlib_math_exp() { command zsh -c "result=\$((exp($*)));echo \${result%.}"; }
+	__shlib_math_exp_cmd() { command zsh -c "result=\$((exp($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing exp'
 fi
+
+__shlib_math_exp()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.exp' 'too few arguments'
+	! test "$#" -gt '1' || shlib.usage 'math.exp' 'too many arguments'
+
+	__shlib_math_exp_cmd "${@}"
+}
 alias math.exp='__shlib_math_exp '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.exp';; esac
 	done
-	math.exp "${@}"
+	__shlib_math_exp "${@}"
 }
 
 # vim: filetype=sh

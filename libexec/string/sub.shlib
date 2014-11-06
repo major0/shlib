@@ -1,7 +1,7 @@
 #!/usr/bin/env shlib
 
 if hascmd awk; then
-	__shlib_string_sub() {
+	__shlib_string_sub_cmd() {
 		awk "{ sub(\"$1\", \"$2\"); print(\$0); }" <<EOF
 $3
 EOF
@@ -9,16 +9,28 @@ EOF
 else
 	die 'no way to implement sub'
 fi
+
+__shlib_string_sub()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(-*)	shlib.usage 'string.sub' "unknown option '${1}'";;
+		(*)	break;;
+		esac
+	done
+	! test "$#" -lt '3' || shlib.usage 'string.sub' 'too few arguments'
+	! test "$#" -gt '3' || shlib.usage 'string.sub' 'too many arguments'
+
+	__shlib_string_sub_cmd "$@"
+}
 alias string.sub='__shlib_string_sub '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <pattern> <repl> <string>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) string.doc 'string.sub';; esac
 	done
-	string.sub "$@"
+	__shlib_string_sub "${1}" "${2}"
 }
 
 # vim: filetype=sh

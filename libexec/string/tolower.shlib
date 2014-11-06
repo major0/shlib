@@ -1,26 +1,36 @@
 #!/usr/bin/env shlib
 
 if hascmd tr; then
-	__shlib_string_tolower() {
+	__shlib_string_tolower_cmd() {
 		tr '[A-Z]' '[a-z]' <<EOF
 $*
 EOF
 	}
 elif hascmd awk; then
-	__shlib_string_tolower() { awk "BEGIN{ print tolower(\"${*}\"); }"; }
+	__shlib_string_tolower_cmd() { awk "BEGIN{ print tolower(\"${*}\"); }"; }
 else
 	die "no way to implement tolower"
 fi
+
+__shlib_string_tolower()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+	! test "$#" -lt '1' || shlib.usage 'string.tolower' 'too few arguments'
+
+	__shlib_string_tolower_cmd "$@"
+}
 alias string.tolower='__shlib_string_tolower '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <string>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) string.doc 'string.tolower';; esac
 	done
-	string.tolower "${@}"
+	__shlib_string_tolower "${1}" "${2}"
 }
 
 # vim: filetype=sh

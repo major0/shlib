@@ -16,19 +16,24 @@ fi
 
 __shlib_math_atan2()
 {
-	test "$#" -eq '2' || die 'invalid number of arguments to atan2'
-	__shlib_math_atan2_cmd "${1}" "${2}"
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+	! test "$#" -lt '2' || shlib.usage 'math.atan2' 'too few arguments'
+	! test "$#" -tt '2' || shlib.usage 'math.atan2' 'too many arguments'
+
+	__shlib_math_atan2_cmd "${@}"
 }
 alias math.atan2='__shlib_math_atan2 '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.atan2';; esac
 	done
-	math.atan2 "${@}"
+	__shlib_math_atan2 "${@}"
 }
 
 # vim: filetype=sh

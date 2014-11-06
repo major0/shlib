@@ -1,30 +1,42 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_cos() { echo "$((cos($*)))"; }
+	__shlib_math_cos_cmd() { echo "$((cos($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cos() { set -- "$((cos($*)))"; echo "${1%.}"; }
+	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; echo "${1%.}"; }
 elif hascmd 'gawk'; then
-	__shlib_math_cos() { command gawk "BEGIN{ print cos($*); }"; }
+	__shlib_math_cos_cmd() { command gawk "BEGIN{ print cos($*); }"; }
 elif hascmd 'awk'; then
-	__shlib_math_cos() { command awk "BEGIN{ print cos($*); }"; }
+	__shlib_math_cos_cmd() { command awk "BEGIN{ print cos($*); }"; }
 elif hascmd 'ksh'; then
-	__shlib_math_cos() { command ksh -c "echo \$((cos($*)))"; }
+	__shlib_math_cos_cmd() { command ksh -c "echo \$((cos($*)))"; }
 elif hascmd 'zsh'; then
-	__shlib_math_cos() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
+	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing cos'
 fi
+
+__shlib_math_cos()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(*)	break;;
+		esac
+	done
+
+	! test "$#" -lt '1' || shlib.usage 'math.cos' 'too few arguments'
+	! test "$#" -gt '1' || shlib.usage 'math.cos' 'too many arguments'
+
+	__shlib_math_cos_cmd "${@}"
+}
 alias math.cos='__shlib_math_cos '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help)
-			echo "usage: ${0} <expression>"
-			exit 0
-		esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'math.cos';; esac
 	done
-	math.cos "${@}"
+	__shlib_math_cos "${@}"
 }
 
 # vim: filetype=sh

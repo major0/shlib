@@ -18,7 +18,7 @@ __shlib_string_compare()
 		esac
 		shift
 	done
-	! test "$#" -lt '2' || shlib.usage 'string.compare' 'missing arguments'
+	! test "$#" -lt '2' || shlib.usage 'string.compare' 'too few arguments'
 	! test "$#" -gt '2' || shlib.usage 'string.compare' 'too many arguments'
 
 	if "${__shlib_string_compare_ignore}"; then
