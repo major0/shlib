@@ -80,6 +80,7 @@ __shlib_optarg()
 		set -- "${1}" "${2}" "${1#*=}"
 	else
 		case "${2}" in (-*);; (*) set -- "${1}" "${2}" "${2}";; esac
+		OPTIND="$((${OPTIND} + 1))"
 	fi
 	test -z "${3}" || echo "${3}"
 }
@@ -308,47 +309,72 @@ fi
 if test "$(basename "${0}")" = 'shlib'; then
 	SHLIB_IMPORTS=
 	SHLIB_COMMAND=
-	while test "$#" -gt '0'; do
-		case "${1}" in
-		(-h|-help|--help)
-			__shlib_arg="$(__shlib_optarg "${1}" "${2}")"
-			test -z "${__shlib_arg}" || __shlib_doc "${__shlib_arg}"
-			__shlib_usage;;
-		(-V|-version|--version)
-			echo "shlib version $(__shlib_version)"; exit 0;;
-
-		(-L|-libdir|--libdir|--libdir=*)
-			__shlib_arg="$(__shlib_getarg "${1}" "${2}")"
-			test -e "${__shlib_arg}" || die "no such directory '${__shlib_arg}'"
-			test -d "${__shlib_arg}" || die "not a directory '${__shlib_arg}'"
-			SHLIB_PATH="${__shlib_arg}:${SHLIB_PATH}"
-			unset __shlib_arg
-			case "${1}" in (*=*);;(*) shift;;esac;;
-
-		(-I|--import|--import=*)
-			SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")"
-			case "${1}" in (*=*);;(*) shift;;esac;;
-
-		(--shlib-only)
-			readonly SHLIB_ONLY=true;;
+	while getopts ':h:VL:I:vxc:' __shlib_arg; do
+		case "${__shlib_arg}" in
+		##
+		# If we are here then everyting went as expected and all
+		# arguments to options have been supplied and the world is
+		# beautiful
+		(h)	__shlib_doc "${OPTARG}";;
+		(V)	echo "shlib version $(__shlib_version)"; exit 0;;
+		(L)	test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
+			test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
+			SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
+		(I)	SHLIB_IMPORTS="${SHLIB_IMPORTS} ${OPTARG}";;
 
 		# Support some traditional sh arguments.
-		(-v)	set -v;;
-		(-x)	set -x;;
-		(-c)	test "$#" -gt '1' || \
-				__shlib_usage 'shlib' "option '${1}' requires an argument"
-			test -z "${SHLIB_COMMAND}" ||
+		(v)	set -v;;
+		(x)	set -x;;
+		(c)	test -z "${SHLIB_COMMAND}" ||
 				__shlib_usage 'shlib' "option '${1}' already specified"
-			SHLIB_COMMAND="${2}"
-			shift;;
+			SHLIB_COMMAND="${OPTARG}";;
 
-		# Our standard argument handling
-		(--)	shift; break;;
-		(-*)	__shlib_usage 'shlib' "unknown option '${1}'";;
-		(*)	break;;
+		##
+		# If we make it to here either the option had no argument
+		# (optional argument?) or the option is unrecognized. The world
+		# becomes confusing and mildly frustrating... but it works.
+		(\?)	: "extended options: index=${OPTIND}"
+			shift $((${OPTIND} - 2))
+			OPTIND=1
+			: "extended arg: '${1}'"
+
+			case "${1}" in
+			# These options had optional arguments
+			(-h)	__shlib_usage;;
+
+			# These options had required arguments
+			(-[ILc]) __shlib_usage 'shlib' "option '${1}' requires an argument";;
+
+			# Long arguments
+			(-help|--help)
+				OPTARG="$(__shlib_optarg "${1}" "${2}")"
+				test -z "${OPTARG}" || __shlib_doc "${__shlib_opt}"
+				__shlib_usage;;
+
+			(-libdir|--libdir|--libdir=*)
+				OPTARG="$(__shlib_getarg "${1}" "${2}")"
+				test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
+				test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
+				SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
+
+			(--import|--import=*)
+				SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")";;
+
+			(--shlib-only)
+				readonly SHLIB_ONLY=true;;
+
+			##
+			# Our standard argument handling
+			(--)	OPTIND="$((${OPTIND} + 1))"; break;;
+			(-*)	__shlib_usage 'shlib' "unknown option '${1}'";;
+			(*)	break;;
+			esac
+			OPTIND="$((${OPTIND} + 1))";;
 		esac
-		shift
 	done
+	shift $((${OPTIND} - 1))
+	unset OPTIND
+	unset OPTARG
 
 	# Initialize shlib
 	eval '__shlib_imports() { :; }'
