@@ -379,8 +379,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 			(*)	break;;
 			esac
 
-			# Try to avoid setting OPTIND to anything but 1
-			shift "$((${OPTIND} - 1))"
+			shift ${OPTIND}
 			OPTIND=1;;
 		esac
 	done
