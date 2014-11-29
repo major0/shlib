@@ -280,6 +280,7 @@ __shlib_usage()
 	   -c STRING			Execute commands given in STRING
 	   -x				Trace script execution
 	   --shlib-only			Only use shlib versions of commands
+	   --report-set			Report set non-environ variables at termination
 
 EOF
 	exit 0
@@ -372,6 +373,9 @@ if test "$(basename "${0}")" = 'shlib'; then
 			(--shlib-only)
 				readonly SHLIB_ONLY=true;;
 
+			(--report-set)
+				readonly SHLIB_REPORT_SET=true;;
+
 			##
 			# Our standard argument handling
 			(--)	OPTIND="$((${OPTIND} + 1))"; break;;
@@ -409,5 +413,26 @@ if test "$(basename "${0}")" = 'shlib'; then
 		shift
 
 		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
+	fi
+fi
+
+# FIXME this should be done in an exit handler
+if ! ${SHLIB_REPORT_SET+false}; then
+	shift $#
+	for __shlib_leaked_var in $( (set;env)|cut -d= -f1|sort|uniq -u); do
+		# We ignore some variables as they are part of the shell
+		# builtin environments
+		case "${__shlib_leaked_vars}" in
+		(OPTIN)		continue;;
+		esac
+		set -- "$@" "${__shlib_leaked_vars}"
+	done
+
+	echo "## SHLIB SET VARIABLES: $#"
+	if test "$#" -ne '0'; then
+		for var; do
+			echo "${var}"
+		done
+		unset var
 	fi
 fi
