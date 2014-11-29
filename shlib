@@ -142,6 +142,10 @@ __shlib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0
 
 __shlib_doc_resolv()
 {
+	case "${1}" in
+	(shlib)		set -- 'doc';;
+	(shlib.*)	set -- "doc.${1#*.}";;
+	esac
 	if test "${1%.*}" != "${1}"; then
 		__shlib_doc_resolv_lib="${1%.*}/${1##*.}"
 	else
@@ -174,9 +178,7 @@ __shlib_doc_resolv()
 __shlib_doc()
 {
 	set -- "${1}" "${1%.*}" "${1##*.}" "$(__shlib_doc_resolv "${1}")"
-	if test "${2}" != "${3}"; then
-		test -e "${4}" || die "no documentation for '${1}'"
-	fi
+	test -e "${4}" || die "no documentation for '${1}'"
 
 	if test -e "${4}"; then
 		sed \
@@ -287,15 +289,15 @@ alias shlib.usage='__shlib_usage '
 # If we were not "installed" then this variable will not have been
 # substituted, and the libexecdir in which we find the 'shlib' front-end will
 # not exist at which point we expect libdir to be relative to ${0}.
-# e.g. <path to shlib>/shlib, <path to shlib>/libexec/.
+# e.g. <path to shlib>/shlib, <path to shlib>/.
 # Alternatively, an environment may set the SHLIB_PATH to place shlib in
 # disparate locations.
 # e.g. SHLIB_PATH="${TOPDIR}/utils/shlib/libexec" while 'shlib' exists as a
 # symlink in "${TOPDIR}/bin/shlib"
 if test -z "${SHLIB_PATH}"; then
 	SHLIB_PATH="@shlib_libexecdir@"
-	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}/libexec"; then
-		SHLIB_PATH="$(__shlib_realpath "${0%/*}/libexec")"
+	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}"; then
+		SHLIB_PATH="$(__shlib_realpath "${0%/*}")"
 		readonly SHLIB_PATH="${SHLIB_PATH%/}"
 	fi
 
@@ -329,29 +331,36 @@ if test "$(basename "${0}")" = 'shlib'; then
 				__shlib_usage 'shlib' "option '${1}' already specified"
 			SHLIB_COMMAND="${OPTARG}";;
 
-		##
-		# If we make it to here either the option had no argument
-		# (optional argument?) or the option is unrecognized. The world
-		# becomes confusing and mildly frustrating... but it works.
-		(\?)	: "extended options: index=${OPTIND}"
-			shift $((${OPTIND} - 2))
+		# Missing optional arguments
+		(:)	case "${OPTARG}" in
+			(h) __shlib_usage;; # -h's argument is optional
+			(*) __shlib_usage 'shlib' "option '-${OPTARG}' requires an argument";;
+			esac;;
+
+		## Long Argument handling
+		# POSIX: Each time it is invoked, the getopts utility shall
+		# place the value of the next option in the shell variable
+		# specified by the 'name' operand and the index of the next
+		# argument to be processed in the shell variable OPTIND.
+		#
+		# NOTE - During error handling Bash and Zsh "appear" to point
+		# OPTIND at the argument that had the error, a behavior not
+		# decribed by POSIX.
+		(\?)	: "extended options: index=${OPTIND}, arg='${__shlib_arg}', optarg='${OPTARG}'"
+			case "${SHLIB_SHELL}" in
+			(zsh|bash)	shift $((${OPTIND} - 1));;
+			(*)		shift $((${OPTIND} - 2));;
+			esac
 			OPTIND=1
 			: "extended arg: '${1}'"
 
 			case "${1}" in
-			# These options had optional arguments
-			(-h)	__shlib_usage;;
-
-			# These options had required arguments
-			(-[ILc]) __shlib_usage 'shlib' "option '${1}' requires an argument";;
-
-			# Long arguments
-			(-help|--help)
+			(--help)
 				OPTARG="$(__shlib_optarg "${1}" "${2}")"
-				test -z "${OPTARG}" || __shlib_doc "${__shlib_opt}"
+				test -z "${OPTARG}" || __shlib_doc "${OPTARG}"
 				__shlib_usage;;
 
-			(-libdir|--libdir|--libdir=*)
+			(--libdir|--libdir=*)
 				OPTARG="$(__shlib_getarg "${1}" "${2}")"
 				test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
 				test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
@@ -369,7 +378,10 @@ if test "$(basename "${0}")" = 'shlib'; then
 			(-*)	__shlib_usage 'shlib' "unknown option '${1}'";;
 			(*)	break;;
 			esac
-			OPTIND="$((${OPTIND} + 1))";;
+
+			# Try to avoid setting OPTIND to anything but 1
+			shift "$((${OPTIND} - 1))"
+			OPTIND=1;;
 		esac
 	done
 	shift $((${OPTIND} - 1))
