@@ -1,0 +1,31 @@
+#!/bin/sh
+# shlib-wrapper - execute shlib utilities from dev environments
+#
+# This wrapper allows the execution of shlib based applications from within the
+# source-code environment. I.e. the application is not installed
+#
+# The wrapper requires that the following exist as a minimum.
+# <project>/shlib.config
+# <project>/<command> -> <project>/libexec/shlib/shlib-wrapper
+# <project>/libexec/<project>/<command>
+# <project>/libexec/shlib
+
+die() { echo "error: $*" >&2; exit 1; }
+SHLIB_PATH="${0%/*}/libexec"
+
+test -f "${0%/*}/shlib.config" || die "missing 'shlib.config'"
+. "${0%/*}/shlib.config" > /dev/null 2>&1 || die "bad config 'shlib.config'"
+! test -z "${project}" || die "no project defined in 'shlib.config'"
+
+test -d "${SHLIB_PATH}" || die "invalid dir '${SHLIB_PATH}'"
+test -d "${SHLIB_PATH}/shlib" || die "missing '${SHLIB_PATH}/shlib'"
+test -f "${SHLIB_PATH}/shlib/shlib" || die "invalid shlib @ '${SHLIB_PATH}/shlib'"
+
+progname="${0##*/}"
+test -d "${SHLIB_PATH}/${project}" || die "missing '${SHLIB_PATH}/${project}'"
+test -f "${SHLIB_PATH}/${project}/${progname}" || die "invalid script '${progname}'"
+
+export SHLIB_PATH
+exec "${SHLIB_PATH}/shlib/shlib" "${SHLIB_PATH}/${project}/${progname}" "$@"
+
+# vim: filetype=sh
