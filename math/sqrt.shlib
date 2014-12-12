@@ -4,13 +4,13 @@ if test "${SHLIB_SHELL}" = 'ksh'; then
 	__shlib_math_sqrt_cmd() { echo "$((sqrt($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_sqrt_cmd() { set -- "$((sqrt($*)))"; echo "${1%.}"; }
-elif hascmd 'gawk'; then
+elif shlib.hascmd 'gawk'; then
 	__shlib_math_sqrt_cmd() { command gawk "BEGIN{ print sqrt($*); }"; }
-elif hascmd 'awk'; then
+elif shlib.hascmd 'awk'; then
 	__shlib_math_sqrt_cmd() { command awk "BEGIN{ print sqrt($*); }"; }
-elif hascmd 'ksh'; then
+elif shlib.hascmd 'ksh'; then
 	__shlib_math_sqrt_cmd() { command ksh -c "echo \$((sqrt($*)))"; }
-elif hascmd 'zsh'; then
+elif shlib.hascmd 'zsh'; then
 	__shlib_math_sqrt_cmd() { command zsh -c "result=\$((sqrt($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing sqrt'

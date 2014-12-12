@@ -4,13 +4,13 @@ if test "${SHLIB_SHELL}" = 'ksh'; then
 	__shlib_math_sin_cmd() { echo "$((sin($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_sin_cmd() { set -- "$((sin($*)))"; echo "${1%.}"; }
-elif hascmd 'gawk'; then
+elif shlib.hascmd 'gawk'; then
 	__shlib_math_sin_cmd() { command gawk "BEGIN{ print sin($*); }"; }
-elif hascmd 'awk'; then
+elif shlib.hascmd 'awk'; then
 	__shlib_math_sin_cmd() { command awk "BEGIN{ print sin($*); }"; }
-elif hascmd 'ksh'; then
+elif shlib.hascmd 'ksh'; then
 	__shlib_math_sin_cmd() { command ksh -c "echo \$((sin($*)))"; }
-elif hascmd 'zsh'; then
+elif shlib.hascmd 'zsh'; then
 	__shlib_math_sin_cmd() { command zsh -c "result=\$((sin($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing sin'

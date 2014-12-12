@@ -4,11 +4,11 @@ if test "${SHLIB_SHELL}" = 'ksh'; then
 	__shlib_math_atan2_cmd() { echo "$((atan2($1,$2)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_atan2_cmd() { set -- "$((atan2($1,$2)))"; echo "${1%.}"; }
-elif hascmd 'awk'; then
+elif shlib.hascmd 'awk'; then
 	__shlib_math_atan2_cmd() { command awk "BEGIN{ print atan2($1,$2); }"; }
-elif hascmd 'ksh'; then
+elif shlib.hascmd 'ksh'; then
 	__shlib_math_atan2_cmd() { command ksh -c "echo \$((atan2($1,$2)))"; }
-elif hascmd 'zsh'; then
+elif shlib.hascmd 'zsh'; then
 	__shlib_math_atan2_cmd() { command zsh -c "result=\$((atan2($1,$2)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing atan2'

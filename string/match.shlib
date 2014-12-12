@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if hascmd awk; then
+if shlib.hascmd awk; then
 	__shlib_string_match_cmd() { command awk "BEGIN{ print match(\"${2}\", \"${1}\"); }"; }
 else
 	die "no way to implement match"

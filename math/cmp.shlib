@@ -2,11 +2,11 @@
 
 if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_cmp_cmd() { (($*)); }
-elif hascmd ksh; then
+elif shlib.hascmd ksh; then
 	__shlib_math_cmp_cmd() { ksh -c "(($*))"; }
-elif hascmd zsh; then
+elif shlib.hascmd zsh; then
 	__shlib_math_cmp_cmd() { zsh -c "(($*))"; }
-elif hascmd awk; then
+elif shlib.hascmd awk; then
 	__shlib_math_cmp_cmd() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
 else
 	die 'no suitable method for float equality'

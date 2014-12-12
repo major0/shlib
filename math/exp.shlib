@@ -4,13 +4,13 @@ if test "${SHLIB_SHELL}" = 'ksh'; then
 	__shlib_math_exp_cmd() { echo "$((exp($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_exp_cmd() { set -- "$((exp($*)))"; echo "${1%.}"; }
-elif hascmd 'gawk'; then
+elif shlib.hascmd 'gawk'; then
 	__shlib_math_exp_cmd() { command gawk "BEGIN{ print exp($*); }"; }
-elif hascmd 'awk'; then
+elif shlib.hascmd 'awk'; then
 	__shlib_math_exp_cmd() { command awk "BEGIN{ print exp($*); }"; }
-elif hascmd 'ksh'; then
+elif shlib.hascmd 'ksh'; then
 	__shlib_math_exp_cmd() { command ksh -c "echo \$((exp($*)))"; }
-elif hascmd 'zsh'; then
+elif shlib.hascmd 'zsh'; then
 	__shlib_math_exp_cmd() { command zsh -c "result=\$((exp($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing exp'

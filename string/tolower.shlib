@@ -1,12 +1,12 @@
 #!/usr/bin/env shlib
 
-if hascmd tr; then
+if shlib.hascmd tr; then
 	__shlib_string_tolower_cmd() {
 		tr '[A-Z]' '[a-z]' <<EOF
 $*
 EOF
 	}
-elif hascmd awk; then
+elif shlib.hascmd awk; then
 	__shlib_string_tolower_cmd() { awk "BEGIN{ print tolower(\"${*}\"); }"; }
 else
 	die "no way to implement tolower"

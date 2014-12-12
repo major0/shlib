@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if hascmd awk; then
+if shlib.hascmd awk; then
 	__shlib_string_sub_cmd() {
 		awk "{ sub(\"$1\", \"$2\"); print(\$0); }" <<EOF
 $3

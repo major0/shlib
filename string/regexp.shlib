@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if hascmd awk; then
+if shlib.hascmd awk; then
 	__shlib_string_regexp_cmd() {
 	awk "BEGIN{found=1;};/${1}/{found=0;};END{exit found;}" <<EOF
 ${2}

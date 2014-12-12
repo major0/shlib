@@ -3,7 +3,7 @@
 import math.cmp
 import math.calc
 
-if hascmd seq; then
+if shlib.hascmd seq; then
 	__shlib_math_seq_cmd() { command seq "${@}"; }
 else
 	__shlib_math_seq_float()

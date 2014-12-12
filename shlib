@@ -9,15 +9,15 @@ SHLIB_ONLY='false'
 # expected output, this can be detected by asking 'command -v' for the path to
 # 'sh', which in busybox returns as 'sh'.
 if test "$(command -v sh)" = 'sh'; then
-	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(which "${1}")" > /dev/null 2>&1; }
-	pathcmd() { hascmd "${1}" && which "${1}"; }
+	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(which "${1}")" > /dev/null 2>&1; }
+	__shlib_pathcmd() { __shlib_hascmd "${1}" && which "${1}"; }
 else
-	hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(command -v "${1}")" > /dev/null 2>&1; }
-	pathcmd() { hascmd "${1}" && command -v "${1}"; }
+	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(command -v "${1}")" > /dev/null 2>&1; }
+	__shlib_pathcmd() { __shlib_hascmd "${1}" && command -v "${1}"; }
 fi
 
 # Allow 'readonly' to work, even if it wont do what we want
-if ! hascmd readonly > /dev/null 2>&1; then alias readonly=' ';fi
+if ! __shlib_hascmd readonly > /dev/null 2>&1; then alias readonly=' ';fi
 
 # Find the shell-flavor we are using
 if ! ${ZSH_VERSION+false}; then
@@ -41,7 +41,7 @@ readonly POSIXLY_CORRECT=posix
 # then fork/exec'ing them.  On the flip side, we only supply very low-level
 # routines as part of the core shlib.  Everything else MUST be supplied via
 # 'import' libraries.
-if ! hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; } fi
+if ! __shlib_hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; } fi
 dirname()
 {
 	case "${1}" in (.*);; (/*);; (*) set -- "./${1}";; esac
@@ -59,6 +59,11 @@ basename()
 
 ##
 # shlib library routines
+
+# These where defined earlier
+alias hascmd='__shlib_hascmd '
+alias shlib.hascmd='__shlib_hascmd '
+alias shlib.pathcmd='__shlib_pathcmd '
 
 # FIXME this is not remotely portable, and it beaks our coding style guidelines
 if pwd -P > /dev/null 2>&1; then
@@ -255,8 +260,6 @@ alias import='__shlib_import '
 ##
 # These routines are pretty shlib specific.
 alias shlib.main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
-alias shlib.hascmd='hascmd '
-alias shlib.pathcmd='pathcmd '
 
 __shlib_version() { echo 0.01; }
 __shlib_usage()

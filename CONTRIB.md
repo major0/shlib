@@ -27,7 +27,7 @@ For example:
 ```sh
 	#!/usr/bin/env shlib
 	
-	if hascmd seq; then
+	if shlib.hascmd seq; then
 		__math_seq() { command seq "${@}"; }
 	else
 		# no seq cmd available then attempt to load the bash version

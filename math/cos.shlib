@@ -4,13 +4,13 @@ if test "${SHLIB_SHELL}" = 'ksh'; then
 	__shlib_math_cos_cmd() { echo "$((cos($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; echo "${1%.}"; }
-elif hascmd 'gawk'; then
+elif shlib.hascmd 'gawk'; then
 	__shlib_math_cos_cmd() { command gawk "BEGIN{ print cos($*); }"; }
-elif hascmd 'awk'; then
+elif shlib.hascmd 'awk'; then
 	__shlib_math_cos_cmd() { command awk "BEGIN{ print cos($*); }"; }
-elif hascmd 'ksh'; then
+elif shlib.hascmd 'ksh'; then
 	__shlib_math_cos_cmd() { command ksh -c "echo \$((cos($*)))"; }
-elif hascmd 'zsh'; then
+elif shlib.hascmd 'zsh'; then
 	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
 else
 	die 'no suitable method for doing cos'
