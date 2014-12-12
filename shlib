@@ -110,6 +110,25 @@ __shlib_die() { error "$*"; exit 1; }
 alias shlib.die='__shlib_die '
 alias die='__shlib_die '
 
+__shlib_exit()
+{
+	set -- ${__shlib_atexit_funcs}
+	unset __shlib_atexit_funcs
+	for __shlib_exit_func; do
+		"${__shlib_exit_func}"
+	done
+	unset __shlib_exit_func
+}
+__shlib_atexit()
+{
+	if ! type "${1}" | grep -q 'is a shell function'; then
+		trap '' 0
+		die "not a function '${1}'"
+	fi
+	__shlib_atexit_funcs="$1 ${__shlib_atexit_funcs}"
+	trap __shlib_exit 0
+}
+alias shlib.atexit='__shlib_atexit '
 
 __shlib_lib_resolv()
 {
@@ -395,6 +414,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 	unset OPTARG
 
 	# Initialize shlib
+	__shlib_atexit_funcs=
 	eval '__shlib_imports() { :; }'
 	for __shlib_lib_to_import in ${SHLIB_IMPORTS}; do
 		import "${__shlib_lib_to_import}"

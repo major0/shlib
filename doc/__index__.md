@@ -25,6 +25,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 
  [math][], [string][], [experimental][]
 
+[atexit]: atexit.md "atexit"
 [error]: error.md "error"
 [die]: die.md "die"
 [getarg]: getarg.md "getarg"
