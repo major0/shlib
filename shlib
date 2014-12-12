@@ -388,7 +388,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 		esac
 	done
 	shift $((${OPTIND} - 1))
-	unset OPTIND
+	OPTIND=1
 	unset OPTARG
 
 	# Initialize shlib
