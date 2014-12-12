@@ -114,10 +114,10 @@ __shlib_exit()
 {
 	set -- ${__shlib_atexit_funcs}
 	unset __shlib_atexit_funcs
-	for __shlib_exit_func; do
-		"${__shlib_exit_func}"
+	while test "$#" -gt '0'; do
+		"${1}"
+		shift
 	done
-	unset __shlib_exit_func
 }
 __shlib_atexit()
 {
