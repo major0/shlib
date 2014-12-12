@@ -1,0 +1,36 @@
+# TODO this is am experimental idea in which we allow the registration of
+# multiple handlers per signal.
+__shlib_trap()
+{
+	__shlib_trap_sighandler="${1}"
+	shift
+	for __shlib_trap_signal; do
+		__shlib_trap_signame=
+		case "${__shlib_trap_signal}" in
+		(0|exit|EXIT)
+			__shlib_trap_signame='EXIT';;
+
+		([0-9]|[0-9][0-9]|[12][0-9][0-9])
+			__shlib_trap_signame="$(kill -l "${__shlib_trap_signal}" 2>/dev/null)";;
+
+		(*)	if kill -l "${__shlib_trap_signal}" >/dev/null 2>&1; then
+				__shlib_trap_signal="$(kill -l "${__shlib_trap_signal}")"
+				__shlib_trap_signame="$(kill -l "${__shlib_trap_signal}")"
+			fi;;
+		esac
+
+		if test -z "${__shlbib_trap_signame}"; then
+			shlib_error "ignoring unknown signal '${__shlib_trap_signal}'"
+			continue
+		fi
+
+		eval "__shlib_trap_${__shlib_trap_signame}=\"\${__shlib_trap_${__shlib_trap_signame}} ${__shlib_trap_sighandler}\""
+	done
+	unset __shlib_trap_signal
+	unset __shlib_trap_signame
+	unset __shlib_trap_sighandler
+}
+# FIXME uncomment when done
+#alias shlib.trap='__shlib_trap '
+
+
