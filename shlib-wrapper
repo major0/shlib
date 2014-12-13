@@ -9,6 +9,7 @@
 # <project>/<command> -> <project>/libexec/shlib/shlib-wrapper
 # <project>/libexec/<project>/<command>
 # <project>/libexec/shlib
+set -e
 
 die() { echo "error: $*" >&2; exit 1; }
 
