@@ -30,6 +30,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 [die]: die.md "die"
 [getarg]: getarg.md "getarg"
 [hascmd]: hascmd.md "hascmd"
+[hasfunc]: hasfunc.md "hasfunc"
 [import]: import.md "import"
 [pathcmd]: pathcmd.md "pathcmd"
 [main]: main.md "main"
