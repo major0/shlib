@@ -359,6 +359,7 @@ if test -z "${SHLIB_PATH}"; then
 		SHLIB_PATH="$(__shlib_realpath "${0%/*}")"
 		readonly SHLIB_PATH="${SHLIB_PATH%/}"
 	fi
+	export SHLIB_PATH
 
 	# Note: Checking for library validity is done at import(), this allows
 	# setting SHLIB_PATH dynamically at runtime.
@@ -445,6 +446,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 			OPTIND=1;;
 		esac
 	done
+	unset __shlib_arg
 	shift $((${OPTIND} - 1))
 	OPTIND=1
 	unset OPTARG
@@ -452,12 +454,14 @@ if test "$(basename "${0}")" = 'shlib'; then
 	# Register the leak detector first so that it is called last.
 	__shlib_atexit_funcs=
 	${SHLIB_REPORT_SET+false} || __shlib_atexit __shlib_leaked_vars
+	unset SHLIB_REPORT_SET
 
 	# Initialize shlib
 	eval '__shlib_imports() { :; }'
 	for __shlib_lib_to_import in ${SHLIB_IMPORTS}; do
 		import "${__shlib_lib_to_import}"
 	done
+	unset SHLIB_IMPORTS
 	unset -f __shlib_version
 
 	# FIXME write SHLIB_COMMAND to a temp SHLIB_SCRIPT to avoid the use of 'eval'
