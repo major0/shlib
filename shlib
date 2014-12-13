@@ -125,7 +125,7 @@ __shlib_exit()
 }
 __shlib_atexit()
 {
-	if ! type "${1}" | grep -q 'function$'; then
+	if ! __shlib_hasfunc "${1}"; then
 		trap '' 0
 		die "not a function '${1}'"
 	fi
