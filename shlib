@@ -134,24 +134,35 @@ __shlib_atexit()
 }
 alias shlib.atexit='__shlib_atexit '
 
+__shlib_leaked_vars_filter()
+{
+	for __shlib_leaked_sh_var; do
+		case "${__shlib_leaked_sh_var}" in
+		(POSIXLY_CORRECT) continue;;
+		(SHLIB_CALL_STACK) continue;;
+		(SHLIB_SHELL)	continue;;
+		(SHLIB_ONLY)	continue;;
+		(OPTARG)	continue;; # zsh
+		(A__z)		continue;; # ksh
+
+		# bash
+		(BASH_EXECUTION_STRING|FUNCNAME|PIPESTATUS) continue;;
+		esac
+		echo "${__shlib_leaked_sh_var}"
+	done
+	unset __shlib_leaked_sh_var
+}
 __shlib_leaked_vars()
 {
 	shift $#
-	for __shlib_leaked_var in $( (set;env)|sed -n 's/=.*//p'|sort|uniq -u); do
-		# We ignore some variables as they are part of the shell
-		# builtin environments
-		case "${__shlib_leaked_var}" in
-		(OPTIN)		continue;;
-		esac
-		set -- "$@" "${__shlib_leaked_var}"
-	done
-
-	echo "## SHLIB SET VARIABLES: $#"
+	set -- $(__shlib_leaked_vars_filter $( ("${SHLIB_SHELL}" -c 'set';set;env)|sed -n 's/=.*//p'|sort|uniq -u))
+	unset __shlib_leaked_shell_vars
 	if test "$#" -ne '0'; then
-		for var; do
-			echo "${var}"
+		echo "## SHLIB SET VARIABLES: $#"
+		for __shlib_leaked_var; do
+			echo "${__shlib_leaked_var}"
 		done
-		unset var
+		unset __shlib_leaked_var
 	fi
 }
 
