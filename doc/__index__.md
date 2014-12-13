@@ -39,5 +39,5 @@ a specific interface use `shlib --help <library>.<interface>`.
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [experimental]: ../experimental/__index__.md "experimental"
-[core]: ../shlib/__index__.md "core"
+[core]: ../doc/__index__.md "core"
 [shlib]: http://github.com/major0/shlib "shlib"

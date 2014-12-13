@@ -11,7 +11,7 @@ of concept regarding various ideas or concepts.
 
  [core][], [math][], [string][]
 
-[core]: ../shlib/__index__.md "core"
+[core]: ../doc/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [experimental]: ../experimental/__index__.md "experimental"

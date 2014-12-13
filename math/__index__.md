@@ -28,7 +28,7 @@ comparisons against floating point numbers.
 [sin]: sin.md
 [sqrt]: sqrt.md
 [sum]: sum.md
-[core]: ../shlib/__index__.md "core"
+[core]: ../doc/__index__.md "core"
 [math]: __index__.md "math"
 [string]: ../string/__index__.md "string"
 [experimental]: ../experimental/__index__.md "experimental"
