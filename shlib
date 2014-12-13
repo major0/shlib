@@ -121,7 +121,7 @@ __shlib_exit()
 }
 __shlib_atexit()
 {
-	if ! type "${1}" | grep -q 'is a shell function'; then
+	if ! type "${1}" | grep -q 'function$'; then
 		trap '' 0
 		die "not a function '${1}'"
 	fi
