@@ -19,7 +19,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 
 ### shlib routines ###
 
- [error][], [die][], [getarg][], [hascmd][], [import][], [main][], [optarg][], [pathcmd][] [realpath][]
+ [error][], [die][], [getarg][], [hascmd][], [hasfunc][], [import][], [main][], [optarg][], [pathcmd][] [realpath][]
 
 ### libraries ###
 
