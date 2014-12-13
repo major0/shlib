@@ -1,0 +1,138 @@
+#!/bin/sh
+# shlib-project - create a development directory structure for a project
+#
+# This is a simple tool for setting up the developer environment for
+# shlib-based tools.  For the most part this tool acts to aid in boot-strapping
+# ones learning process about the development layout and is not expected to be
+# used for regaular development operations.
+set -e
+
+SHLIB_GIT_URL='http://github.com/major0/shlib'
+error() { echo "error: $*" >&2; }
+die() { echo "error: $*" >&2; exit 1; }
+shlib_usage()
+{
+	if test "$#" -gt '0'; then
+		 error "$*"
+		 echo "try '${0} help' for more information" >&2
+		 exit 1
+	fi
+
+	sed -e 's/	//' <<EOF
+	usage: ${0} <command> [<arg>]
+	A simple tool to aid in setting up shlib-dev environments.
+
+	commands:
+	  init <project>	Initialize project.
+	  add <command>		Make <command> usable.
+	  help			Display this help.
+
+EOF
+	exit 0
+}
+
+shlib_init()
+{
+	shlib_path="${PWD}"
+	shlib_project="${1##*/}"
+	test "${shlib_project}" = "${1}" || shlib_path="${1%/*}"
+	! test -e "${shlib_path}/${shlib_project}" || die 'project already exists'
+	mkdir "${shlib_path}/${shlib_project}" && cd "${shlib_path}/${shlib_project}"
+	mkdir libexec
+	mkdir "libexec/${shlib_project}" && cd "libexec/${shlib_project}"
+	git init
+	sed -e 's/	//' <<EOF > shlib.config
+	project="${shlib_project}"
+	version='0.0'
+	description="${shlib_project}"
+EOF
+	git add shlib.config
+	git commit -m 'Initial Commit'
+
+	sed -e 's/	//' <<EOF > hello
+	#!/usr/bin/env shlib
+
+	cat<<EOF
+	This is an example program which demonstrates using the shlib project
+	directory structure.  This structure allows the development of projects
+	based on shlib without needing to install shlib, or various shlib
+	tools, into the target platform.
+
+	All development on your project should be done in:
+		${shlib_path}/${shlib_project}/libexec/${shlib_project}
+
+	If you would like to make a command usable without installing it,
+	simply make a symlink for the new command which points at the
+	shlib-wrapper.
+
+	For example, if you had the command:
+		${shlib_path}/${shlib_project}/libexec/${shlib_project}/hello
+
+	You would create the symlink:
+		${shlib_path}/${shlib_project}/hello
+
+	Which points at:
+		${shlib_path}/${shlib_project}/libexec/shlib/shlib-wrapper
+
+	As an alternative you can run:
+		${shlib_path}/${shlib_project}/libexec/shlib/shlib-project add <command>
+
+	Happy Hacking!
+	EOF
+EOF
+	chmod a+rx hello
+	cd ../..
+	git init
+	ln -s "libexec/${shlib_project}/shlib.config" shlib.config
+	git add shlib.config
+	ln -s libexec/shlib/shlib-wrapper hello
+	git submodule add "${SHLIB_GIT_URL}" libexec/shlib
+	git submodule add "file://${PWD}/libexec/${shlib_project}" "libexec/${shlib_project}"
+	git commit -m 'Initial commit'
+}
+
+shlib_add()
+{
+	while ! test -h 'shlib.config'; do
+		test "${PWD}" != '/' || die 'not in a shlib project'
+		cd ..
+	done
+	: PWD: ${PWD}
+	test -e 'shlib.config' || die 'missing shlib.config'
+
+	unset project
+	. ./shlib.config
+	! test -z "${project}" || die 'project missing from shlib.config'
+	test -d "libexec/${project}" || die "directory does not exist 'libexec/${project}'"
+	test -f "libexec/${project}/${1}" || die "command does not exist 'libexec/${project}/${1}'"
+	if ! test -d "libexec/shlib"; then
+		if test -e "$(command -v 'shlib-wrapper')"; then
+			ln -s "${1}" "$(command -v 'shlib-wrapper')"
+			exit 0
+		fi
+		error 'libexec/shlib does not exist'
+		echo "try 'git submodule add ${SHLIB_GIT_URL} libexec/shlib'"
+		exit 1
+	else
+		if test -f 'libexec/shlib/shlib-wrapper'; then
+			ln -s 'libexec/shlib/shlib-wrapper' "${1}"
+			exit 0
+		fi
+	fi
+	die 'shlib-wrapper missing'
+}
+
+test "$#" -gt '0' || shlib_usage 'no command specified'
+SHLIB_COMMAND="${1}"
+shift
+
+test -e "$(command -v git 2>/dev/null)" || die 'git not installed'
+
+case "${SHLIB_COMMAND}" in
+(init)		shlib_init "$@"; exit;;
+(add)		shlib_add "$@"; exit;;
+(help)		shlib_usage;;
+(*)		usage "unknown command '${SHLIB_COMMAND}'";;
+esac
+
+# vim: filetype=sh
