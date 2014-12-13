@@ -130,6 +130,27 @@ __shlib_atexit()
 }
 alias shlib.atexit='__shlib_atexit '
 
+__shlib_leaked_vars()
+{
+	shift $#
+	for __shlib_leaked_var in $( (set;env)|sed -n 's/=.*//p'|sort|uniq -u); do
+		# We ignore some variables as they are part of the shell
+		# builtin environments
+		case "${__shlib_leaked_var}" in
+		(OPTIN)		continue;;
+		esac
+		set -- "$@" "${__shlib_leaked_var}"
+	done
+
+	echo "## SHLIB SET VARIABLES: $#"
+	if test "$#" -ne '0'; then
+		for var; do
+			echo "${var}"
+		done
+		unset var
+	fi
+}
+
 __shlib_lib_resolv()
 {
 	if test "${1%.*}" != "${1}"; then
@@ -413,8 +434,11 @@ if test "$(basename "${0}")" = 'shlib'; then
 	OPTIND=1
 	unset OPTARG
 
-	# Initialize shlib
+	# Register the leak detector first so that it is called last.
 	__shlib_atexit_funcs=
+	${SHLIB_REPORT_SET+false} || __shlib_atexit __shlib_leaked_vars
+
+	# Initialize shlib
 	eval '__shlib_imports() { :; }'
 	for __shlib_lib_to_import in ${SHLIB_IMPORTS}; do
 		import "${__shlib_lib_to_import}"
@@ -436,26 +460,5 @@ if test "$(basename "${0}")" = 'shlib'; then
 		shift
 
 		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
-	fi
-fi
-
-# FIXME this should be done in an exit handler
-if ! ${SHLIB_REPORT_SET+false}; then
-	shift $#
-	for __shlib_leaked_var in $( (set;env)|cut -d= -f1|sort|uniq -u); do
-		# We ignore some variables as they are part of the shell
-		# builtin environments
-		case "${__shlib_leaked_vars}" in
-		(OPTIN)		continue;;
-		esac
-		set -- "$@" "${__shlib_leaked_vars}"
-	done
-
-	echo "## SHLIB SET VARIABLES: $#"
-	if test "$#" -ne '0'; then
-		for var; do
-			echo "${var}"
-		done
-		unset var
 	fi
 fi
