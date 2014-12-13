@@ -11,21 +11,33 @@
 # <project>/libexec/shlib
 
 die() { echo "error: $*" >&2; exit 1; }
-SHLIB_PATH="${0%/*}/libexec"
 
 test -f "${0%/*}/shlib.config" || die "missing 'shlib.config'"
 . "${0%/*}/shlib.config" > /dev/null 2>&1 || die "bad config 'shlib.config'"
 ! test -z "${project}" || die "no project defined in 'shlib.config'"
 
-test -d "${SHLIB_PATH}" || die "invalid dir '${SHLIB_PATH}'"
-test -d "${SHLIB_PATH}/shlib" || die "missing '${SHLIB_PATH}/shlib'"
-test -f "${SHLIB_PATH}/shlib/shlib" || die "invalid shlib @ '${SHLIB_PATH}/shlib'"
-
+# Assign any variables after sourcing the 'shlib.config'
+SHLIB_PATH="${0%/*}/libexec"
 progname="${0##*/}"
+
+# Validte our core project structure
+test -d "${SHLIB_PATH}" || die "invalid dir '${SHLIB_PATH}'"
 test -d "${SHLIB_PATH}/${project}" || die "missing '${SHLIB_PATH}/${project}'"
 test -f "${SHLIB_PATH}/${project}/${progname}" || die "invalid script '${progname}'"
 
+# This is a partial-installed mode in which shlib is installed into the system
+# but the project is not.  This will most likely result from someone copying
+# the shlib-wrapper into their project as opposed to symlinking it from the
+# submodule. Supported, but not recommended.
+if ! test -d "${SHLIB_PATH}/shlib"; then
+	test -e "$(command -v 'shlib')" || die "missing '${SHLIB_PATH}/shlib'"
+	exec shlib --libdir="${SHLIB_PATH}" "${SHLIB_PATH}/${project}/${progname}" "$@"
+fi
+
+# Normal use-case in which we set the SHLIB_PATH and execute everthing in
+# developer mode
 export SHLIB_PATH
+test -f "${SHLIB_PATH}/shlib/shlib" || die "invalid shlib @ '${SHLIB_PATH}/shlib'"
 exec "${SHLIB_PATH}/shlib/shlib" "${SHLIB_PATH}/${project}/${progname}" "$@"
 
 # vim: filetype=sh
