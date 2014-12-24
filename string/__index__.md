@@ -8,13 +8,14 @@ and manipulation/editing.
 
 ### string routines ###
 
- [compare][], [index][], [match][], [regexp][], [sub][], [tolower][], [toupper][]
+ [compare][], [escape][], [index][], [match][], [regexp][], [sub][], [tolower][], [toupper][]
 
 #### See also ####
 
  [core][], [math][], [experimental][]
 
 [compare]: compare.md
+[escape]: escape.md
 [index]: index.md
 [match]: match.md
 [regexp]: regexp.md

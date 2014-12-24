@@ -1,0 +1,37 @@
+#!/usr/bin/env shlib
+
+case "${SHLIB_SHELL}" in
+(bash|ksh|zsh)
+	__shlib_string_escape() { printf '%q' "$1"; };;
+(*)
+	if shlib.hascmd sed; then
+		__shlib_string_escape() { printf '%s' "$1" | sed -e "s/\\([[:punct:]]\\)/\\\\\\1/g"; }
+	else
+		__shlib_string_escape()
+		{
+			while ! test -z "${1}"; do
+				__shlib_string_prefix="${1%%[[:punct:]]*}"
+				test -z "${__shlib_string_prefix}" || printf '%s' "${__shlib_string_prefix}"
+				set -- "${1#${__shlib_string_prefix}}"
+				__shlib_string_suffix="${1#?}"
+				if ! test -z "${__shlib_string_suffix}"; then
+					printf '\\%s' "${1%${__shlib_string_suffix}}"
+				fi
+				set -- "${__shlib_string_suffix}"
+			done
+			unset __shlib_string_prefix
+			unset __shlib_string_suffix
+		}
+	fi
+	;;
+esac
+alias string.escape='__shlib_string_escape '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.escape';; esac
+	done
+	__shlib_string_escape "${*}"
+}
+
+# vim: filetype=sh
