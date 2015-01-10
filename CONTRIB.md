@@ -1,11 +1,12 @@
 ## Philosphy ##
 
-[shlib] is written around the goal of providing a portable **dumping ground**
-for various shell tricks and hacks produced throughout the ages.  Such things
-as floating point arithematic, string manipulation, and even just overly common
-routines used by programmers on a day-to-day basis.  With that in mind, shlib
-attempts to implement an interface via as many methods as possible to try and
-achieve maximum portability.
+[shlib][shlib] is written around the goal of providing a portable **dumping
+ground** for various shell tricks and hacks produced throughout the ages.  Such
+things as floating point arithematic, string manipulation, and even just overly
+common routines used by programmers on a day-to-day basis.  With that in mind,
+shlib is a framework which presents a portable interface to the developer, but
+which may be implemented via any number of methods under-the-covers at load
+time.
 
 ## What shlib is not ##
 
@@ -83,8 +84,8 @@ defined by [git][git].
 
  * Do not use `-a` or `-o` with `test`, use `&&` or `||` instead.
 
- * Parameter expansion on both left and right side is performed regardless of
-   the result of the left-side during `-o`:
+   Parameter expansion on both left and right side is performed regardless of
+   the result of the left-side during `-o` and `-a`:
 
 ```sh
 	test "$(cmd1)" = 'success' -o "$(cmd2)" = 'success'
@@ -108,7 +109,7 @@ defined by [git][git].
   * Do not use '+', this is an ERE, use `\{1,\}` instead.
 
   * Do not use `grep -E` unless you know the current flavor of grep supports
-    it, it isn't portable.
+    it (it isn't portable).
 
 
 #### Avoid shell-ism's outside of shell-specific code. #####
@@ -121,12 +122,14 @@ defined by [git][git].
 
 ##### Unacceptable shell-ism's #####
 
-  * Do not use any of these w/out knowledge of the current shell-flavour (i.e.
-    hide it inside of an if, or some other source-file to be sourced in).
+Do not use any of these w/out knowledge of the current shell-flavour (i.e.
+hide it inside of an if, or some other source-file to be sourced in).
+
+   * Double-bracket conditions: `if [[ ... ]]`, this is entirely unportable.
 
    * Sub-string expansion: `${parameter:offset:length}`
 
-   * Shell-Arrays
+   * Shell-Arrays: `var=(one two three)`
 
    * strlen substitution: `${#parameter}`
 

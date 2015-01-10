@@ -62,6 +62,7 @@ See Also
  * [Examples](examples/)
  * [Development](CONTRIB.md)
  * [API Reference](doc/__index__.md)
+ * [Future features](TODO.md)
  * [License](LICENSE)
 
 [shlib]: http://github.com/major0/shlib "shlib"
