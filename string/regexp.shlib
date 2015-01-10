@@ -2,7 +2,7 @@
 
 if shlib.hascmd awk; then
 	__shlib_string_regexp_cmd() {
-	awk "BEGIN{found=1;};/${1}/{found=0;};END{exit found;}" <<EOF
+	awk "/${1}/{exit 0;}{exit 1;}" <<EOF
 ${2}
 EOF
 }
@@ -21,9 +21,18 @@ __shlib_string_regexp()
 		esac
 	done
 	! test "$#" -lt '2' || shlib.usage 'string.regexp' 'too few arguments'
-	! test "$#" -gt '2' || shlib.usage 'string.regexp' 'too many arguments'
 
-	__shlib_string_regexp_cmd "$@"
+	__shlib_string_regexp_pattern="${1}"
+	shift
+	until __shlib_string_regexp_cmd "${__shlib_string_regexp_pattern}" "${1}"; do
+		shift
+		if test "$#" -eq '0'; then
+			unset __shlib_string_regexp_pattern
+			return 1
+		fi
+	done
+	unset __shlib_string_regexp_pattern
+	return 0
 }
 alias string.regexp='__shlib_string_regexp '
 

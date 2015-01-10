@@ -1,6 +1,6 @@
 [shlib][] / [string][] / regexp()
 
-## string.regexp `<pattern>` `<string>`
+## string.regexp `<pattern>` `<string>` `...`
 
 Returns success if `<pattern>` is found in `<string>`.
 
