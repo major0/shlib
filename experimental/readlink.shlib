@@ -1,0 +1,51 @@
+#!/usr/bin/env shlib
+
+if shlib.hascmd readlink; then
+	__shlib_readlink_cmd() { command readlink "$@"; }
+elif shlib.hascmd busybox && busybox --help 2>&1 | grep -q readlink; then
+	__shlib_readlink_cmd() { command busybox readlink "$@"; }
+else
+	# FIXME we need a portable mktemp that is always destroyed atexit()
+	#import path.mktemp
+	__shlib_readlink_tmp="$(mktemp shlib_readlink.XXXXXX)"
+	if test -e "${__shlib_readlink_tmp}"; then
+		rm "${__shlib_readlink_tmp}"
+		ln -s readlink "${__shlib_readlink_tmp}"
+		__shlib_readlink_val="$(find "${__shlib_readlink_tmp}" -prune -printf '%l')"
+		if test "${__shlib_readlink_val}" = 'readlink'; then
+			__shlib_readlink_cmd() { command find "${1}" -prune -printf '%l\n'; }
+		else
+			# FIXME This fallback is not exactly safe and it may be
+			# worthwhile to test for other commands which may be
+			# able to supply a sane readlink() interface
+			# (perl/python/busybox/etc) as this fallback fails if
+			# the file, or link contain ' -> ' or a newline.
+			__shlib_readlink_cmd() {
+				set -- "$(ls -long "${1}")";
+				printf '%s\n' "${1##* -> }";
+			}
+		fi
+		rm -f "${__shlib_readlink_tmp}"
+		unset __shlib_readlink_tmp
+		unset __shlib_readlink_val
+	fi
+fi
+
+__shlib_readlink()
+{
+	test -h "${1}" || exit 1
+	__shlib_readlink_cmd "${1}"
+}
+alias shlib.readlink='__shlib_readlink '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help)
+			echo 'usage: readlink <path>'
+			exit 0
+		esac
+	done
+	__shlib_readlink "${@}"
+}
+
+# vim: filetype=sh
