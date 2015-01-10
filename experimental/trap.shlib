@@ -1,3 +1,5 @@
+#!/usr/bin/env shlib
+
 # TODO this is am experimental idea in which we allow the registration of
 # multiple handlers per signal.
 __shlib_trap()
@@ -33,4 +35,4 @@ __shlib_trap()
 # FIXME uncomment when done
 #alias shlib.trap='__shlib_trap '
 
-
+# vim: filetype=sh
