@@ -2,33 +2,46 @@
 
 # Based on a bash map() function by Reddit user downdiagonal
 # http://www.reddit.com/r/bashtricks/comments/aks3u/a_functional_programming_style_map_function_for/
-# edited for portability, (read dash compat, the others: ksh93, bash, zsh) worked out of the box.
+# Re-written to work w/ shlib arrays such that we can have quoted spaces and
+# escapes on the command and item side of the mapping.
 
-import string.match
+import string.regexp
+import array
 
-__shlib_misc_map(){
-        command="${1}"; shift
-        if test $# -lt 2 || test $(string.match ":[:space:]" "$@") -ne 0; then
-                echo "Invalid syntax." >&2; return 1 
+__shlib_map()
+{
+        if test $# -lt 2 || ! string.regexp '.*:$' "$@"; then
+                shlib.die "Invalid syntax."
         fi
-        until test $(string.match "^.*:$" "$1") -eq 1; do
-                command="$command $1"; shift
+
+	__shlib_map_cmd=
+        until string.regexp '.*:$' "${1}"; do
+		__shlib_map_cmd="$(array.append "${__shlib_map_cmd}" "${1}")"
+		shift
         done
-        command="$command ${1%:}"; shift
-        for i in "$@"; do
-                eval "${command} \"${i}\""
-        done
+	__shlib_map_cmd="$(array.append "${__shlib_map_cmd}" "${1%:}")"
+	shift
+
+	__shlib_map_items="$(array "${@}")"
+	while __shlib_map_item="$(array.head "${__shlib_map_items}")"; do
+		__shlib_map_items="$(array.shift "${__shlib_map_items}")"
+		eval set -- "${__shlib_map_cmd}" "\"${__shlib_map_item}\""
+		"${@}"
+	done
+	unset __shlib_map_items
+	unset __shlib_map_item
+	unset __shlib_map_cmd
 }
-alias misc.map='__shlib_misc_map '
+alias shlib.map='__shlib_map '
 
 shlib.main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help)
-			echo 'usage: map <command>: <expression> <...> <...>'
+			echo 'usage: map <command> [<arg>]: <item> ...'
 			exit 0
 		esac
 	done
-	misc.map "${@}"
+	__shlib_map "${@}"
 }
 
 # vim: filetype=sh
