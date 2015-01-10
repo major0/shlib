@@ -5,7 +5,7 @@ case "${SHLIB_SHELL}" in
 	__shlib_string_escape() { printf '%q' "$1"; };;
 (*)
 	if shlib.hascmd sed; then
-		__shlib_string_escape() { printf '%s' "$1" | sed -e "s/\\([[:punct:]]\\)/\\\\\\1/g"; }
+		__shlib_string_escape() { printf '%s' "$1" | sed -e 's/\([[:punct:]]\)/\1/g'; }
 	else
 		__shlib_string_escape()
 		{
