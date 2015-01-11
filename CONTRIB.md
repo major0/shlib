@@ -54,6 +54,21 @@ otherwise it will use one implemented in POSIX shell.
 Please submit all pull-request changes on their own git branch.  Any pull
 requests which are not on their own topic branch will be rejected.
 
+### Unit Tests ###
+
+[shlib][shlib] is moving towards a Test-Driven Development model.  This means
+that all new interfaces must be documented, and have unit tests written, before
+the interface is written.  The [shlib][shlib] development environment contains
+git-hooks which try to enforce this model.  This hooks can be enabled by adding
+the following code to the appropriate git-hook script.
+
+```sh
+if test -x ".hooks/${0##*/}"; then ".hooks/${0##*/}" "$@"; fi
+```
+
+See the output of `ls -d -C1 .hooks/*.d/` for a list of script names in
+.git/hooks/ which should be updated.
+
 ### Coding Style ###
 
 The coding-style in [shlib][shlib] borrows heavily from the coding-style
@@ -136,3 +151,4 @@ hide it inside of an if, or some other source-file to be sourced in).
    * Pattern replacement: `${parameter/pattern/string}`
 
 [shlib]: http://github.com/major0/shlib "shlib"
+[git]: http://gitscm.com/

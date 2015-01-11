@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Run the shlib unit tests
+exec ./shlib-interface-test
+
+# vim: filetype=sh

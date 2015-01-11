@@ -1,0 +1,18 @@
+#!/bin/sh
+##
+# Simple git hook wapper for wrapping all hook types.  This allows one to
+# easily add a call to ".hooks/<name>" to a users custom .git/hook/<name> so
+# that we can enforce our hooks along side a users custom hooks. This also
+# allows us to support multiple hook scripts, as opposed to just one.
+#
+# To make use of this framework simply add the following line to an existing
+# git-hook (such as .git/hooks/pre-commit):
+# if test -x ".hooks/${0##*/}"; then ".hooks/${0##*/}" "$@"; fi
+
+PROGNAME="${0##*/}"
+test -d ".hooks/${PROGNAME}.d" || exit 0
+ls -C1 .hooks/${PROGNAME}.d/|while read SCRIPT; do
+	".hooks/${PROGNAME}.d/${SCRIPT}" "${@}"
+done
+
+# vim: filetype=sh

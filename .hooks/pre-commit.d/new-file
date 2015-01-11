@@ -1,0 +1,38 @@
+#!/bin/sh
+# Rules for adding new files
+set -x
+: "$0" "$@"
+die() { echo "error: $*" >&2; exit 1; }
+
+exec 1>&2
+
+git diff --cached --diff-filter A --name-only|while read filename; do
+	# Filename must have valid characters
+	if test "$(git config --bool hooks.allownonascii)" != 'true'; then
+		if ! test -z "$(printf '%s' "${filename}"|LC_ALL=C tr -d '[ -~]')"; then
+			die 'attempt to add a non-ASCII filename.'
+		fi
+	fi
+
+	# New libraries and interfaces must come with documentation and unit tests.
+	case "${filename}" in
+	(*/__init__.shlib)
+		if ! test -f "${filename%__init__.shlib}__index__.md"; then
+			die "missing documentation for '${filename%/__init__.shlib}'"
+		fi
+
+		if ! test -f "${filename%__init__.shlib}__index__.shit"; then
+			die "missing tests for '${filename%/__init__.shlib}'"
+		fi
+		;;
+
+	(*.shlib)
+		if ! test -f "${filename%.shlib}.md"; then
+			die "missing documentation for '${filename}'"
+		fi
+		if ! test -f "${filename%.shlib}.shit"; then
+			die "missing tests for '${filename}'"
+		fi
+		;;
+	esac
+done
