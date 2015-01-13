@@ -66,7 +66,7 @@ alias shlib.hascmd='__shlib_hascmd '
 alias shlib.pathcmd='__shlib_pathcmd '
 
 # the compliment to hascmd
-__shlib_hasfunc() { type "${1}"|grep -q 'function$'; }
+__shlib_hasfunc() { type "${1}" 2>&1 | grep -q 'function$'; }
 alias shlib.hasfunc='__shlib_hasfunc '
 
 # FIXME this is not remotely portable, and it beaks our coding style guidelines
