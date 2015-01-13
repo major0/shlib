@@ -380,8 +380,10 @@ fi
 # If our basename is 'shlib' then we are the master program, else we are likely
 # being 'sourced' by some other script which wants to utilize shlib as a
 # library.
+
+SHLIB_IMPORTS=
+__shlib_atexit_funcs=
 if test "$(basename "${0}")" = 'shlib'; then
-	SHLIB_IMPORTS=
 	SHLIB_COMMAND=
 	while getopts ':h:VL:I:vxc:' __shlib_arg; do
 		case "${__shlib_arg}" in
@@ -468,7 +470,6 @@ if test "$(basename "${0}")" = 'shlib'; then
 	unset OPTARG
 
 	# Register the leak detector first so that it is called last.
-	__shlib_atexit_funcs=
 	${SHLIB_REPORT_SET+false} || __shlib_atexit __shlib_leaked_vars
 	unset SHLIB_REPORT_SET
 
@@ -495,4 +496,8 @@ if test "$(basename "${0}")" = 'shlib'; then
 
 		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
 	fi
+else # sourced in
+	unset -f __shlib_version
 fi
+
+# vim: filetype=sh
