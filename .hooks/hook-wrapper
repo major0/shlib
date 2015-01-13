@@ -15,4 +15,6 @@ ls -C1 .hooks/${PROGNAME}.d/|while read SCRIPT; do
 	".hooks/${PROGNAME}.d/${SCRIPT}" "${@}"
 done
 
+echo "All ${PROGNAME} scripts passed!"
+
 # vim: filetype=sh
