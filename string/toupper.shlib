@@ -9,7 +9,8 @@ EOF
 elif shlib.hascmd awk; then
 	__shlib_string_toupper_cmd() { awk "BEGIN{ print toupper(\"${*}\"); }"; }
 else
-	die "no way to implement toupper"
+	shlib.error "no way to implement toupper"
+	return 1
 fi
 
 __shlib_string_toupper()

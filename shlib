@@ -298,21 +298,28 @@ __shlib_import_lib()
 	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}"
 	__shlib_imported "${1}" "${2}"
 	. "${2}"
+	__shlib_imported_status="$?"
 	SHLIB_CALL_STACK="${4}"
 
 	cd "${3}"
+	set -- "${__shlib_imported_status}"
+	unset __shlib_imported_status
+	return "${1}"
 }
 
 # FIXME support 'import <routine> from <lib>'?
 __shlib_import()
 {
-	for __shlib_import_arg; do
-		if ! eval "${__shlib_import_arg}_imported" 2>/dev/null; then
-			__shlib_import_lib "${__shlib_import_arg}"
+	while test "$#" -gt '0'; do
+		if ! eval "${1}_imported" 2>/dev/null; then
+			if ! __shlib_import_lib "${1}"; then
+				set -- $?
+				break
+			fi
 		fi
+		shift
 	done
-	unset __shlib_import_arg
-
+	return "$#"
 }
 alias shlib.import='__shlib_import '
 alias import='__shlib_import '

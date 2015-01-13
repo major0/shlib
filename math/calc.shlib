@@ -13,7 +13,8 @@ elif shlib.hascmd zsh; then
 elif shlib.hascmd bc; then
 	__shlib_math_calc_cmd() { printf '%s\n' "$*" | bc; }
 else
-	die 'no suitable method for doing math'
+	shlib.error 'no suitable method for doing math'
+	return 1
 fi
 
 __shlib_math_calc()

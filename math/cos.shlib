@@ -13,7 +13,8 @@ elif shlib.hascmd 'ksh'; then
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
 else
-	die 'no suitable method for doing cos'
+	shlib.error 'no suitable method for doing cos'
+	return 1
 fi
 
 __shlib_math_cos()

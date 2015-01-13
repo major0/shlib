@@ -13,7 +13,8 @@ elif shlib.hascmd 'ksh'; then
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_sin_cmd() { command zsh -c "result=\$((sin($*)));echo \${result%.}"; }
 else
-	die 'no suitable method for doing sin'
+	shlib.error 'no suitable method for doing sin'
+	return 1
 fi
 
 __shlib_math_sin()

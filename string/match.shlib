@@ -3,7 +3,8 @@
 if shlib.hascmd awk; then
 	__shlib_string_match_cmd() { command awk "BEGIN{ print match(\"${2}\", \"${1}\"); }"; }
 else
-	die "no way to implement match"
+	shlib.error "no way to implement match"
+	return 1
 fi
 
 __shlib_string_match()

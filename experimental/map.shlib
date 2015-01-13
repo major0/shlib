@@ -11,7 +11,8 @@ import array
 __shlib_map()
 {
         if test $# -lt 2 || ! string.regexp '.*:$' "$@"; then
-                shlib.die "Invalid syntax."
+                shlib.error "Invalid syntax."
+		return 1
         fi
 
 	__shlib_map_cmd=

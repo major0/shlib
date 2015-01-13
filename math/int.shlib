@@ -13,7 +13,8 @@ elif shlib.hascmd 'ksh'; then
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_int_cmd() { command zsh -c "result=\$((int($*)));echo \${result%.}"; }
 else
-	die 'no suitable method for doing int'
+	shlib.error 'no suitable method for doing int'
+	return 1
 fi
 
 __shlib_math_int()

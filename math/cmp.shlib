@@ -9,7 +9,8 @@ elif shlib.hascmd zsh; then
 elif shlib.hascmd awk; then
 	__shlib_math_cmp_cmd() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
 else
-	die 'no suitable method for float equality'
+	shlib.error 'no suitable method for float equality'
+	return 1
 fi
 
 __shlib_math_cmp()

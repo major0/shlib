@@ -11,7 +11,8 @@ elif shlib.hascmd 'ksh'; then
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_atan2_cmd() { command zsh -c "result=\$((atan2($1,$2)));echo \${result%.}"; }
 else
-	die 'no suitable method for doing atan2'
+	shlib.error 'no suitable method for doing atan2'
+	return 1
 fi
 
 __shlib_math_atan2()

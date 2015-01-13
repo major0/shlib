@@ -13,7 +13,8 @@ elif shlib.hascmd 'ksh'; then
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_rand_cmd() { command zsh -c "result=\$((rand($*)));echo \${result%.}"; }
 else
-	die 'no suitable method for doing rand'
+	shlib.error 'no suitable method for doing rand'
+	return 1
 fi
 
 __shlib_math_rand()

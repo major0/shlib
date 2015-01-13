@@ -9,7 +9,8 @@ EOF
 elif shlib.hascmd awk; then
 	__shlib_string_tolower_cmd() { awk "BEGIN{ print tolower(\"${*}\"); }"; }
 else
-	die "no way to implement tolower"
+	shlib.error "no way to implement tolower"
+	return 1
 fi
 
 __shlib_string_tolower()

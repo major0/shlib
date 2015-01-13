@@ -7,7 +7,8 @@ ${2}
 EOF
 }
 else
-	die 'no way to implement string.regexp'
+	shlib.error 'no way to implement string.regexp'
+	return 1
 fi
 alias string.regexp='__shlib_string_regexp '
 
