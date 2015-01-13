@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if test "${SHLIB_SHELL}" = 'ksh'; then
+if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.sqrt; then
 	__shlib_math_sqrt_cmd() { echo "$((sqrt($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_sqrt_cmd() { set -- "$((sqrt($*)))"; echo "${1%.}"; }
@@ -8,7 +8,7 @@ elif shlib.hascmd 'gawk'; then
 	__shlib_math_sqrt_cmd() { command gawk "BEGIN{ print sqrt($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_sqrt_cmd() { command awk "BEGIN{ print sqrt($*); }"; }
-elif shlib.hascmd 'ksh'; then
+elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.sqrt' > /dev/null 2>&1; then
 	__shlib_math_sqrt_cmd() { command ksh -c "echo \$((sqrt($*)))"; }
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_sqrt_cmd() { command zsh -c "result=\$((sqrt($*)));echo \${result%.}"; }

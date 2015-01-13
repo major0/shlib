@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if test "${SHLIB_SHELL}" = 'ksh'; then
+if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.int; then
 	__shlib_math_int_cmd() { echo "$((int($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_int_cmd() { set -- "$((int($*)))"; echo "${1%.}"; }
@@ -8,7 +8,7 @@ elif shlib.hascmd 'gawk'; then
 	__shlib_math_int_cmd() { command gawk "BEGIN{ print int($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_int_cmd() { command awk "BEGIN{ print int($*); }"; }
-elif shlib.hascmd 'ksh'; then
+elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.int' > /dev/null 2>&1; then
 	__shlib_math_int_cmd() { command ksh -c "echo \$((int($*)))"; }
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_int_cmd() { command zsh -c "result=\$((int($*)));echo \${result%.}"; }

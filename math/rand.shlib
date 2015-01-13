@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if test "${SHLIB_SHELL}" = 'ksh'; then
+if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.rand; then
 	__shlib_math_rand_cmd() { echo "$((rand($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_rand_cmd() { set -- "$((rand($*)))"; echo "${1%.}"; }
@@ -8,7 +8,7 @@ elif shlib.hascmd 'gawk'; then
 	__shlib_math_rand_cmd() { command gawk "BEGIN{ print rand($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_rand_cmd() { command awk "BEGIN{ print rand($*); }"; }
-elif shlib.hascmd 'ksh'; then
+elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.rand' > /dev/null 2>&1; then
 	__shlib_math_rand_cmd() { command ksh -c "echo \$((rand($*)))"; }
 elif shlib.hascmd 'zsh'; then
 	__shlib_math_rand_cmd() { command zsh -c "result=\$((rand($*)));echo \${result%.}"; }

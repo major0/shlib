@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
+if test "${SHLIB_SHELL}" = 'ksh';then
 	__shlib_math_calc_cmd() { echo "$(($*))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
 	__shlib_math_calc_cmd() { set -- "$(($*))"; echo "${1%.}"; }
