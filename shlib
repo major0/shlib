@@ -269,7 +269,11 @@ __shlib_imported()
 	esac
 
 	# We only get this far if $# == 2
-	eval "__shlib_imports() { echo '$(__shlib_imports) ${1}'; }"
+	if __shlib_hasfunc __shlib_imports; then
+		eval "__shlib_imports() { echo '$(__shlib_imports) ${1}'; }"
+	else
+		eval "__shlib_imports() { echo '${1}'; }"
+	fi
 	return 0
 }
 
@@ -462,7 +466,6 @@ if test "$(basename "${0}")" = 'shlib'; then
 	unset SHLIB_REPORT_SET
 
 	# Initialize shlib
-	eval '__shlib_imports() { :; }'
 	for __shlib_lib_to_import in ${SHLIB_IMPORTS}; do
 		import "${__shlib_lib_to_import}"
 	done
