@@ -25,8 +25,15 @@ __shlib_math_rand()
 		esac
 	done
 
-	! test "$#" -lt '0' || shlib.usage 'math.rand' 'too few arguments'
-	! test "$#" -gt '0' || shlib.usage 'math.rand' 'too many arguments'
+	if test "$#" -lt '0'; then
+		shlib.usage 'math.rand' 'too few arguments'
+		return 1
+	fi
+
+	if test "$#" -gt '0'; then
+		shlib.usage 'math.rand' 'too many arguments'
+		return 1
+	fi
 
 	__shlib_math_rand_cmd "${@}"
 }

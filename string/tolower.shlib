@@ -20,7 +20,11 @@ __shlib_string_tolower()
 		(*)	break;;
 		esac
 	done
-	! test "$#" -lt '1' || shlib.usage 'string.tolower' 'too few arguments'
+
+	if test "$#" -lt '1'; then
+		shlib.usage 'string.tolower' 'too few arguments'
+		return 1
+	fi
 
 	__shlib_string_tolower_cmd "$@"
 }

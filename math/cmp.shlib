@@ -21,7 +21,10 @@ __shlib_math_cmp()
 		esac
 	done
 
-	! test "$#" -lt '1' || shlib.usage 'math.cmp' 'too few arguments'
+	if test "$#" -lt '1'; then
+		shlib.usage 'math.cmp' 'too few arguments'
+		return 1
+	fi
 
 	__shlib_math_cmp_cmd "${@}"
 }

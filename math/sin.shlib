@@ -25,8 +25,15 @@ __shlib_math_sin()
 		esac
 	done
 
-	! test "$#" -lt '1' || shlib.usage 'math.sin' 'too few arguments'
-	! test "$#" -gt '1' || shlib.usage 'math.sin' 'too many arguments'
+	if test "$#" -lt '1'; then
+		shlib.usage 'math.sin' 'too few arguments'
+		return 1
+	fi
+
+	if test "$#" -gt '1'; then
+		shlib.usage 'math.sin' 'too many arguments'
+		return 1
+	fi
 
 	__shlib_math_sin_cmd "${@}"
 }

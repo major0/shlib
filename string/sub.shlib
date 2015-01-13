@@ -15,12 +15,21 @@ __shlib_string_sub()
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(--)	shift; break;;
-		(-*)	shlib.usage 'string.sub' "unknown option '${1}'";;
+		(-*)	shlib.usage 'string.sub' "unknown option '${1}'"
+			return 1;;
 		(*)	break;;
 		esac
 	done
-	! test "$#" -lt '3' || shlib.usage 'string.sub' 'too few arguments'
-	! test "$#" -gt '3' || shlib.usage 'string.sub' 'too many arguments'
+
+	if test "$#" -lt '3'; then
+		shlib.usage 'string.sub' 'too few arguments'
+		return 1
+	fi
+
+	if test "$#" -gt '3'; then
+		shlib.usage 'string.sub' 'too many arguments'
+		return 1
+	fi
 
 	__shlib_string_sub_cmd "$@"
 }

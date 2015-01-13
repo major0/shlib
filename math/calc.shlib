@@ -25,6 +25,11 @@ __shlib_math_calc()
 		esac
 	done
 
+	if test "$#" -eq '0'; then
+		shlib.usage 'math.calc' 'too few arguments'
+		return 1
+	fi
+
 	__shlib_math_calc_cmd "${@}"
 }
 alias math.calc='__shlib_math_calc '

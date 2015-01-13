@@ -15,8 +15,15 @@ __shlib_string_match()
 		(*)	break;;
 		esac
 	done
-	! test "$#" -lt '2' || shlib.usage 'string.match' 'too few arguments'
-	! test "$#" -gt '2' || shlib.usage 'string.match' 'too many arguments'
+	if test "$#" -lt '2'; then
+		shlib.usage 'string.match' 'too few arguments'
+		return 1
+	fi
+
+	if test "$#" -gt '2'; then
+		shlib.usage 'string.match' 'too many arguments'
+		return 1
+	fi
 
 	__shlib_string_match_cmd "$@"
 }

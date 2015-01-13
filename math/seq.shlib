@@ -55,8 +55,15 @@ __shlib_math_seq()
 		esac
 	done
 
-	! test "$#" -lt '1' || shlib.usage 'math.seq' 'too few arguments'
-	! test "$#" -gt '3' || shlib.usage 'math.seq' 'too many arguments'
+	if test "$#" -lt '1'; then
+		shlib.usage 'math.seq' 'too few arguments'
+		return 1
+	fi
+
+	if test "$#" -gt '3'; then
+		shlib.usage 'math.seq' 'too many arguments'
+		return 1
+	fi
 
 	__shlib_math_seq_cmd "$@"
 }

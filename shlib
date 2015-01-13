@@ -100,6 +100,7 @@ __shlib_getarg()
 	set -- "${1}" "${2}" "$(__shlib_optarg "${@}")"
 	if test -z "${3}"; then
 		__shlib_usage 'shlib' "option '${1%=*}' requires an argument"
+		return 1
 	fi
 	echo "${3}"
 }
@@ -322,7 +323,7 @@ __shlib_usage()
 	if test "$#" -gt '0'; then
 		error "${2}"
 		echo "try '${1} --help'" >&2
-		exit 1
+		return 1
 	fi
 	sed -e 's/	//' << EOF
 	usage: shlib [options] [file]
@@ -387,14 +388,17 @@ if test "$(basename "${0}")" = 'shlib'; then
 		# Support some traditional sh arguments.
 		(v)	set -v;;
 		(x)	set -x;;
-		(c)	test -z "${SHLIB_COMMAND}" ||
+		(c)	if ! test -z "${SHLIB_COMMAND}"; then
 				__shlib_usage 'shlib' "option '${1}' already specified"
+				exit 1
+			fi
 			SHLIB_COMMAND="${OPTARG}";;
 
 		# Missing optional arguments
 		(:)	case "${OPTARG}" in
-			(h) __shlib_usage;; # -h's argument is optional
-			(*) __shlib_usage 'shlib' "option '-${OPTARG}' requires an argument";;
+			(h) __shlib_usage; exit 0;; # -h's argument is optional
+			(*) __shlib_usage 'shlib' "option '-${OPTARG}' requires an argument"
+			    exit 1;;
 			esac;;
 
 		## Long Argument handling
@@ -418,7 +422,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 			(--help)
 				OPTARG="$(__shlib_optarg "${1}" "${2}")"
 				test -z "${OPTARG}" || __shlib_doc "${OPTARG}"
-				__shlib_usage;;
+				__shlib_usage; exit 0;;
 
 			(--libdir|--libdir=*)
 				OPTARG="$(__shlib_getarg "${1}" "${2}")"
@@ -438,7 +442,8 @@ if test "$(basename "${0}")" = 'shlib'; then
 			##
 			# Our standard argument handling
 			(--)	OPTIND="$((${OPTIND} + 1))"; break;;
-			(-*)	__shlib_usage 'shlib' "unknown option '${1}'";;
+			(-*)	__shlib_usage 'shlib' "unknown option '${1}'"
+				exit 1;;
 			(*)	break;;
 			esac
 

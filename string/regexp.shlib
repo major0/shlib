@@ -16,11 +16,16 @@ __shlib_string_regexp()
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(--)	shift; break;;
-		(-*)	shlib.usage 'string.regexp' "unknown option '${1}'";;
+		(-*)	shlib.usage 'string.regexp' "unknown option '${1}'"
+			return 1;;
 		(*)	break;;
 		esac
 	done
-	! test "$#" -lt '2' || shlib.usage 'string.regexp' 'too few arguments'
+
+	if test "$#" -lt '2'; then
+		shlib.usage 'string.regexp' 'too few arguments'
+		return 1
+	fi
 
 	__shlib_string_regexp_pattern="${1}"
 	shift
