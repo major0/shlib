@@ -342,6 +342,7 @@ __shlib_usage()
 	 options:
 	   -L, --libdir=LIBDIR		Path to SHLIB libraries
 	   -I, --import=LIB		Import specified lib(s)
+	   -T, --test=LIB		Test specified lib(s)
 	   -v, --verbose		Enable verbose execution
 	   -V, --version		Display shlib version
 	   -h, --help			Display this help
@@ -351,11 +352,30 @@ __shlib_usage()
 	   -x				Trace script execution
 	   --shlib-only			Only use shlib versions of commands
 	   --report-set			Report set non-environ variables at termination
+	   --benchmark			Report benchmark results during testing
 
 EOF
 	exit 0
 }
 alias shlib.usage='__shlib_usage '
+
+__shlib_benchmark()
+{
+	# timer.start
+	__shlib_benchmark_total='1'
+	__shlib_benchmark_start="$(date +'%s%3N')"
+	while test "$(($(date +'%s%3N') - ${__shlib_benchmark_start}))" -lt 10000; do
+		__shlib_benchmark_count='1'
+		while test "${__shlib_benchmark_count}" -le '100'; do
+			"$@" >/dev/null
+			__shlib_benchmark_count="$((${__shlib_benchmark_count} + 1))"
+		done
+		__shlib_benchmark_total="$((${__shlib_benchmark_total} + 100))"
+	done
+
+	# timer.elapsed
+	printf '%dms\n' "$(($(($(date +'%s%3N') - ${__shlib_benchmark_start}))/${__shlib_benchmark_total}))"
+}
 
 # If we were not "installed" then this variable will not have been
 # substituted, and the libexecdir in which we find the 'shlib' front-end will
@@ -381,11 +401,12 @@ fi
 # being 'sourced' by some other script which wants to utilize shlib as a
 # library.
 
+SHLIB_TESTING=
 SHLIB_IMPORTS=
 __shlib_atexit_funcs=
 if test "$(basename "${0}")" = 'shlib'; then
 	SHLIB_COMMAND=
-	while getopts ':h:VL:I:vxc:' __shlib_arg; do
+	while getopts ':h:VL:I:T:vxc:' __shlib_arg; do
 		case "${__shlib_arg}" in
 		##
 		# If we are here then everyting went as expected and all
@@ -397,6 +418,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 			test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
 			SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
 		(I)	SHLIB_IMPORTS="${SHLIB_IMPORTS} ${OPTARG}";;
+		(T)	SHLIB_TESTING="${SHLIB_TESTING} ${OPTARG}";;
 
 		# Support some traditional sh arguments.
 		(v)	set -v;;
@@ -446,11 +468,17 @@ if test "$(basename "${0}")" = 'shlib'; then
 			(--import|--import=*)
 				SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")";;
 
+			(--test|--test=*)
+				SHLIB_TESTING="${SHLIB_TESTING} $(__shlib_getarg "${1}" "${2}")";;
+
 			(--shlib-only)
 				readonly SHLIB_ONLY=true;;
 
 			(--report-set)
 				readonly SHLIB_REPORT_SET=true;;
+
+			(--benchmark)
+				readonly SHLIB_BENCHMARK=true;;
 
 			##
 			# Our standard argument handling
@@ -479,6 +507,31 @@ if test "$(basename "${0}")" = 'shlib'; then
 	done
 	unset SHLIB_IMPORTS
 	unset -f __shlib_version
+
+	# Perform unit tests
+	if ! test -z "${SHLIB_TESTING}"; then
+		alias shlib.test='! : ||'
+
+		if ! ${SHLIB_BENCHMARK+false}; then
+			alias shlib.benchmark='__shlib_benchmark '
+		else
+			alias shlib.benchmark=':'
+		fi
+		alias shlib.test_pass='SHLIB_TEST_ERROR=0'
+		for __shlib_lib_to_test in ${SHLIB_TESTING}; do
+			SHLIB_TEST_ERROR=1
+			import "${__shlib_lib_to_test}"
+			if ! test "${SHLIB_TEST_ERROR}" -eq 0; then
+				die 'unit tests missing'
+			fi
+		done
+
+		exit 0
+	fi
+	unset SHLIB_TESTING
+	unset SHLIB_BENCHMARK
+	alias shlib.test=': ||'
+	unset -f __shlib_benchmark
 
 	# FIXME write SHLIB_COMMAND to a temp SHLIB_SCRIPT to avoid the use of 'eval'
 	if ! test -z "${SHLIB_COMMAND}"; then
