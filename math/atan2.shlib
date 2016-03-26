@@ -24,7 +24,7 @@ __shlib_math_atan2()
 		return 1
 	fi
 
-	if test "$#" -tt '2'; then
+	if test "$#" -gt '2'; then
 		shlib.usage 'math.atan2' 'too many arguments'
 		return 1
 	fi
