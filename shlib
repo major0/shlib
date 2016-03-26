@@ -368,6 +368,7 @@ EOF
 }
 alias shlib.usage='__shlib_usage '
 
+SHLIB_TEST_ERROR=1
 __shlib_benchmark()
 {
 	: "__shlib_benchmark($*)"
@@ -386,6 +387,9 @@ __shlib_benchmark()
 	# timer.elapsed
 	printf '%dms\n' "$(($(($(date +'%s%3N') - ${__shlib_benchmark_start}))/${__shlib_benchmark_total}))"
 }
+alias shlib.benchmark='__shlib_benchmark '
+alias shlib.test=': ||'
+alias shlib.test_pass='SHLIB_TEST_ERROR=0'
 
 # If we were not "installed" then this variable will not have been
 # substituted, and the libexecdir in which we find the 'shlib' front-end will
@@ -527,7 +531,6 @@ if test "$(basename "${0}")" = 'shlib'; then
 		else
 			alias shlib.benchmark=':'
 		fi
-		alias shlib.test_pass='SHLIB_TEST_ERROR=0'
 		for __shlib_lib_to_test in ${SHLIB_TESTING}; do
 			SHLIB_TEST_ERROR=1
 			import "${__shlib_lib_to_test}"
