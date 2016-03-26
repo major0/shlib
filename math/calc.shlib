@@ -45,4 +45,19 @@ shlib.main {
 	__shlib_math_calc "${@}"
 }
 
+shlib.test {
+	! math.calc >/dev/null 2>&1 || die 'no arguments allowed'
+	! math.calc '1 2 3' >/dev/null 2>&1 || die 'accepted bad input'
+	math.calc '1' >/dev/null 2>&1 || die 'failed to execute'
+	math.calc '1 + 1' >/dev/null 2>&1 || die 'failed to execute'
+	test "$(math.calc '1 + 1')" = '2' || die 'addition error'
+	test "$(math.calc '2 - 1')" = '1' || die 'subtraction error'
+	test "$(math.calc '20 / 2')" = '10' || die 'divsion error'
+	test "$(math.calc '3 * 5')" = '15' || die 'multiplication error'
+
+	shlib.benchmark math.calc '12 * 12 + 11 / 3 - 1'
+
+	shlib.test_pass
+}
+
 # vim: filetype=sh
