@@ -43,7 +43,7 @@ shlib.main {
 shlib.test {
 	import math.atan2 || exit 0
 	! math.atan2 >/dev/null 2>&1 || die 'no arguments allowed'
-	! math.atan2 1  >/dev/null 2>&1 || die 'too many arguments allowed'
+	! math.atan2 1  >/dev/null 2>&1 || die 'too few arguments allowed'
 	! math.atan2 1 2 3  >/dev/null 2>&1 || die 'too many arguments allowed'
 	math.atan2 1 0 > /dev/null 2>&1 || die 'failed to execute'
 	test "$(math.atan2 1 0)" = '1.5708' || die 'invalid result'
