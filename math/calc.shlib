@@ -1,17 +1,19 @@
 #!/usr/bin/env shlib
 
-if test "${SHLIB_SHELL}" = 'ksh';then
-	__shlib_math_calc_cmd() { echo "$(($*))"; }
+if test "${SHLIB_SHELL}" = 'ksh'; then
+	__shlib_math_calc_cmd() { set +e;set -- "$(($*))"; set -- "${1}" "$?";set -e;test "$2" -eq '0' || return 1;echo "${1}"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_calc_cmd() { set -- "$(($*))"; echo "${1%.}"; }
-elif shlib.hascmd awk; then
-	__shlib_math_calc_cmd() { command awk "BEGIN{ print $*; }"; }
+	__shlib_math_calc_cmd() { set +e;set -- "$(($*))"; set -- "${1}" "$?";set -e;test "$?" -eq '0' || return 1;echo "${1%.}"; }
+elif shlib.hascmd calc; then
+	__shlib_math_calc_cmd() { command calc -p "$*"; }
+elif shlib.hascmd bc; then
+	__shlib_math_calc_cmd() { printf '%s\n' "$*" | bc; }
 elif shlib.hascmd ksh; then
 	__shlib_math_calc_cmd() { command ksh -c "echo \$(($*))"; }
 elif shlib.hascmd zsh; then
 	__shlib_math_calc_cmd() { command zsh -c "result=\$(($*));echo \${result%.}"; }
-elif shlib.hascmd bc; then
-	__shlib_math_calc_cmd() { printf '%s\n' "$*" | bc; }
+elif shlib.hascmd awk; then
+	__shlib_math_calc_cmd() { command awk "BEGIN{ print $*; }"; }
 else
 	shlib.error 'no suitable method for doing math'
 	return 1
@@ -19,6 +21,7 @@ fi
 
 __shlib_math_calc()
 {
+	: "__shlib_math_calc($*)"
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(--)	shift; break;;
