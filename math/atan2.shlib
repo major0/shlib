@@ -13,6 +13,7 @@ fi
 
 __shlib_math_atan2()
 {
+	: "__shlib_math_atan2($*)"
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(--)	shift; break;;
@@ -41,7 +42,6 @@ shlib.main {
 }
 
 shlib.test {
-	import math.atan2 || exit 0
 	! math.atan2 >/dev/null 2>&1 || die 'no arguments allowed'
 	! math.atan2 1  >/dev/null 2>&1 || die 'too few arguments allowed'
 	! math.atan2 1 2 3  >/dev/null 2>&1 || die 'too many arguments allowed'
