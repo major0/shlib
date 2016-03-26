@@ -1,5 +1,7 @@
 #!/usr/bin/env shlib
 
+shlib.test { return 0; }
+
 # NOTE: it would be nice if 'import' automagically imported everything below a path
 import math.atan2
 import math.calc
