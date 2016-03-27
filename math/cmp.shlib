@@ -1,13 +1,13 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cmp_cmd() { (($*)); }
+	__shlib_math_cmp_cmd() { set +e;(($*)); set -e; }
+elif shlib.hascmd awk; then
+	__shlib_math_cmp_cmd() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
 elif shlib.hascmd ksh; then
 	__shlib_math_cmp_cmd() { ksh -c "(($*))"; }
 elif shlib.hascmd zsh; then
 	__shlib_math_cmp_cmd() { zsh -c "(($*))"; }
-elif shlib.hascmd awk; then
-	__shlib_math_cmp_cmd() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
 else
 	shlib.error 'no suitable method for float equality'
 	return 1
