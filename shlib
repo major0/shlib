@@ -300,6 +300,9 @@ __shlib_import_lib()
 	set -- "${1}" "${2}" "${PWD}"
 	cd "$(dirname "${2}")"
 
+	# Automated unit testing requires this.
+	alias shlib.test='! test "${1}" = "${__shlib_lib_to_test}" || '
+
 	# name file opwd old_stack
 	set -- "${1}" "${2}" "${3}" "${SHLIB_CALL_STACK}"
 	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}"
@@ -307,6 +310,9 @@ __shlib_import_lib()
 	. "${2}"
 	__shlib_imported_status="$?"
 	SHLIB_CALL_STACK="${4}"
+
+	# Rest test alias
+	alias shlib.test=': ||'
 
 	cd "${3}"
 	set -- "${__shlib_imported_status}"
@@ -335,6 +341,7 @@ alias import='__shlib_import '
 ##
 # These routines are pretty shlib specific.
 alias shlib.main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
+alias shlib.test=': ||'
 
 __shlib_version() { echo 0.01; }
 __shlib_usage()
@@ -386,7 +393,6 @@ __shlib_test_benchmark()
 	# timer.elapsed
 	printf '%dms\n' "$(($(($(date +'%s%3N') - ${__shlib_test_benchmark_start}))/${__shlib_test_benchmark_total}))"
 }
-alias shlib.test=': ||'
 
 # If we were not "installed" then this variable will not have been
 # substituted, and the libexecdir in which we find the 'shlib' front-end will
@@ -521,7 +527,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 
 	# Perform unit tests
 	if ! test -z "${SHLIB_TESTING}"; then
-		alias shlib.test='! : ||'
+		alias shlib.test="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
 		alias test.done='SHLIB_TEST_ERROR=0'
 		__shlib_test_fail()
 		{
