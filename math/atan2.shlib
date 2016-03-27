@@ -42,15 +42,13 @@ shlib.main {
 }
 
 shlib.test {
-	! __shlib_math_atan2 >/dev/null 2>&1 || die 'no arguments allowed'
-	! __shlib_math_atan2 1  >/dev/null 2>&1 || die 'too few arguments allowed'
-	! __shlib_math_atan2 1 2 3  >/dev/null 2>&1 || die 'too many arguments allowed'
-	__shlib_math_atan2 1 0 > /dev/null 2>&1 || die 'failed to execute'
-	test "$(__shlib_math_atan2 1 0)" = '1.5708' || die 'invalid result'
-
-	shlib.benchmark __shlib_math_atan2 1 0
-
-	shlib.test_pass
+	test.fail 'no arguments allowed' __shlib_math_atan2
+	test.fail 'too few arguments allowed' __shlib_math_atan2 1
+	test.fail 'too many arguments allowed' __shlib_math_atan2 1 2 3
+	test.exec __shlib_math_atan2 1 0
+	test.result 'math' '1.5708' __shlib_math_atan2 1 0
+	test.benchmark __shlib_math_atan2 1 0
+	test.done
 }
 
 # vim: filetype=sh

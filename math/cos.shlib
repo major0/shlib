@@ -47,4 +47,13 @@ shlib.main {
 	__shlib_math_cos "${@}"
 }
 
+shlib.test {
+	test.pass 'empty argument list allowed' __shlib_math_cos
+	test.pass 'too many arguments allowed' __shlib_math_cos 1 2
+	test.exec __shlib_math_cos 1
+	test.result 'math' '0.99239' __shlib_math_cos 0.12345
+	test.benchmark __shlib_math_cos 1
+	test.done
+}
+
 # vim: filetype=sh
