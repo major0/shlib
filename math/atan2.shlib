@@ -42,13 +42,13 @@ shlib.main {
 }
 
 shlib.test {
-	! math.atan2 >/dev/null 2>&1 || die 'no arguments allowed'
-	! math.atan2 1  >/dev/null 2>&1 || die 'too few arguments allowed'
-	! math.atan2 1 2 3  >/dev/null 2>&1 || die 'too many arguments allowed'
-	math.atan2 1 0 > /dev/null 2>&1 || die 'failed to execute'
-	test "$(math.atan2 1 0)" = '1.5708' || die 'invalid result'
+	! __shlib_math_atan2 >/dev/null 2>&1 || die 'no arguments allowed'
+	! __shlib_math_atan2 1  >/dev/null 2>&1 || die 'too few arguments allowed'
+	! __shlib_math_atan2 1 2 3  >/dev/null 2>&1 || die 'too many arguments allowed'
+	__shlib_math_atan2 1 0 > /dev/null 2>&1 || die 'failed to execute'
+	test "$(__shlib_math_atan2 1 0)" = '1.5708' || die 'invalid result'
 
-	shlib.benchmark math.atan2 1 0
+	shlib.benchmark __shlib_math_atan2 1 0
 
 	shlib.test_pass
 }
