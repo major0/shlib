@@ -1,0 +1,14 @@
+#!/usr/bin/env shlib
+
+import array
+
+__shlib_array_insert()
+{
+	__shlib_array_insert_data="${2}"
+	eval set -- "${1}"
+	set -- "${__shlib_array_insert_data}" "${@}"
+	unset __shlib_array_insert_data
+	printf '%s\n' "$(__shlib_array "$@")"
+}
+
+# vim: filetype=sh

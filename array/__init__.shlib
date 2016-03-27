@@ -1,0 +1,32 @@
+#!/usr/bin/env shlib
+
+import string.escape
+import array.append
+import array.head
+import array.index
+import array.insert
+import array.join
+import array.length
+import array.pop
+import array.shift
+import array.tail
+
+__shlib_array()
+{
+	test "$#" -gt '0' || return 0
+	for __shlib_array_entry; do
+		printf "'%s' \\\\\n" "$(string.escape "${__shlib_array_entry}")"
+	done
+	echo " "
+}
+alias array='__shlib_array '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help) shlib.doc 'array';; esac
+	done
+
+	__shlib_array "$@" || exit 1
+}
+
+# vim: filetype=sh

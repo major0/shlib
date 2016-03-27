@@ -1,0 +1,16 @@
+#!/usr/bin/env shlib
+
+import string.escape
+
+__shlib_array_pop()
+{
+	eval set -- "${1}"
+	__shlib_array_pop_index=0
+	while test "${__shlib_array_pop_index}" -lt "$#"; do
+		printf "'%s' \\\\\n" "$(string.escape "$1")"
+		shift
+	done
+	echo " "
+}
+
+# vim: filetype=sh

@@ -1,0 +1,6 @@
+#!/usr/bin/env shlib
+
+__shlib_array_length() { eval set -- "${1}"; echo "$#"; }
+alias array.length='__shlib_array_length '
+
+# vim: filetype=sh

@@ -1,0 +1,19 @@
+#!/usr/bin/env shlib
+
+import array
+import math.seq
+
+__shlib_array_index()
+{
+	__shlib_array_index_shift="$((${2} - 1))"
+	eval set -- "${1}"
+	for __shlib_array_index_count in $(math.seq "${__shlib_array_index_shift}"); do
+		shift
+	done
+	unset __shlib_array_index_shift_count
+	unset __shlib_array_index_shift
+	printf '%s\n' "${1}"
+}
+alias array.index='__shlib_array_index '
+
+# vim: filetype=sh

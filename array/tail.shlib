@@ -1,0 +1,11 @@
+#!/usr/bin/env shlib
+
+__shlib_array_tail()
+{
+	eval set -- "${1}"
+	until test "$#" -eq '1'; do shift; done
+	printf '%s\n' "${1}"
+}
+alias array.tail='__shlib_array_tail '
+
+# vim: filetype=sh

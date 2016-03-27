@@ -1,0 +1,10 @@
+#!/usr/bin/env shlib
+
+__shlib_array_head()
+{
+	eval set -- "${1}"
+	printf '%s\n' "${1}"
+}
+alias array.head='__shlib_array_head '
+
+# vim: filetype=sh

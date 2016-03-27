@@ -1,0 +1,13 @@
+#!/usr/bin/env shlib
+
+__shlib_array_append()
+{
+	__shlib_array_append_data="${2}"
+	eval set -- "${1}"
+	set -- "${@}" "${__shlib_array_append_data}"
+	unset __shlib_array_append_data
+	printf '%s\n' "$(__shlib_array "$@")"
+}
+alias array.append='__shlib_array_append '
+
+# vim: filetype=sh

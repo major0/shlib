@@ -1,0 +1,14 @@
+#!/usr/bin/env shlib
+
+import array
+
+__shlib_array_shift()
+{
+	eval set -- "${1}"
+	test "$#" -gt '0' || return 1
+	shift
+	printf '%s\n' "$(__shlib_array "$@")"
+}
+alias array.shift='__shlib_array_shift '
+
+# vim: filetype=sh

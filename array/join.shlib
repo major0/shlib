@@ -1,0 +1,11 @@
+#!/usr/bin/env shlib
+
+import array
+
+__shlib_array_join()
+{
+	eval set -- "${@}"
+	printf '%s\n' "$(__shlib_array "$@")"
+}
+
+# vim: filetype=sh
