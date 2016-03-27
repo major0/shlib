@@ -38,4 +38,16 @@ shlib.main {
 	__shlib_math_cmp "${@}"
 }
 
+shlib.test {
+	! math.cmp >/dev/null 2>&1 || die 'no arguments allowed'
+	#! math.cmp '1 2 3' >/dev/null 2>&1 || die 'accepted bad input'
+	math.cmp '1' >/dev/null 2>&1 || die 'failed to execute #1'
+	math.cmp '1 == 1' >/dev/null 2>&1 || die 'failed basic comparison'
+	math.cmp '0 == 0.0' >/dev/null 2>&1 || die 'failed floating point comparison'
+
+	shlib.benchmark math.cmp '1 == 1'
+
+	shlib.test_pass
+}
+
 # vim: filetype=sh
