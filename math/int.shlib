@@ -47,4 +47,14 @@ shlib.main {
 	__shlib_math_int "${@}"
 }
 
+shlib.test {
+	! __shlib_math_int > /dev/null 2>&1 || die 'no arguments allowed'
+	__shlib_math_int 1.0 > /dev/null 2>&1 || die 'failed to execute'
+	test "$(__shlib_math_int 2.0)" = '2' || die 'failed float to int'
+
+	shlib.benchmark __shlib_math_int 3.0
+
+	shlib.test_pass
+}
+
 # vim: filetype=sh
