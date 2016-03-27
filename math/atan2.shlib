@@ -1,11 +1,11 @@
 #!/usr/bin/env shlib
 
-if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.atan2; then
-	__shlib_math_atan2_cmd() { echo "$((atan2($1,$2)))"; }
-elif shlib.hascmd 'awk'; then
+#if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.atan2; then
+#	__shlib_math_atan2_cmd() { echo "$((atan2($1,$2)))"; }
+if shlib.hascmd 'awk'; then
 	__shlib_math_atan2_cmd() { command awk "BEGIN{ print atan2($1,$2); }"; }
-elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.atan2' > /dev/null 2>&1; then
-	__shlib_math_atan2_cmd() { command ksh -c "echo \$((atan2($1,$2)))"; }
+#elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.atan2' > /dev/null 2>&1; then
+#	__shlib_math_atan2_cmd() { command ksh -c "echo \$((atan2($1,$2)))"; }
 else
 	shlib.error 'no suitable method for doing atan2'
 	return 1
