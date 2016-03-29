@@ -112,6 +112,24 @@ __shlib_getarg()
 }
 alias shlib.getarg='__shlib_getarg '
 
+# Not all printf's are created equal.  Lksh/PdKsh don't support %f format
+# strings and Dash and Zsh's printf use single-precision floating point
+# arithmetic.
+if __shlib_hascmd printf; then
+	if ! printf '%f' 1 > /dev/null 2>&1; then
+		alias shlib.printf="$(__shlib_pathcmd printf) "
+	else
+		case "$(printf '%0.20f\n' 0.0099887766554433221100)" in
+		(0.0099887766554433221100)
+			alias shlib.printf='printf '
+			;;
+
+		(*)	alias shlib.printf="$(__shlib_pathcmd printf) ";;
+		esac
+	fi
+else
+	alias shlib.printf='printf '
+fi
 
 __shlib_error() { echo "error: $*" >&2; }
 alias shlib.error='__shlib_error '
