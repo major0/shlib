@@ -33,7 +33,7 @@ EOF
 }
 
 SHIT_BENCHMARKS='false'
-SHIT_SHELLS='sh ash dash bash ksh ksh93 pdksh mksh zsh'
+SHIT_SHELLS='sh ash dash bash zsh ksh ksh93 lksh pdksh mksh'
 __shit_trace=
 __shit_benchmark=
 while getopts ':hxvbL:S:' __shit_arg; do
