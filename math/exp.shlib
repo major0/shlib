@@ -1,17 +1,17 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.exp; then
-	__shlib_math_exp_cmd() { echo "$((exp($*)))"; }
+	__shlib_math_exp_cmd() { printf '%0.5f\n' "$((exp($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_exp_cmd() { set -- "$((exp($*)))"; echo "${1%.}"; }
+	__shlib_math_exp_cmd() { set -- "$((exp($*)))"; printf '%0.5f\n' "${1%.}"; }
 elif shlib.hascmd 'gawk'; then
 	__shlib_math_exp_cmd() { command gawk "BEGIN{ print exp($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_exp_cmd() { command awk "BEGIN{ print exp($*); }"; }
 elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.exp' > /dev/null 2>&1; then
-	__shlib_math_exp_cmd() { command ksh -c "echo \$((exp($*)))"; }
+	__shlib_math_exp_cmd() { command ksh -c "printf '%0.5f\n' \$((exp($*)))"; }
 elif shlib.hascmd 'zsh'; then
-	__shlib_math_exp_cmd() { command zsh -c "result=\$((exp($*)));echo \${result%.}"; }
+	__shlib_math_exp_cmd() { command zsh -c "result=\$((exp($*)));printf '%0.5f\n' \${result%.}"; }
 else
 	shlib.error 'no suitable method for doing exp'
 	return 1
