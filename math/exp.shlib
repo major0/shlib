@@ -47,4 +47,13 @@ shlib.main {
 	__shlib_math_exp "${@}"
 }
 
+shlib.test {
+	test.fail 'empty argument list allowed' __shlib_math_exp
+	test.fail 'too many arguments allowed' __shlib_math_exp 1 2
+	test.exec __shlib_math_exp '1'
+	test.result 'exponent' '2.71828' __shlib_math_exp 1
+	test.benchmark __shlib_math_exp '1'
+	test.done
+}
+
 # vim: filetype=sh
