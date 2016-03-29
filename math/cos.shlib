@@ -1,17 +1,17 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.cos; then
-	__shlib_math_cos_cmd() { echo "$((cos($*)))"; }
+	__shlib_math_cos_cmd() { printf '%0.5f\n' "$((cos($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; echo "${1%.}"; }
+	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; printf '%0.5f\n' "${1%.}"; }
 elif shlib.hascmd 'gawk'; then
 	__shlib_math_cos_cmd() { command gawk "BEGIN{ print cos($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_cos_cmd() { command awk "BEGIN{ print cos($*); }"; }
 elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.cos' > /dev/null 2>&1; then
-	__shlib_math_cos_cmd() { command ksh -c "echo \$((cos($*)))"; }
+	__shlib_math_cos_cmd() { command ksh -c "printf '%0.5f\n' \$((cos($*)))"; }
 elif shlib.hascmd 'zsh'; then
-	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
+	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));printf '%0.5f\n' \${result%.}"; }
 else
 	shlib.error 'no suitable method for doing cos'
 	return 1
