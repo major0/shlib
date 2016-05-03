@@ -102,12 +102,19 @@ __expect_timer_stop()
 	return 0
 }
 
+__expect_line()
+{
+	: "__expect_line(): $*"
+	printf '%s\n' "${__expect_read_val}"
+}
+alias expect.line='__expect_line '
+
 __expect_read()
 {
 	: "__expect_read(): $*"
 	__expect_timer_start
-	if read __expect_line < "${__expect_stdout}"; then
-		printf '%s\n' "${__expect_line}"
+	if read __expect_read_val < "${__expect_stdout}"; then
+		__expect_line
 		__expect_timer_stop
 		return 0
 	fi
@@ -120,14 +127,27 @@ __expect_match()
 {
 	: "__expect_match(): $*"
 	while __expect_read; do
-		if string.match "${1}" "${__expect_line}"; then
-			printf '%s\n' "${__expect_line}"
+		if string.match "${1}" "$(__expect_line)"; then
+			__expect_line
 			return 0
 		fi
 	done
 	return 1
 }
 alias expect.match='__expect_match '
+
+__expect_regexp()
+{
+	:"__expect_regexp(): $*"
+	while __expect_read; do
+		if string.regexp "${1}" "$(__expect_line)"; then
+			__expect_line
+			return 0
+		fi
+	done
+	return 1
+}
+alias expect.regexp='__expect_regexp '
 
 __expect_write()
 {

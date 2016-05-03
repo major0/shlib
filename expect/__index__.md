@@ -5,9 +5,27 @@ expect
 
 Routines for interfacing to interactive applications
 
+## example ##
+
+```
+	import expect
+
+	expect.spawn ssh user@host.domain.com
+
+	if expect.match "*assword:*"; then
+		expect.write 'FakePassword'
+	fi
+
+	while expect.read; do
+		case "$(expect.line)" in
+		(prompt)	do_stuff;;
+		esac
+	done
+```
+
 ## expect routines ##
 
-  [spawn][], [read][], [match][], [write][], [timeout][], [close][]
+  [spawn][], [read][], [match][], [regexp][], [write][], [timeout][], [close][]
 
 #### See also ####
 
@@ -16,6 +34,7 @@ Routines for interfacing to interactive applications
 [spawn]: spawn.md
 [read]: read.md
 [match]: match.md
+[regexp]: regexp.md
 [write]: write.md
 [timeout]: timeout.md
 [close]: close.md
