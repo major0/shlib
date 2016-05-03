@@ -3,13 +3,17 @@
 import system
 import string
 
-__expect_tmpdir=
-__expect_stdin=
-__expect_stdout=
-__expect_stderr=
-__expect_pid=0
-__expect_timer=0
-__expect_timeout_val=60
+__expect_init()
+{
+	__expect_tmpdir=
+	__expect_stdin=
+	__expect_stdout=
+	__expect_stderr=
+	__expect_pid=0
+	__expect_timer=0
+	__expect_timeout_val=60
+}
+__expect_init
 
 __expect_timeout()
 {
@@ -35,6 +39,8 @@ __expect_close()
 	if (cd '/proc/' && test -d "${__expect_timer}"); then
 		kill "${__expect_timer}"
 	fi
+
+	__expect_init
 }
 
 __expect_spawn()
