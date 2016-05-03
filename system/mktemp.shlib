@@ -1,7 +1,7 @@
 #!/usr/bin/env shlib
 
 if shlib.hascmd mktemp; then
-	__shlib_system_mktemp_cmd() { command mktemp "${1%%X}.XXXXXX"; }
+	__shlib_system_mktemp_cmd() { command mktemp "${TMPDIR:-/tmp}/${1%%X}.XXXXXX"; }
 else
 	shlib.error "no wway to implement mktemp"
 	return 1
