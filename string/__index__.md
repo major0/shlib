@@ -12,7 +12,7 @@ and manipulation/editing.
 
 #### See also ####
 
- [core][], [math][], [system][], [experimental][]
+ [core][], [expect][], [math][], [system][], [experimental][]
 
 [compare]: compare.md
 [escape]: escape.md
@@ -24,6 +24,7 @@ and manipulation/editing.
 [toupper]: tolower.md
 
 [core]: ../doc/__index__.md "core"
+[expect]: ../expect/__index__.md "expect"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [system]: ../system/__index__.md "system"

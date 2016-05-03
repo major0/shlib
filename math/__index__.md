@@ -13,7 +13,7 @@ comparisons against floating point numbers.
 
 #### See also ####
 
- [core][], [string][], [system][], [experimental][]
+ [core][], [expect][], [string][], [system][], [experimental][]
 
 
 [atan2]: atan2.md
@@ -30,6 +30,7 @@ comparisons against floating point numbers.
 [sum]: sum.md
 
 [core]: ../doc/__index__.md "core"
+[expect]: ../expect/__index__.md "expect"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [system]: ../system/__index__.md "system"
