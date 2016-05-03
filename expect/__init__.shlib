@@ -63,6 +63,11 @@ __expect_spawn()
 	# FIXME this is not entirely portable to all OS's
 	if (cd '/proc/' && test -d "${__expect_pid}"); then
 		echo "${__expect_pid}" > "${__expect_tmpdir}/pid"
+
+		# NOTE: For whatever reason the fifo's are effectively
+		# "stalled" unless we perform an initial empty write.  This may
+		# be an oddity of /bin/sh.
+		echo '' > "${__expect_stdin}"
 	fi
 }
 alias expect.spawn='__expect_spawn '
