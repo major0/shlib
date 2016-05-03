@@ -25,13 +25,14 @@ Routines for interfacing to interactive applications
 
 ## expect routines ##
 
-  [spawn][], [read][], [match][], [regexp][], [write][], [timeout][], [close][]
+  [spawn][], [open][], [read][], [match][], [regexp][], [write][], [timeout][], [close][]
 
 #### See also ####
 
  [core][], [math][], [string][], [system][], [experimental][]
 
 [spawn]: spawn.md
+[open]: open.md
 [read]: read.md
 [match]: match.md
 [regexp]: regexp.md
