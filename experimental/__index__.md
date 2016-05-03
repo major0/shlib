@@ -9,10 +9,11 @@ of concept regarding various ideas or concepts.
 
 #### See also ####
 
- [core][], [math][], [string][]
+ [core][], [math][], [string][], [system][]
 
 [core]: ../doc/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
+[system]: ../system/__index__.md "system"
 [experimental]: ../experimental/__index__.md "experimental"
 [shlib]: http://github.com/major0/shlib "shlib"

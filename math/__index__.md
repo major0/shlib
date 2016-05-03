@@ -13,7 +13,7 @@ comparisons against floating point numbers.
 
 #### See also ####
 
- [core][], [string][], [experimental][]
+ [core][], [string][], [system][], [experimental][]
 
 
 [atan2]: atan2.md
@@ -28,8 +28,10 @@ comparisons against floating point numbers.
 [sin]: sin.md
 [sqrt]: sqrt.md
 [sum]: sum.md
+
 [core]: ../doc/__index__.md "core"
-[math]: __index__.md "math"
+[math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
+[system]: ../system/__index__.md "system"
 [experimental]: ../experimental/__index__.md "experimental"
 [shlib]: http://github.com/major0/shlib "shlib"

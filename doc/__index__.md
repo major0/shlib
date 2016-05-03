@@ -23,7 +23,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 
 ### libraries ###
 
- [math][], [string][], [experimental][]
+ [math][], [string][], [system][], [experimental][]
 
 [atexit]: atexit.md "atexit"
 [error]: error.md "error"
@@ -36,8 +36,10 @@ a specific interface use `shlib --help <library>.<interface>`.
 [main]: main.md "main"
 [optarg]: optarg.md "optarg"
 [realpath]: realpath.md "realpath"
+
+[core]: ../doc/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
+[system]: ../system/__index__.md "system"
 [experimental]: ../experimental/__index__.md "experimental"
-[core]: ../doc/__index__.md "core"
 [shlib]: http://github.com/major0/shlib "shlib"

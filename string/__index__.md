@@ -12,7 +12,7 @@ and manipulation/editing.
 
 #### See also ####
 
- [core][], [math][], [experimental][]
+ [core][], [math][], [system][], [experimental][]
 
 [compare]: compare.md
 [escape]: escape.md
@@ -22,8 +22,10 @@ and manipulation/editing.
 [sub]: sub.md
 [tolower]: toupper.md
 [toupper]: tolower.md
+
 [core]: ../doc/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
+[system]: ../system/__index__.md "system"
 [experimental]: ../experimental/__index__.md "experimental"
 [shlib]: http://github.com/major0/shlib "shlib"
