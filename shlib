@@ -157,7 +157,7 @@ __shlib_atexit()
 		die "not a function '${1}'"
 	fi
 	__shlib_atexit_funcs="$1 ${__shlib_atexit_funcs}"
-	trap __shlib_exit 0
+	trap __shlib_exit 0 TERM HUP INT
 }
 alias shlib.atexit='__shlib_atexit '
 
