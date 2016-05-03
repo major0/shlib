@@ -1,6 +1,6 @@
 [[shlib][] / [expect][] / timeout
 
-## expect.timeout `<seconds>`
+## expect.timeout `<seconds>` ##
 
 Change the amount of time we will wait when reading from stdin of spawned programs.
 Default: 60

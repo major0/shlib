@@ -8,7 +8,6 @@ __expect_init()
 	__expect_tmpdir=
 	__expect_stdin=
 	__expect_stdout=
-	__expect_stderr=
 	__expect_pid=0
 	__expect_timer=0
 	__expect_timeout_val=60
@@ -25,9 +24,15 @@ alias expect.timeout='__expect_timeout '
 __expect_close()
 {
 	: "__expect_close(): $*"
-	! test -f "${__expect_stdin}" || rm "${__expect_stdin}"
-	! test -f "${__expect_stdout}" || rm "${__expect_stdout}"
-	! test -f "${__expect_stderr}" || rm "${__expect_stderr}"
+	if test -e "${__expect_stdin}"; then
+		! test -h "${__expect_stdin}" || exec 3>&-
+		rm "${__expect_stdin}"
+	fi
+	if test -e "${__expect_stdout}"; then
+		! test -h "${__expect_stdout}" || exec 4<&-
+		rm "${__expect_stdout}"
+	fi
+
 	! test -f "${__expect_tmpdir}/pid" || rm "${__expect_tmpdir}/pid"
 	! test -d "${__expect_tmpdir}" || rmdir "${__expect_tmpdir}"
 
@@ -42,6 +47,32 @@ __expect_close()
 
 	__expect_init
 }
+alias expect.close='__expect_close '
+
+__expect_open()
+{
+	: "__expect_open(): $*"
+
+	! test -d "${__expect_tmpdir}" || die 'expect.open() a file is already open'
+
+	__expect_tmpdir="$(system.mktempdir expect)"
+	test -d "${__expect_tmpdir}" || die 'expect.open() failed to make tmp directory'
+
+	shlib.atexit __expect_close
+
+	test -c "${1}" || die "expect.open() invalid file"
+	test -w "${1}" || die "expect.open() permission denied"
+	test -r "${1}" || die "expect.open() permission denied"
+
+	__expect_stdin="${__expect_tmpdir}/in"
+	ln -s "${__expect_stdin}" "${1}"
+	exec 3> "${__expect_stdin}"
+
+	__expect_stdout="${__expect_tmpdir}/out"
+	ln -s "${__expect_stdout}" "${1}"
+	exec 4< "${__expect_stdout}"
+}
+
 
 __expect_spawn()
 {
@@ -55,15 +86,12 @@ __expect_spawn()
 	shlib.atexit __expect_close
 
 	__expect_stdin="${__expect_tmpdir}/in"
-	system.mkifo "${__expect_stdin}" || die 'expect.spawn() failed to make stdin'
+	system.mkfifo "${__expect_stdin}" || die 'expect.spawn() failed to make stdin'
 
 	__expect_stdout="${__expect_tmpdir}/out"
-	system.mkifo "${__expect_stdout}" || die 'expect.spawn() failed to make stdout'
+	system.mkfifo "${__expect_stdout}" || die 'expect.spawn() failed to make stdout'
 
-	__expect_stderr="${__expect_tmpdir}/log"
-	touch "${__expect_stderr}"
-
-	(exec "$@" 1> "${__expect_stdout}" 2> "${__expect_stderr}" < "${__expect_stdin}") &
+	(exec "$@" 1> "${__expect_stdout}" 2>&1 < "${__expect_stdin}") &
 	__expect_pid="$!"
 
 	# FIXME this is not entirely portable to all OS's
@@ -73,7 +101,7 @@ __expect_spawn()
 		# NOTE: For whatever reason the fifo's are effectively
 		# "stalled" unless we perform an initial empty write.  This may
 		# be an oddity of /bin/sh.
-		echo '' > "${__expect_stdin}"
+		echo '' > "${__expect_stdin}" &
 	fi
 }
 alias expect.spawn='__expect_spawn '
@@ -84,9 +112,9 @@ __expect_timer_start()
 	if (cd '/proc/' && test -d "${__expect_timer}"); then
 		kill "${__expect_timer}" > /dev/null 2>&1
 	fi
-	trap return SIGALRM
+	trap return ALRM
 	__expect_timer_parent="$$"
-	(sleep "${__expect_timeout_val}" && kill -SIGALRM ${__expect_timer_parent}) > /dev/null 2>&1 &
+	(sleep "${__expect_timeout_val}" && kill -ALRM ${__expect_timer_parent}) > /dev/null 2>&1 &
 	unset __expect_timer_parent
 	if (cd '/proc/' && test -d "$!"); then
 		__expect_timer="$!"
@@ -96,7 +124,7 @@ __expect_timer_start()
 
 __expect_timer_stop()
 {
-	trap '' SIGARLM
+	trap '' ALRM
 	(cd '/proc/' && test -d "${__expect_timer}") && kill "${__expect_timer}" > /dev/null 2>&1
 	__expect_timer='0'
 	return 0
@@ -113,8 +141,7 @@ __expect_read()
 {
 	: "__expect_read(): $*"
 	__expect_timer_start
-	if read __expect_read_val < "${__expect_stdout}"; then
-		__expect_line
+	if read __expect_read_val <"${__expect_stdout}"; then
 		__expect_timer_stop
 		return 0
 	fi
@@ -152,8 +179,20 @@ alias expect.regexp='__expect_regexp '
 __expect_write()
 {
 	: "__expect_write(): $*"
-	printf '%s\n' "$*" > "${__expect_stdin}"
+	printf '%s\n' "$*" >"${__expect_stdin}"
 }
 alias expect.write='__expect_write '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help) string.doc 'expect';; esac
+	done
+
+	__expect_spawn "$@"
+
+	while __expect_read; do
+		__expect_line
+	done
+}
 
 # vim: filetype=sh
