@@ -1,17 +1,19 @@
 #!/usr/bin/env shlib
 
 if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.cos; then
-	__shlib_math_cos_cmd() { printf '%0.5f\n' "$((cos($*)))"; }
+	__shlib_math_cos_cmd() { echo "$((cos($*)))"; }
 elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; printf '%0.5f\n' "${1%.}"; }
+	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; echo "${1%.}"; }
+elif shlib.hascmd 'bc'; then
+	__shlib_math_cos_cmd() { set -- "$(printf 'c(%s);\n' "$*" | bc -l)";shlib.printf '%0.20f\n' "${1}";}
 elif shlib.hascmd 'gawk'; then
-	__shlib_math_cos_cmd() { command gawk "BEGIN{ print cos($*); }"; }
+	__shlib_math_cos_cmd() { command gawk "BEGIN{ printf('%0.20f\n',cos($*)); }"; }
 elif shlib.hascmd 'awk'; then
-	__shlib_math_cos_cmd() { command awk "BEGIN{ print cos($*); }"; }
+	__shlib_math_cos_cmd() { command awk "BEGIN{ printf('%0.20f\n',cos($*)); }"; }
 elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.cos' > /dev/null 2>&1; then
-	__shlib_math_cos_cmd() { command ksh -c "printf '%0.5f\n' \$((cos($*)))"; }
+	__shlib_math_cos_cmd() { command ksh -c "echo \$((cos($*)))"; }
 elif shlib.hascmd 'zsh'; then
-	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));printf '%0.5f\n' \${result%.}"; }
+	__shlib_math_cos_cmd() { command zsh -c "result=\$((cos($*)));echo \${result%.}"; }
 else
 	shlib.error 'no suitable method for doing cos'
 	return 1
@@ -51,7 +53,9 @@ shlib.test {
 	test.fail 'empty argument list allowed' __shlib_math_cos
 	test.fail 'too many arguments allowed' __shlib_math_cos 1 2
 	test.exec __shlib_math_cos 1
-	test.result 'math' '0.99239' __shlib_math_cos 0.12345
+	__shlib_math_cos_result="$(shlib.printf '%0.10f' "$(__shlib_math_cos 1)")"
+	test.result 'math' '0.5403023059' echo "${__shlib_math_cos_result}"
+	unset __shlib_math_cos_result
 	test.benchmark __shlib_math_cos 1
 	test.done
 }

@@ -2,8 +2,10 @@
 
 #if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.atan2; then
 #	__shlib_math_atan2_cmd() { echo "$((atan2($1,$2)))"; }
-if shlib.hascmd 'awk'; then
-	__shlib_math_atan2_cmd() { command awk "BEGIN{ print atan2($1,$2); }"; }
+if shlib.hascmd 'gawk'; then
+	__shlib_math_atan2_cmd() { command gawk "BEGIN{ printf(\"%0.20f\n\",atan2($1,$2)); }"; }
+elif shlib.hascmd 'awk'; then
+	__shlib_math_atan2_cmd() { command awk "BEGIN{ printf(\"%0.20f\n\",atan2($1,$2)); }"; }
 #elif shlib.hascmd 'ksh' && ksh -c 'whence -t .sh.math.atan2' > /dev/null 2>&1; then
 #	__shlib_math_atan2_cmd() { command ksh -c "echo \$((atan2($1,$2)))"; }
 else
@@ -46,7 +48,9 @@ shlib.test {
 	test.fail 'too few arguments allowed' __shlib_math_atan2 1
 	test.fail 'too many arguments allowed' __shlib_math_atan2 1 2 3
 	test.exec __shlib_math_atan2 1 0
-	test.result 'math' '1.5708' __shlib_math_atan2 1 0
+	__shlib_math_atan2_result="$(shlib.printf '%0.7f' "$(__shlib_math_atan2 1 0)")"
+	test.result 'math' '1.5707963' echo "${__shlib_math_atan2_result}"
+	unset __shlib_math_atan2_result
 	test.benchmark __shlib_math_atan2 1 0
 	test.done
 }
