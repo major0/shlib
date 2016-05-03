@@ -7,7 +7,7 @@ Routines for manipulating the underlying system environment.
 
 ## system routines ##
 
-  [mkfifo][]
+  [mkfifo][], [mktemp][], [mktempdir][]
 
 #### See also ####
 
