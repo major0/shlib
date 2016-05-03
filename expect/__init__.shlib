@@ -70,9 +70,16 @@ alias expect.spawn='__expect_spawn '
 __expect_timer_start()
 {
 	: "__expect_timer_start(): $*"
-	(cd '/proc/' && test -d "${__expect_timer}") && kill "${__expect_timer}" > /dev/null 2>&1
+	if (cd '/proc/' && test -d "${__expect_timer}"); then
+		kill "${__expect_timer}" > /dev/null 2>&1
+	fi
 	trap return SIGALRM
-	(sleep "${__expect_timeout_val}" && kill -SIGALRM $$) > /dev/null 2>&1 &
+	__expect_timer_parent="$$"
+	(sleep "${__expect_timeout_val}" && kill -SIGALRM ${__expect_timer_parent}) > /dev/null 2>&1 &
+	unset __expect_timer_parent
+	if (cd '/proc/' && test -d "$!"); then
+		__expect_timer="$!"
+	fi
 	return 0
 }
 
@@ -80,6 +87,7 @@ __expect_timer_stop()
 {
 	trap '' SIGARLM
 	(cd '/proc/' && test -d "${__expect_timer}") && kill "${__expect_timer}" > /dev/null 2>&1
+	__expect_timer='0'
 	return 0
 }
 
