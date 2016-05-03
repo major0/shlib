@@ -1,0 +1,37 @@
+#!/usr/bin/env shlib
+
+if shlib.hascmd mktempdir; then
+	__shlib_system_mktempdir_cmd() { command mktemp -d "${1%%X}.XXXXXX"; }
+else
+	shlib.error "no wway to implement mktempdir"
+	return 1
+fi
+
+__shlib_system_mktempdir()
+{
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(--)	shift; break;;
+		(-*)	shlib.usage 'system.mktempdir' "unknown option '${1}'";;
+		(*)	break;;
+		esac
+	done
+	if test "$#" -lt '1'; then set -- 'tmp'; fi
+
+	if test "$#" -gt '1'; then
+		shlib.usage 'system.mktempdir' 'too many arguments'
+		return 1
+	fi
+
+	__shlib_system_mktemp_cmd "$@"
+}
+alias system.mktempdir='__shlib_system_mktempdir '
+
+shlib.main {
+	for arg; do
+		case "${arg}" in (-h|-help|--help) string.doc 'system.mktempdir';; esac
+	done
+	__shlib_system_mktempdir "${@}"
+}
+
+# vim: filetype=sh

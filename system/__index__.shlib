@@ -14,6 +14,8 @@ Routines for manipulating the underlying system environment.
  [core][], [math][], [string][], [exerimental][]
 
 [mkfifo]: mkfifo.md
+[mktemp]: mktemp.md
+[mktempdir]: mktempdir.md
 
 [core]: ../doc/__index__.md "core"
 [math]: ../math/__index__.md "math"

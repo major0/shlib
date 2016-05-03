@@ -1,3 +1,5 @@
 #!/usr/bin/env shlib
 
 import mkfifo
+import mktemp
+import mktempdir
