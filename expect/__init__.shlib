@@ -64,13 +64,13 @@ __expect_open()
 	test -w "${1}" || die "expect.open() permission denied"
 	test -r "${1}" || die "expect.open() permission denied"
 
-	__expect_stdin="${__expect_tmpdir}/in"
+	__expect_stdin="${__expect_tmpdir}/input"
 	ln -s "${__expect_stdin}" "${1}"
-	exec 3> "${__expect_stdin}"
+	exec 3>>"${__expect_stdin}"
 
-	__expect_stdout="${__expect_tmpdir}/out"
+	__expect_stdout="${__expect_tmpdir}/output"
 	ln -s "${__expect_stdout}" "${1}"
-	exec 4< "${__expect_stdout}"
+	exec 4<>"${__expect_stdout}"
 }
 
 
@@ -85,13 +85,13 @@ __expect_spawn()
 
 	shlib.atexit __expect_close
 
-	__expect_stdin="${__expect_tmpdir}/in"
-	system.mkfifo "${__expect_stdin}" || die 'expect.spawn() failed to make stdin'
-
-	__expect_stdout="${__expect_tmpdir}/out"
+	__expect_stdout="${__expect_tmpdir}/output"
 	system.mkfifo "${__expect_stdout}" || die 'expect.spawn() failed to make stdout'
 
-	(exec "$@" 1> "${__expect_stdout}" 2>&1 < "${__expect_stdin}") &
+	__expect_stdin="${__expect_tmpdir}/input"
+	system.mkfifo "${__expect_stdin}" || die 'expect.spawn() failed to make stdin'
+
+	(exec "$@" <> "${__expect_stdin}" > "${__expect_stdout}" 2>&1 ) &
 	__expect_pid="$!"
 
 	# FIXME this is not entirely portable to all OS's
@@ -101,10 +101,14 @@ __expect_spawn()
 		# NOTE: For whatever reason the fifo's are effectively
 		# "stalled" unless we perform an initial empty write.  This may
 		# be an oddity of /bin/sh.
-		echo '' > "${__expect_stdin}" &
+		exec 3>> "${__expect_stdin}"
+		exec 4<> "${__expect_stdout}"
 	fi
 }
 alias expect.spawn='__expect_spawn '
+
+__expect_timedout() { false; }
+alias expect.timedout='__expect_timedout '
 
 __expect_timer_start()
 {
@@ -112,43 +116,53 @@ __expect_timer_start()
 	if (cd '/proc/' && test -d "${__expect_timer}"); then
 		kill "${__expect_timer}" > /dev/null 2>&1
 	fi
-	trap return ALRM
-	__expect_timer_parent="$$"
-	(sleep "${__expect_timeout_val}" && kill -ALRM ${__expect_timer_parent}) > /dev/null 2>&1 &
-	unset __expect_timer_parent
-	if (cd '/proc/' && test -d "$!"); then
-		__expect_timer="$!"
-	fi
-	return 0
+	__expect_timedout() { false; }
+	trap '__expect_timedout() { true; }' ALRM
+
+	/bin/sh -c "sleep ${__expect_timeout_val} > /dev/null 2>&1 && kill -ALRM $$ > /dev/null 2>&1" &
+	__expect_timer="$!"
 }
 
 __expect_timer_stop()
 {
 	trap '' ALRM
-	(cd '/proc/' && test -d "${__expect_timer}") && kill "${__expect_timer}" > /dev/null 2>&1
+	kill -9 "${__expect_timer}" > /dev/null 2>&1
 	__expect_timer='0'
-	return 0
 }
 
-__expect_line()
+__expect_write()
 {
-	: "__expect_line(): $*"
-	printf '%s\n' "${__expect_read_val}"
+	: "__expect_write(): $*"
+	(cd '/proc/' && test -d "${__expect_pid}") || return 1
+	(printf '%s\r\n' "$*" >&3) &
 }
-alias expect.line='__expect_line '
+alias expect.write='__expect_write '
 
 __expect_read()
 {
 	: "__expect_read(): $*"
+
+	(cd '/proc/' && test -d "${__expect_pid}") || return 1
 	__expect_timer_start
-	if read __expect_read_val <"${__expect_stdout}"; then
+	if read __expect_read_val <&4; then
 		__expect_timer_stop
+
+		__expect_read_val="$(printf '%s' "${__expect_read_val}"|sed -e 's/\r//g')"
+		__expect_read_val="${__expect_read_val## }"
+		__expect_read_val="${__expect_read_val%% }"
 		return 0
 	fi
 	__expect_timer_stop
 	return 1
 }
 alias expect.read='__expect_read '
+
+__expect_line()
+{
+	: "__expect_line(): $*"
+	printf '%s' "${__expect_read_val}"
+}
+alias expect.line='__expect_line '
 
 __expect_match()
 {
@@ -175,13 +189,6 @@ __expect_regexp()
 	return 1
 }
 alias expect.regexp='__expect_regexp '
-
-__expect_write()
-{
-	: "__expect_write(): $*"
-	printf '%s\n' "$*" >"${__expect_stdin}"
-}
-alias expect.write='__expect_write '
 
 shlib.main {
 	for arg; do
