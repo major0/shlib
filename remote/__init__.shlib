@@ -1,0 +1,99 @@
+#!/usr/bin/env shlib
+
+import expect
+import string
+
+__remote_hascmd()
+{
+	expect.write "command -v '${1}' >/dev/null 2>&1;printf 'hascmd[%s]=%d\n' '$1' \$?;"
+	expect.regexp "^hascmd\[$1\]=[[:digit:]].*"
+
+	__remote_hascmd_status="$(expect.line)"
+	__remote_hascmd_status="${__remote_hascmd_status##*=}"
+	set -- "${__remote_hascmd_status}"
+	unset __remote_hashcmd_status
+	return ${1}
+}
+alias remote.hascmd='__remote_hascmd '
+
+__remote_runcmd()
+{
+	expect.write "echo cmd[$1]:\$($@);"
+	expect.regexp "^cmd\[$1\]:*"
+
+	__remote_runcmd_status="$(expect.line)"
+	__remote_runcmd_status="${__remote_runcmd_status#cmd\[$1\]:}"
+	set -- "${__remote_runcmd_status}"
+	unset __remote_runcmd_status
+	echo "${1}"
+}
+alias remote.runcmd='__remove_runcmd '
+
+__remote_arch()
+{
+	set -- "$(__remote_runcmd uname -p)"
+	case "${1}" in
+	(amd64)	set -- 'x86_64';;
+	esac
+
+	echo "$1"
+}
+alias remote.arch='__remote_arch '
+
+__remote_linux_vendor()
+{
+	__remote_runcmd \
+		sh -c \'test -f /etc/os-release && . /etc/os-release && echo \$ID\' || \
+		sh -c \'test -f /etc/redhat-release && echo redhat\' || \
+		sh -c \'test -f /etc/debian-version && echo debian\' || \
+		echo linux
+}
+
+__remote_vendor()
+{
+	set -- "$(string.tolower "$(__remote_runcmd uname -o)")"
+
+	case "${1}" in
+	(*linux) set -- "$(__remote_linux_vendor)";;
+	esac
+
+	echo "${1}"
+}
+alias remote.vendor='__remote_vendor '
+
+__remote_open()
+{
+	case "${1}" in
+	(ssh://*) expect.spawn ssh -tt "${1}";;
+	(rsh://*) expect.spawn rsh "${1}";;
+	(telnet://*)
+		expect.spawn telnet "${1#@}"
+		expect.regexp '.*[Ll]ogin: '
+		expect.write "${1%%@*}"
+		;;
+	esac
+
+	expect.write ''
+
+	while expect.read; do
+		if string.regexp '.*assword: ' "$(expect.line)"; then
+			printf 'Password: '
+		fi
+
+		if string.regexp '.*[$#] ' "$(expect.line)"; then
+			break
+		fi
+	done
+}
+alias remote.open='__remote_open '
+
+__remote_close() { expect.close; }
+
+shlib.main {
+	__remote_open "$@"
+	echo "vendor: '$(__remote_vend)'"
+	echo "arch: '$(__remote_arch)'"
+	__remote_close
+}
+
+# vim: filetype=sh
