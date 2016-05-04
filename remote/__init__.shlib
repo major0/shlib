@@ -18,14 +18,43 @@ alias remote.hascmd='__remote_hascmd '
 
 __remote_runcmd()
 {
-	expect.write "echo cmd[$1]:\$($@);"
-	expect.regexp "^cmd\[$1\]:*"
+	: "__remote_runcmd($@)"
+	# Run the remote command
+	expect.write "echo BEGIN[$1] > ${__remote_tmpdir}/stdout"
+	expect.write "echo BEGIN[$1] > ${__remote_tmpdir}/stderr"
+	expect.write "$@" ">>${__remote_tmpdir}/stdout" "2>>${__remote_tmpdir}/stderr"
+	expect.write "echo \$? >${__remote_tmpdir}/status"
+	expect.write "echo END[$1] >> ${__remote_tmpdir}/stdout"
+	expect.write "echo END[$1] >> ${__remote_tmpdir}/stderr"
 
-	__remote_runcmd_status="$(expect.line)"
-	__remote_runcmd_status="${__remote_runcmd_status#cmd\[$1\]:}"
+	# Grab the remote exit code
+	expect.write "echo STATUS[$1]:\$(cat ${__remote_tmpdir}/status)"
+	while expect.read; do
+		if string.regexp "^STATUS\[$1\]:*" "$(expect.line)"; then
+			__remote_runcmd_status="$(expect.line)"
+			__remote_runcmd_status="${__remote_runcmd_status#STATUS\[$1\]:}"
+			break
+		fi
+	done
+
+	# Based on the remote exit code we report either stderr or stdout
+	if test "${__remote_runcmd_status}" -eq '0'; then
+		expect.write "cat ${__remote_tmpdir}/stdout"
+	else
+		expect.write "cat ${__remote_tmpdir}/stderr"
+	fi
+
+	# Grab the remote log
+	expect.regexp "^BEGIN\[$1\]"
+	while expect.read; do
+		! string.regexp "^END\[$1\]" "$(expect.line)" || break
+		expect.line
+	done
+
+	# Return w/ the proper status
 	set -- "${__remote_runcmd_status}"
 	unset __remote_runcmd_status
-	echo "${1}"
+	return $1
 }
 alias remote.runcmd='__remove_runcmd '
 
@@ -88,10 +117,32 @@ __remote_open()
 			break
 		fi
 	done
+
+	expect.write "echo COMMAND[mktemp]:\$(mktemp -d \${TMPDIR:-/tmp}/shlib.remote.XXXXXX)"
+	while expect.read; do
+		if string.regexp "^COMMAND\[mktemp\]:*" "$(expect.line)"; then
+			__remote_tmpdir="$(expect.line)"
+			__remote_tmpdir="${__remote_tmpdir#COMMAND\[mktemp\]:}"
+			return 0
+		fi
+	done
+
+	error 'problem setting up remote session'
+	__remote_close
+	return 1
 }
 alias remote.open='__remote_open '
 
-__remote_close() { expect.close; }
+__remote_close()
+{
+	: "__remote_close($@)"
+	expect.write "rm '${__remote_tmpdir}/stdout'"
+	expect.write "rm '${__remote_tmpdir}/stderr'"
+	expect.write "rm '${__remote_tmpdir}/status'"
+	expect.write "rmdir '${__remote_tmpdir}'"
+	expect.regexp '^.*[$#] '
+	expect.close
+}
 
 shlib.main {
 	__remote_open "$@"
