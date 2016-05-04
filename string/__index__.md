@@ -10,10 +10,6 @@ and manipulation/editing.
 
  [compare][], [escape][], [index][], [match][], [regexp][], [sub][], [tolower][], [toupper][]
 
-#### See also ####
-
- [core][], [expect][], [math][], [system][], [experimental][]
-
 [compare]: compare.md
 [escape]: escape.md
 [index]: index.md

@@ -1,4 +1,4 @@
-[[shlib][] / expect
+[shlib][] / expect
 
 expect
 ------
@@ -26,10 +26,6 @@ Routines for interfacing to interactive applications
 ## expect routines ##
 
   [spawn][], [open][], [read][], [match][], [regexp][], [write][], [timeout][], [close][]
-
-#### See also ####
-
- [core][], [math][], [string][], [system][], [experimental][]
 
 [spawn]: spawn.md
 [open]: open.md

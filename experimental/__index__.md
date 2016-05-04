@@ -7,10 +7,6 @@ These interfaces should be deemed unfinished, unsafe, and may never see the
 light of day in shlib proper. Some of these interfaces may only serve as proofs
 of concept regarding various ideas or concepts.
 
-#### See also ####
-
- [core][], [expect][], [math][], [string][], [system][]
-
 [core]: ../doc/__index__.md "core"
 [expect]: ../expect/__index__.md "expect"
 [math]: ../math/__index__.md "math"

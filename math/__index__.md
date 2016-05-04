@@ -11,11 +11,6 @@ comparisons against floating point numbers.
 
  [atan2][], [calc][], [cmp][], [cos][], [exp][], [int][], [log][], [rand][], [seq][], [sin][], [sqrt][], [sum][]
 
-#### See also ####
-
- [core][], [expect][], [string][], [system][], [experimental][]
-
-
 [atan2]: atan2.md
 [calc]: calc.md
 [cmp]: cmp.md

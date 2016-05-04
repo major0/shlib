@@ -17,7 +17,7 @@ You can get information about a library, and a list of the library's provided
 interfaces via the command `shlib --help <library>`.  To see documentation for
 a specific interface use `shlib --help <library>.<interface>`.
 
-### shlib routines ###
+### shlib core routines ###
 
  [error][], [die][], [getarg][], [hascmd][], [hasfunc][], [import][], [main][], [optarg][], [pathcmd][] [realpath][]
 

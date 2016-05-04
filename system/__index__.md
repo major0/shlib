@@ -9,10 +9,6 @@ Routines for manipulating the underlying system environment.
 
   [mkfifo][], [mktemp][], [mktempdir][]
 
-#### See also ####
-
- [core][], [expect][], [math][], [string][], [exerimental][]
-
 [mkfifo]: mkfifo.md
 [mktemp]: mktemp.md
 [mktempdir]: mktempdir.md
