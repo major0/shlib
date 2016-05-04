@@ -165,7 +165,6 @@ __expect_match()
 	: "__expect_match(): $*"
 	while __expect_read; do
 		if string.match "${1}" "$(__expect_line)"; then
-			__expect_line
 			return 0
 		fi
 	done
@@ -175,10 +174,9 @@ alias expect.match='__expect_match '
 
 __expect_regexp()
 {
-	:"__expect_regexp(): $*"
+	: "__expect_regexp(): $*"
 	while __expect_read; do
 		if string.regexp "${1}" "$(__expect_line)"; then
-			__expect_line
 			return 0
 		fi
 	done
