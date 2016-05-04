@@ -42,10 +42,9 @@ alias remote.arch='__remote_arch '
 
 __remote_linux_vendor()
 {
-	__remote_runcmd \
-		sh -c \'test -f /etc/os-release && . /etc/os-release && echo \$ID\' || \
-		sh -c \'test -f /etc/redhat-release && echo redhat\' || \
-		sh -c \'test -f /etc/debian-version && echo debian\' || \
+	__remote_runcmd sh -c "'test -f /etc/os-release && . /etc/os-release && echo \$ID'" || \
+		sh -c "'test -f /etc/redhat-release && echo redhat'" || \
+		sh -c "'test -f /etc/debian-version && echo debian'" || \
 		echo linux
 }
 
