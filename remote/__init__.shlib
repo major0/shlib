@@ -17,9 +17,9 @@ __remote_hascmd()
 }
 alias remote.hascmd='__remote_hascmd '
 
-__remote_runcmd()
+__remote_command()
 {
-	: "__remote_runcmd($@)"
+	: "__remote_command($@)"
 	# Run the remote command
 	expect.write "echo BEGIN[$1] > ${__remote_tmpdir}/stdout"
 	expect.write "echo BEGIN[$1] > ${__remote_tmpdir}/stderr"
@@ -32,14 +32,14 @@ __remote_runcmd()
 	expect.write "echo STATUS[$1]:\$(cat ${__remote_tmpdir}/status)"
 	while expect.read; do
 		if string.regexp "^STATUS\[$1\]:*" "$(expect.line)"; then
-			__remote_runcmd_status="$(expect.line)"
-			__remote_runcmd_status="${__remote_runcmd_status#STATUS\[$1\]:}"
+			__remote_command_status="$(expect.line)"
+			__remote_command_status="${__remote_command_status#STATUS\[$1\]:}"
 			break
 		fi
 	done
 
 	# Based on the remote exit code we report either stderr or stdout
-	if test "${__remote_runcmd_status}" -eq '0'; then
+	if test "${__remote_command_status}" -eq '0'; then
 		expect.write "cat ${__remote_tmpdir}/stdout"
 	else
 		expect.write "cat ${__remote_tmpdir}/stderr"
@@ -53,16 +53,16 @@ __remote_runcmd()
 	done
 
 	# Return w/ the proper status
-	set -- "${__remote_runcmd_status}"
-	unset __remote_runcmd_status
+	set -- "${__remote_command_status}"
+	unset __remote_command_status
 	return $1
 }
-alias remote.runcmd='__remove_runcmd '
+alias remote.command='__remove_command '
 
 __remote_arch()
 {
 	: '__remote_arch()'
-	set -- "$(__remote_runcmd uname -p)"
+	set -- "$(__remote_command uname -p)"
 	case "${1}" in
 	(amd64)	set -- 'x86_64';;
 	esac
@@ -74,7 +74,7 @@ alias remote.arch='__remote_arch '
 __remote_linux_vendor()
 {
 	: '__remote_linux_vendor()'
-	__remote_runcmd sh -c "'test -f /etc/os-release && . /etc/os-release && echo \$ID'" || \
+	__remote_command sh -c "'test -f /etc/os-release && . /etc/os-release && echo \$ID'" || \
 		sh -c "'test -f /etc/redhat-release && echo redhat'" || \
 		sh -c "'test -f /etc/debian-version && echo debian'" || \
 		echo linux
@@ -83,7 +83,7 @@ __remote_linux_vendor()
 __remote_vendor()
 {
 	: '__remote_vendor()'
-	set -- "$(string.tolower "$(__remote_runcmd uname -o)")"
+	set -- "$(string.tolower "$(__remote_command uname -o)")"
 
 	case "${1}" in
 	(*linux) set -- "$(__remote_linux_vendor)";;
