@@ -64,8 +64,8 @@ alias remote.vendor='__remote_vendor '
 __remote_open()
 {
 	case "${1}" in
-	(ssh://*) expect.spawn ssh -tt "${1}";;
-	(rsh://*) expect.spawn rsh "${1}";;
+	(ssh://*) expect.spawn ssh -tt "${1#ssh://}";;
+	(rsh://*) expect.spawn rsh "${1#rsh://}";;
 	(telnet://*)
 		expect.spawn telnet "${1#@}"
 		expect.regexp '.*[Ll]ogin: '
