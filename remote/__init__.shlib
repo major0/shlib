@@ -5,6 +5,7 @@ import string
 
 __remote_hascmd()
 {
+	: "__remote_hascmd($@)"
 	expect.write "command -v '${1}' >/dev/null 2>&1;printf 'hascmd[%s]=%d\n' '$1' \$?;"
 	expect.regexp "^hascmd\[$1\]=[[:digit:]].*"
 
@@ -60,6 +61,7 @@ alias remote.runcmd='__remove_runcmd '
 
 __remote_arch()
 {
+	: '__remote_arch()'
 	set -- "$(__remote_runcmd uname -p)"
 	case "${1}" in
 	(amd64)	set -- 'x86_64';;
@@ -71,6 +73,7 @@ alias remote.arch='__remote_arch '
 
 __remote_linux_vendor()
 {
+	: '__remote_linux_vendor()'
 	__remote_runcmd sh -c "'test -f /etc/os-release && . /etc/os-release && echo \$ID'" || \
 		sh -c "'test -f /etc/redhat-release && echo redhat'" || \
 		sh -c "'test -f /etc/debian-version && echo debian'" || \
@@ -79,6 +82,7 @@ __remote_linux_vendor()
 
 __remote_vendor()
 {
+	: '__remote_vendor()'
 	set -- "$(string.tolower "$(__remote_runcmd uname -o)")"
 
 	case "${1}" in
@@ -91,7 +95,7 @@ alias remote.vendor='__remote_vendor '
 
 __remote_open()
 {
-	: "__remote_open(): $*"
+	: "__remote_open($@)"
 
 	case "${1}" in
 	(ssh://*) expect.spawn ssh -tt "${1#ssh://}";;
