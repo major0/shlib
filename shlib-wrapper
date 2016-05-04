@@ -18,27 +18,33 @@ test -f "${0%/*}/shlib.config" || die "missing 'shlib.config'"
 ! test -z "${project}" || die "no project defined in 'shlib.config'"
 
 # Assign any variables after sourcing the 'shlib.config'
-SHLIB_PATH="${0%/*}/libexec"
+PROJECT_DIR="${0%/*}"
+if test "${PROJECT_DIR}" = '.'; then
+	PROJECT_DIR="${PWD}"
+fi
+LIBEXEC_DIR="${PROJECT_DIR}/libexec"
 progname="${0##*/}"
-
-# Validte our core project structure
-test -d "${SHLIB_PATH}" || die "invalid dir '${SHLIB_PATH}'"
-test -d "${SHLIB_PATH}/${project}" || die "missing '${SHLIB_PATH}/${project}'"
-test -f "${SHLIB_PATH}/${project}/${progname}" || die "invalid script '${progname}'"
 
 # This is a partial-installed mode in which shlib is installed into the system
 # but the project is not.  This will most likely result from someone copying
 # the shlib-wrapper into their project as opposed to symlinking it from the
 # submodule. Supported, but not recommended.
-if ! test -d "${SHLIB_PATH}/shlib"; then
-	test -e "$(command -v 'shlib')" || die "missing '${SHLIB_PATH}/shlib'"
-	exec shlib --libdir="${SHLIB_PATH}" "${SHLIB_PATH}/${project}/${progname}" "$@"
+if ! test -d "${LIBEXEC_DIR}"; then
+	test -f "${PROJECT_DIR}/${progname}" || die "invalid script '${progname}'"
+	test -e "$(command -v 'shlib')" || die "missing '${LIBEXEC_DIR}/shlib'"
+	exec shlib --libdir="${PROJECT_DIR}" "${PROJECT_DIR}/${progname}" "$@"
 fi
+
+# ElSE .. This is an integration directory which requires a libexec tree
+test -d "${LIBEXEC_DIR}/${project}" || die "missing '${LIBEXEC_DIR}/${project}'"
+test -f "${LIBEXEC_DIR}/${project}/${progname}" || die "invalid script '${progname}'"
+test -f "${LIBEXEC_DIR}/shlib/shlib" || die "invalid shlib @ '${LIBEXEC_DIR}/shlib'"
 
 # Normal use-case in which we set the SHLIB_PATH and execute everthing in
 # developer mode
+# note: we destroy the old SHLIB_PATH on purpose
+SHLIB_PATH="${LIBEXEC_DIR}/shlib:${LIBEXEC_DIR}/${project}"
 export SHLIB_PATH
-test -f "${SHLIB_PATH}/shlib/shlib" || die "invalid shlib @ '${SHLIB_PATH}/shlib'"
-exec "${SHLIB_PATH}/shlib/shlib" "${SHLIB_PATH}/${project}/${progname}" "$@"
+exec "${LIBEXEC_DIR}/shlib/shlib" "${LIBEXEC_DIR}/${project}/${progname}" "$@"
 
 # vim: filetype=sh
