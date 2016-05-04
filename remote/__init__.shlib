@@ -62,6 +62,8 @@ alias remote.vendor='__remote_vendor '
 
 __remote_open()
 {
+	: "__remote_open(): $*"
+
 	case "${1}" in
 	(ssh://*) expect.spawn ssh -tt "${1#ssh://}";;
 	(rsh://*) expect.spawn rsh "${1#rsh://}";;
@@ -75,10 +77,13 @@ __remote_open()
 	expect.write ''
 
 	while expect.read; do
+		# FIXME need to prompt for a password and/or pull one from a
+		# config somewhere.
 		if string.regexp '.*assword: ' "$(expect.line)"; then
 			printf 'Password: '
 		fi
 
+		# Possibly found a shell prompt, time to bail...
 		if string.regexp '.*[$#] ' "$(expect.line)"; then
 			break
 		fi

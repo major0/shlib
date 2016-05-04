@@ -1,7 +1,9 @@
 #!/usr/bin/env shlib
 
 if shlib.hascmd awk; then
-	__shlib_string_regexp_cmd() {
+__shlib_string_regexp_cmd()
+{
+	: '__shlib_string_regexp_cmd():' "$@"
 	awk "/${1}/{exit 0;}{exit 1;}" <<EOF
 ${2}
 EOF
@@ -14,6 +16,8 @@ alias string.regexp='__shlib_string_regexp '
 
 __shlib_string_regexp()
 {
+	: '__shlib_string_regexp():' "$@"
+
 	while test "$#" -gt '0'; do
 		case "${1}" in
 		(--)	shift; break;;
