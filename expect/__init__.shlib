@@ -14,6 +14,18 @@ __expect_init()
 }
 __expect_init
 
+
+__expect_ready()
+{
+	case "${__expect_pid}" in
+	(0)	! test -e "${__expect_stdin}" || return 0;;
+	(*)	! (cd '/proc/' && test -d "${__expect_pid}") || return 0;;
+	esac
+
+	error 'expect not ready'
+	return 1
+}
+
 __expect_timeout()
 {
 	: "__expect_timeout(): $*"
@@ -133,7 +145,7 @@ __expect_timer_stop()
 __expect_write()
 {
 	: "__expect_write(): $*"
-	(cd '/proc/' && test -d "${__expect_pid}") || return 1
+	__expect_ready || return 1
 	(printf '%s\r\n' "$*" >&3) &
 }
 alias expect.write='__expect_write '
@@ -142,7 +154,7 @@ __expect_read()
 {
 	: "__expect_read(): $*"
 
-	(cd '/proc/' && test -d "${__expect_pid}") || return 1
+	__expect_ready || return 1
 	__expect_timer_start
 	if read __expect_read_val <&4; then
 		__expect_timer_stop
