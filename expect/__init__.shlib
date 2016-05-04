@@ -156,7 +156,7 @@ alias expect.read='__expect_read '
 __expect_line()
 {
 	: "__expect_line(): $*"
-	string.sub '\r' "${__expect_read_val}" ''
+	string.sub '\r' '' "${__expect_read_val}"
 }
 alias expect.line='__expect_line '
 
