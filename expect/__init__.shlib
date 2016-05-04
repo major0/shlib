@@ -146,10 +146,6 @@ __expect_read()
 	__expect_timer_start
 	if read __expect_read_val <&4; then
 		__expect_timer_stop
-
-		__expect_read_val="$(printf '%s' "${__expect_read_val}"|sed -e 's/\r//g')"
-		__expect_read_val="${__expect_read_val## }"
-		__expect_read_val="${__expect_read_val%% }"
 		return 0
 	fi
 	__expect_timer_stop
@@ -160,7 +156,7 @@ alias expect.read='__expect_read '
 __expect_line()
 {
 	: "__expect_line(): $*"
-	printf '%s' "${__expect_read_val}"
+	string.sub '\r' "${__expect_read_val}" ''
 }
 alias expect.line='__expect_line '
 
