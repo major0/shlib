@@ -79,34 +79,34 @@ alias expect.popen='__expect_popen '
 
 if shlib.hascmd ssh; then
 	if shlib.hascmd socat; then
-		__expect_open_ssh() { __expect_popen socat "EXEC:'ssh ${@}',pty,setsid,ctty"; }
+		__expect_open_ssh() { __expect_popen socat - "EXEC:'ssh ${@}',pty,setsid,ctty"; }
 	else
-		__expect_open_ssh() { __expect_popen ssh -tt "$@"; }
+		__expect_open_ssh() { __expect_popen ssh -tt "${@}"; }
 	fi
 elif shlib.hascmd dbclient; then
 	if shlib.hascmd socat; then
-		__expect_open_ssh() { __expect_popen socat "EXEC:'dbclient ${@}',pty,setsid,ctty"; }
+		__expect_open_ssh() { __expect_popen socat - "EXEC:'dbclient ${@}',pty,setsid,ctty"; }
 	else
-		__expect_open_ssh() { __expect_popen dbclient -t "$@"; }
+		__expect_open_ssh() { __expect_popen dbclient -t "${@}"; }
 	fi
 else
-	error "no handler available for 'ssh'";
 	__expect_open_ssh() { die "ssh unavailable"; }
+	error "no handler available for 'ssh'"
 fi
 
 if shlib.hascmd rsh; then
 	if shlib.hascmd socat; then
-		__expect_open_rsh { __expect_popen socat "EXEC:'rsh $@',pty,setsid,ctty"; }
+		__expect_open_rsh() { __expect_popen socat - "EXEC:'rsh ${@}',pty,setsid,ctty"; }
 	else
-		__expect_open_rsh { __expect_popen rsh "$@"; }
+		__expect_open_rsh() { __expect_popen rsh "$@"; }
 	fi
 else
+	__expect_open_rsh() { die "rsh unavable"; }
 	error "no handler available for 'rsh'"
-	__expect_open_rsh { die "rsh unavable"; }
 fi
 
 if shlib.hascmd socat; then
-	__expect_open_telnet_cmd() { __expect_popen socat "TCP4:${1}:22"; }
+	__expect_open_telnet_cmd() { __expect_popen socat - "TCP4:${1}:22"; }
 elif shlib.hascmd netcat; then
 	__expect_open_telnet_cmd() { __expect_popen netcat "${1}" 22; }
 elif shlib.hascmd nc; then
