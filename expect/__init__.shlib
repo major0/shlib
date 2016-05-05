@@ -11,8 +11,6 @@ __expect_init()
 	__expect_pid=0
 	__expect_timer=0
 	__expect_timeout_val=60
-
-	shlib.atexit __expect_close
 }
 __expect_init
 
@@ -33,6 +31,7 @@ __expect_session()
 	test -d "${__expect_tmpdir}" || die 'failed to make session tmp directory'
 	__expect_stdin="${__expect_tmpdir}/input"
 	__expect_stdout="${__expect_tmpdir}/output"
+	shlib.atexit __expect_close
 }
 
 __expect_close()
