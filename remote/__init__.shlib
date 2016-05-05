@@ -97,17 +97,7 @@ __remote_open()
 {
 	: "__remote_open($@)"
 
-	case "${1}" in
-	(ssh://*) expect.spawn ssh -tt "${1#ssh://}";;
-	(rsh://*) expect.spawn rsh "${1#rsh://}";;
-	(telnet://*)
-		expect.spawn telnet "${1#@}"
-		expect.regexp '.*[Ll]ogin: '
-		expect.write "${1%%@*}"
-		;;
-	esac
-
-	expect.write ''
+	expect.open "${@}"
 
 	while expect.read; do
 		# FIXME need to prompt for a password and/or pull one from a
