@@ -65,7 +65,12 @@ __expect_popen()
 	system.mkfifo "${__expect_stdout}" || die 'expect.popen() failed to make stdout'
 	system.mkfifo "${__expect_stdin}" || die 'expect.popen() failed to make stdin'
 
-	(exec "$@" <> "${__expect_stdin}" > "${__expect_stdout}" 2>&1 ) &
+	#if shlib.hascmd socat; then
+	#	(socat "PIPE:${__expect_stdin}" "EXEC:'$*',pty,setsid,ctty,crlf" | socat STDIN "PIPE:${__expect_stdout}") &
+	#else
+		(exec "$@" <> "${__expect_stdin}" > "${__expect_stdout}" 2>&1 ) &
+	#fi
+
 	__expect_pid="$!"
 
 	# FIXME this is not entirely portable to all OS's
@@ -78,28 +83,16 @@ __expect_popen()
 alias expect.popen='__expect_popen '
 
 if shlib.hascmd ssh; then
-	if shlib.hascmd socat; then
-		__expect_open_ssh() { __expect_popen socat - "EXEC:'ssh ${@}',pty,setsid,ctty"; }
-	else
-		__expect_open_ssh() { __expect_popen ssh -tt "${@}"; }
-	fi
+	__expect_open_ssh() { __expect_popen ssh -tt "${@}"; }
 elif shlib.hascmd dbclient; then
-	if shlib.hascmd socat; then
-		__expect_open_ssh() { __expect_popen socat - "EXEC:'dbclient ${@}',pty,setsid,ctty"; }
-	else
-		__expect_open_ssh() { __expect_popen dbclient -t "${@}"; }
-	fi
+	__expect_open_ssh() { __expect_popen dbclient -t "${@}"; }
 else
 	__expect_open_ssh() { die "ssh unavailable"; }
 	error "no handler available for 'ssh'"
 fi
 
 if shlib.hascmd rsh; then
-	if shlib.hascmd socat; then
-		__expect_open_rsh() { __expect_popen socat - "EXEC:'rsh ${@}',pty,setsid,ctty"; }
-	else
-		__expect_open_rsh() { __expect_popen rsh "$@"; }
-	fi
+	__expect_open_rsh() { __expect_popen rsh "$@"; }
 else
 	__expect_open_rsh() { die "rsh unavable"; }
 	error "no handler available for 'rsh'"
