@@ -40,6 +40,9 @@ test -d "${LIBEXEC_DIR}/${project}" || die "missing '${LIBEXEC_DIR}/${project}'"
 test -f "${LIBEXEC_DIR}/${project}/${progname}" || die "invalid script '${progname}'"
 test -f "${LIBEXEC_DIR}/shlib/shlib" || die "invalid shlib @ '${LIBEXEC_DIR}/shlib'"
 
+PATH="${LIBEXEC_DIR}/shlib:${PATH}"
+export PATH
+
 # Normal use-case in which we set the SHLIB_PATH and execute everthing in
 # developer mode
 # note: we destroy the old SHLIB_PATH on purpose
