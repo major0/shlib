@@ -49,8 +49,8 @@ __expect_close()
 	! test -f "${__expect_tmpdir}/pid" || rm "${__expect_tmpdir}/pid"
 	! test -d "${__expect_tmpdir}" || rmdir "${__expect_tmpdir}"
 
-	kill "${__expect_pid}" >/dev/null 2>&1
-	kill "${__expect_timer}" >/dev/null 2>&1
+	test "${__expect_pid}" -eq 0 || kill "${__expect_pid}" >/dev/null 2>&1
+	test "${__expect_timer}" -eq 0 || kill "${__expect_timer}" >/dev/null 2>&1
 
 	__expect_init
 }
@@ -178,7 +178,7 @@ alias expect.timedout='__expect_timedout '
 __expect_timer_start()
 {
 	: "__expect_timer_start(): $*"
-	kill "${__expect_timer}" > /dev/null 2>&1
+	test "${__expect_timer}" -eq 0 || kill "${__expect_timer}" > /dev/null 2>&1
 	__expect_timedout() { false; }
 	trap '__expect_timedout() { true; }' ALRM
 
@@ -189,7 +189,7 @@ __expect_timer_start()
 __expect_timer_stop()
 {
 	trap '' ALRM
-	kill -9 "${__expect_timer}" > /dev/null 2>&1
+	test "${__expect_timer}" -eq 0 || kill -9 "${__expect_timer}" > /dev/null 2>&1
 	__expect_timer='0'
 }
 
