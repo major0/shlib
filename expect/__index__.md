@@ -10,7 +10,7 @@ Routines for interfacing to interactive applications
 ```
 	import expect
 
-	expect.spawn ssh user@host.domain.com
+	expect.open ssh://user@host.domain.com
 
 	if expect.match "*assword:*"; then
 		expect.write 'FakePassword'
@@ -25,9 +25,9 @@ Routines for interfacing to interactive applications
 
 ## expect routines ##
 
-  [spawn][], [open][], [read][], [match][], [regexp][], [write][], [timeout][], [close][]
+  [open][], [read][], [match][], [regexp][], [write][], [popen][], [timeout][], [close][]
 
-[spawn]: spawn.md
+[popen]: popen.md
 [open]: open.md
 [read]: read.md
 [match]: match.md

@@ -11,20 +11,10 @@ __expect_init()
 	__expect_pid=0
 	__expect_timer=0
 	__expect_timeout_val=60
+
+	shlib.atexit __expect_close
 }
 __expect_init
-
-
-__expect_ready()
-{
-	case "${__expect_pid}" in
-	(0)	! test -e "${__expect_stdin}" || return 0;;
-	(*)	! (cd '/proc/' && test -d "${__expect_pid}") || return 0;;
-	esac
-
-	error 'expect not ready'
-	return 1
-}
 
 __expect_timeout()
 {
@@ -32,6 +22,18 @@ __expect_timeout()
 	__expect_timeout_val="${1}"
 }
 alias expect.timeout='__expect_timeout '
+
+__expect_session()
+{
+	: "__expect_session($*)"
+
+	! test -d "${__expect_tmpdir}" || die 'expect session already started'
+	__expect_tmpdir="$(system.mktempdir expect)"
+
+	test -d "${__expect_tmpdir}" || die 'failed to make session tmp directory'
+	__expect_stdin="${__expect_tmpdir}/input"
+	__expect_stdout="${__expect_tmpdir}/output"
+}
 
 __expect_close()
 {
@@ -48,60 +50,21 @@ __expect_close()
 	! test -f "${__expect_tmpdir}/pid" || rm "${__expect_tmpdir}/pid"
 	! test -d "${__expect_tmpdir}" || rmdir "${__expect_tmpdir}"
 
-	# FIXME this is not entirely portable to all OS's
-	if (cd '/proc/' && test -d "${__expect_pid}"); then
-		kill "${__expect_pid}"
-	fi
-
-	if (cd '/proc/' && test -d "${__expect_timer}"); then
-		kill "${__expect_timer}"
-	fi
+	kill "${__expect_pid}" >/dev/null 2>&1
+	kill "${__expect_timer}" >/dev/null 2>&1
 
 	__expect_init
 }
 alias expect.close='__expect_close '
 
-__expect_open()
+__expect_popen()
 {
-	: "__expect_open(): $*"
+	: "__expect_popen(): $*"
 
-	! test -d "${__expect_tmpdir}" || die 'expect.open() a file is already open'
+	__expect_session || return
 
-	__expect_tmpdir="$(system.mktempdir expect)"
-	test -d "${__expect_tmpdir}" || die 'expect.open() failed to make tmp directory'
-
-	shlib.atexit __expect_close
-
-	test -c "${1}" || die "expect.open() invalid file"
-	test -w "${1}" || die "expect.open() permission denied"
-	test -r "${1}" || die "expect.open() permission denied"
-
-	__expect_stdin="${__expect_tmpdir}/input"
-	ln -s "${__expect_stdin}" "${1}"
-	exec 3>>"${__expect_stdin}"
-
-	__expect_stdout="${__expect_tmpdir}/output"
-	ln -s "${__expect_stdout}" "${1}"
-	exec 4<>"${__expect_stdout}"
-}
-
-
-__expect_spawn()
-{
-	: "__expect_spawn(): $*"
-
-	! test -d "${__expect_tmpdir}" || die 'expect.spawn() process already running'
-
-	__expect_tmpdir="$(system.mktempdir expect)"
-	test -d "${__expect_tmpdir}" || die 'expect.spawn() failed to make tmp directory'
-
-	shlib.atexit __expect_close
-
-	__expect_stdout="${__expect_tmpdir}/output"
-	system.mkfifo "${__expect_stdout}" || die 'expect.spawn() failed to make stdout'
-
-	__expect_stdin="${__expect_tmpdir}/input"
-	system.mkfifo "${__expect_stdin}" || die 'expect.spawn() failed to make stdin'
+	system.mkfifo "${__expect_stdout}" || die 'expect.popen() failed to make stdout'
+	system.mkfifo "${__expect_stdin}" || die 'expect.popen() failed to make stdin'
 
 	(exec "$@" <> "${__expect_stdin}" > "${__expect_stdout}" 2>&1 ) &
 	__expect_pid="$!"
@@ -109,25 +72,114 @@ __expect_spawn()
 	# FIXME this is not entirely portable to all OS's
 	if (cd '/proc/' && test -d "${__expect_pid}"); then
 		echo "${__expect_pid}" > "${__expect_tmpdir}/pid"
-
-		# NOTE: For whatever reason the fifo's are effectively
-		# "stalled" unless we perform an initial empty write.  This may
-		# be an oddity of /bin/sh.
 		exec 3>> "${__expect_stdin}"
 		exec 4<> "${__expect_stdout}"
 	fi
 }
-alias expect.spawn='__expect_spawn '
+alias expect.popen='__expect_popen '
+
+if shlib.hascmd ssh; then
+	if shlib.hascmd socat; then
+		__expect_open_ssh() { __expect_popen socat "EXEC:'ssh ${@}',pty,setsid,ctty"; }
+	else
+		__expect_open_ssh() { __expect_popen ssh -tt "$@"; }
+	fi
+elif shlib.hascmd dbclient; then
+	if shlib.hascmd socat; then
+		__expect_open_ssh() { __expect_popen socat "EXEC:'dbclient ${@}',pty,setsid,ctty"; }
+	else
+		__expect_open_ssh() { __expect_popen dbclient -t "$@"; }
+	fi
+else
+	error "no handler available for 'ssh'";
+	__expect_open_ssh() { die "ssh unavailable"; }
+fi
+
+if shlib.hascmd rsh; then
+	if shlib.hascmd socat; then
+		__expect_open_rsh { __expect_popen socat "EXEC:'rsh $@',pty,setsid,ctty"; }
+	else
+		__expect_open_rsh { __expect_popen rsh "$@"; }
+	fi
+else
+	error "no handler available for 'rsh'"
+	__expect_open_rsh { die "rsh unavable"; }
+fi
+
+if shlib.hascmd socat; then
+	__expect_open_telnet_cmd() { __expect_popen socat "TCP4:${1}:22"; }
+elif shlib.hascmd netcat; then
+	__expect_open_telnet_cmd() { __expect_popen netcat "${1}" 22; }
+elif shlib.hascmd nc; then
+	__expect_open_telnet_cmd() { __expect_popen nc "${1}" 22; }
+elif shlib.hascmd telnet; then
+	# Pointless to test for socat here to try to get sane pty
+	# handling, so don't bother...
+	__expect_open_telnet_cmd() { __expect_popen telnet "$@"; }
+else
+	error "no handler available for telnet"
+	__expect_open_telnet_cmd() { die "telnet unavailable"; }
+fi
+
+__expect_open_telnet()
+{
+	: "__expect_open_telnet($@)"
+
+	__expect_open_telnet_user="${1}"
+	shift
+	set -- "${__expect_open_telnet_user#*@}" "$@"
+	__expect_open_telnet_user="${__expect_open_telnet_user%%@*}"
+
+	__expect_open_telnet_cmd "$@"
+
+	# FIXME find the login/username prompt and enter it?
+}
+
+__expect_open_file()
+{
+	: "__expect_open_file(): $*"
+
+	__expect_session || return
+
+	test -c "${1}" || die "expect.open() invalid file"
+	test -w "${1}" || die "expect.open() write permission denied"
+	test -r "${1}" || die "expect.open() read permission denied"
+
+	ln -s "${__expect_stdin}" "${1}"
+	exec 3>>"${__expect_stdin}"
+
+	ln -s "${__expect_stdout}" "${1}"
+	exec 4<>"${__expect_stdout}"
+}
+
+__expect_open()
+{
+	: "__expect_open($*)"
+
+	__expect_open_proto="${1}"
+	shift
+	set -- "${__expect_open_proto#*://}"
+
+	case "${__expect_open_proto}" in
+	(ssh://*)	__expect_open_ssh "$@";;
+	(rsh://*)	__expect_open_rsh "$@";;
+	(telnet://*)	__expect_open_telnet "$@";;
+	(file://*)	__expect_open_file "$@";;
+	(*://)	error "Do not know how to handle '${__expect_open_proto%%://}://'"
+		return 1;;
+	(*)		__expect_open_file "$@";;
+	esac
+}
+alias expect.open='__expect_open '
 
 __expect_timedout() { false; }
 alias expect.timedout='__expect_timedout '
 
+# FIXME move timers to a timer library?
 __expect_timer_start()
 {
 	: "__expect_timer_start(): $*"
-	if (cd '/proc/' && test -d "${__expect_timer}"); then
-		kill "${__expect_timer}" > /dev/null 2>&1
-	fi
+	kill "${__expect_timer}" > /dev/null 2>&1
 	__expect_timedout() { false; }
 	trap '__expect_timedout() { true; }' ALRM
 
@@ -140,6 +192,17 @@ __expect_timer_stop()
 	trap '' ALRM
 	kill -9 "${__expect_timer}" > /dev/null 2>&1
 	__expect_timer='0'
+}
+
+__expect_ready()
+{
+	case "${__expect_pid}" in
+	(0)	! test -e "${__expect_stdin}" || return 0;;
+	(*)	! (cd '/proc/' && test -d "${__expect_pid}") || return 0;;
+	esac
+
+	error 'expect not ready'
+	return 1
 }
 
 __expect_write()
@@ -172,18 +235,6 @@ __expect_line()
 }
 alias expect.line='__expect_line '
 
-__expect_match()
-{
-	: "__expect_match(): $*"
-	while __expect_read; do
-		if string.match "${1}" "$(__expect_line)"; then
-			return 0
-		fi
-	done
-	return 1
-}
-alias expect.match='__expect_match '
-
 __expect_regexp()
 {
 	: "__expect_regexp(): $*"
@@ -201,7 +252,7 @@ shlib.main {
 		case "${arg}" in (-h|-help) string.doc 'expect';; esac
 	done
 
-	__expect_spawn "$@"
+	__expect_popen "$@"
 
 	while __expect_read; do
 		__expect_line

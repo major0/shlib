@@ -1,6 +1,6 @@
-[[shlib][] / [expect][] / spawn
+[[shlib][] / [expect][] / popen
 
-## expect.spawn `<program>` `[<args> ...]`
+## expect.popen `<program>` `[<args> ...]`
 
 Spawn `<program>` such that we can interact with it.
 
