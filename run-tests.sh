@@ -52,7 +52,7 @@ while getopts ':hxvBL:S:' __shit_arg; do
 		: "extended arg: '${1}'"
 
 		case "${1}" in
-		(--help)__shit_usage;;
+		(--help) __shit_usage;;
 		(--benchmark) __shit_benchmark="${1}";;
 		(--libdir|--libdir=*)
 			OPTARG="$(shlib.getarg "${1}" "${2}")"
