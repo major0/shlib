@@ -450,7 +450,7 @@ if test -z "${SHLIB_PATH}"; then
 	SHLIB_PATH="@shlib_libexecdir@"
 	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}"; then
 		SHLIB_PATH="$(__shlib_realpath "${0%/*}")"
-		readonly SHLIB_PATH="${SHLIB_PATH%/}"
+		SHLIB_PATH="${SHLIB_PATH%/}"
 	fi
 	export SHLIB_PATH
 
@@ -535,7 +535,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 				readonly SHLIB_REPORT_SET=true;;
 
 			(--benchmark)
-				readonly SHLIB_BENCHMARK=true;;
+				SHLIB_BENCHMARK=true;;
 
 			##
 			# Our standard argument handling
