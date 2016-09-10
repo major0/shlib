@@ -112,6 +112,24 @@ __shlib_getarg()
 }
 alias shlib.getarg='__shlib_getarg '
 
+__shlib_shiftarg()
+{
+	if test "$((${OPTIND} - 2))" -ge '0'; then
+		# Bash and Zsh don't index $0
+		echo "$((${OPTIND} - 2))"
+	elif test "$((${OPTIND} - 1))" -ge '0'; then
+		# All flavours of Ksh as well as Dash and BusyBox's /bin/sh
+		# count $0 as part of the index position
+		echo "$((${OPTIND} - 1))"
+	else
+		# *BSD /bin/sh appear to pre-shift the arg list every time
+		# getopt is invoked, apparently in violation of POSIX.
+		echo 1
+	fi
+	OPTIND=1
+}
+alias shlib.shiftarg='__shlib_shiftarg '
+
 # Not all printf's are created equal.  Lksh/PdKsh don't support %f format
 # strings and Dash and Zsh's printf use single-precision floating point
 # arithmetic.
@@ -487,11 +505,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 		# OPTIND at the argument that had the error, a behavior not
 		# decribed by POSIX.
 		(\?)	: "extended options: index=${OPTIND}, arg='${__shlib_arg}', optarg='${OPTARG}'"
-			case "${SHLIB_SHELL}" in
-			(zsh|bash)	shift $((${OPTIND} - 1));;
-			(*)		shift $((${OPTIND} - 2));;
-			esac
-			OPTIND=1
+			shift $(__shlib_shiftarg)
 			: "extended arg: '${1}'"
 
 			case "${1}" in
