@@ -23,7 +23,7 @@ else
 fi
 
 # Allow 'readonly' to work, even if it wont do what we want
-if ! __shlib_hascmd readonly > /dev/null 2>&1; then alias readonly=' ';fi
+if ! $(readonly __SHLIB_JUNK >/dev/null 2>&1); then alias readonly=' ';fi
 
 # Find the shell-flavor we are using
 if ! ${ZSH_VERSION+false}; then
