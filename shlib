@@ -125,7 +125,7 @@ __shlib_shiftarg()
 		if test "$((${OPTIND} - 2))" -ge '0'; then
 			echo "$((${OPTIND} - 2))"
 		else # except /bin/sh found in *BSD
-			echo 1
+			echo 0
 		fi;;
 	esac
 	OPTIND=1
