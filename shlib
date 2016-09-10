@@ -114,18 +114,20 @@ alias shlib.getarg='__shlib_getarg '
 
 __shlib_shiftarg()
 {
-	if test "$((${OPTIND} - 2))" -ge '0'; then
-		# Bash and Zsh don't index $0
-		echo "$((${OPTIND} - 2))"
-	elif test "$((${OPTIND} - 1))" -ge '0'; then
-		# All flavours of Ksh as well as Dash and BusyBox's /bin/sh
+	: "__shlib_shiftarg: shell=${SHLIB_SHELL}, index=${OPTIND}"
+	case "${SHLIB_SHELL}" in
+	(bash|zsh) # Bash and Zsh don't index $0
+		echo "$((${OPTIND} - 1))";;
+	(ksh)	# All flavours of Ksh as well as Dash and BusyBox's /bin/sh
 		# count $0 as part of the index position
-		echo "$((${OPTIND} - 1))"
-	else
-		# *BSD /bin/sh appear to pre-shift the arg list every time
-		# getopt is invoked, apparently in violation of POSIX.
-		echo 1
-	fi
+		echo "$((${OPTIND} - 2))";;
+	(*)	# "MOST" /bin/sh shells obey ksh's behavior..
+		if test "$((${OPTIND} - 2))" -ge '0'; then
+			echo "$((${OPTIND} - 2))"
+		else # except /bin/sh found in *BSD
+			echo 1
+		fi;;
+	esac
 	OPTIND=1
 }
 alias shlib.shiftarg='__shlib_shiftarg '
