@@ -36,12 +36,13 @@ SHIT_BENCHMARKS='false'
 SHIT_SHELLS='sh ash dash bash zsh ksh ksh93 lksh pdksh mksh'
 __shit_trace=
 __shit_benchmark=
-while getopts ':hxvbL:S:' __shit_arg; do
+while getopts ':hxvBL:S:' __shit_arg; do
 	case "${__shit_arg}" in
 	(L)	test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
 		test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
 		SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
 	(S)	SHIT_SHELLS="${SHIT_SHELLS} ${OPTARG}";;
+	(B)	__shit_benchmark='--benchmark';;
 	(h)	__shit_usage;;
 	(v)	set -v;;
 	(x)	__shit_trace='-x';;
