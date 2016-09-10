@@ -32,6 +32,20 @@ EOF
 	exit 0
 }
 
+# Find the shell-flavor we are using
+if ! ${ZSH_VERSION+false}; then
+	SHIT_SHELL='zsh'
+	emulate ksh
+	zmodload zsh/mathfunc
+elif ! ${KSH_VERSION+false}; then
+	SHIT_SHELL='ksh'
+	alias type > /dev/null 2>&1 || alias type='whence -v '
+elif ! ${BASH_VERSION+false}; then
+	SHIT_SHELL='bash'
+else
+	SHIT_SHELL='sh'
+fi
+
 SHIT_BENCHMARKS='false'
 SHIT_SHELLS='sh ash dash bash zsh ksh ksh93 lksh pdksh mksh'
 __shit_trace=
@@ -47,7 +61,7 @@ while getopts ':hxvbL:S:' __shit_arg; do
 	(x)	__shit_trace='-x';;
 	(:)	__shit_usage "option '-${OPTARG}' requires an argument";;
 	(\?)	: "extended options: index=${OPTIND}, arg=${__shit_arg}', optarg='${OPTARG}'"
-		case "${SHLIB_SHELL}" in
+		case "${SHIT_SHELL}" in
 		(zsh|bash)	shift $((${OPTIND} - 1));;
 		(*)		shift $((${OPTIND} - 2));;
 		esac
