@@ -313,7 +313,7 @@ __shlib_imported()
 	: "__shlib_imported($#): $*"
 
 	case "$#" in
-	(1)	"__shlib_${1}_imported" > /dev/null 2>&1 || return 1;;
+	(1)	eval "__shlib_${1}_imported" > /dev/null 2>&1 || return 1;;
 	(2)	eval "__shlib_${1}_imported() { :; }";;
 	(*)	return 1;;
 	esac

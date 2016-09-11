@@ -135,7 +135,7 @@ for __shit_arg; do
 	# twice, on the flip side, we may end up testing 2 different versions
 	# of similar shells (E.g. ash and dash).
 	for __shit_shell in ${SHIT_SHELLS}; do
-		"${__shit_shell}" -c 'exit 0' > /dev/null 2>&1 || continue
+		eval "${__shit_shell}" -c 'exit 0' > /dev/null 2>&1 || continue
 
 		# FIXME #1 we need to handle a per-test log-file for capturing
 		# the test result. i.e. we need a place to dump the results.
