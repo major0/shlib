@@ -9,16 +9,16 @@ SHLIB_ONLY='false'
 # expected output, this can be detected by asking 'command -v' for the path to
 # 'sh', which in busybox returns as 'sh'.
 if which sh > /dev/null 2>&1; then
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(which "${1}")" > /dev/null 2>&1; }
+	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(which "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && which "${1}"; }
 elif whence -p sh > /dev/null 2>&1; then
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(whence -p "${1}")" > /dev/null 2>&1; }
+	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(whence -p "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && whence -p "${1}"; }
 elif type -P sh > /dev/null 2>&1; then
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(type -P "${1}")" > /dev/null 2>&1; }
+	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(type -P "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && type -P "${1}"; }
 else
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(command -v "${1}")" > /dev/null 2>&1; }
+	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(command -v "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && command -v "${1}"; }
 fi
 
