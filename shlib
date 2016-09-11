@@ -369,12 +369,16 @@ __shlib_import()
 {
 	: "__shlib_import($*)"
 	while test "$#" -gt '0'; do
+		# OpenBSD's /bin/sh will trigger an exit if we do this test
+		# while 'set -e' is active.
+		set +e
 		if ! eval "${1}_imported" 2>/dev/null; then
 			if ! __shlib_import_lib "${1}"; then
 				set -- $?
 				break
 			fi
 		fi
+		set -e
 		shift
 	done
 	return "$#"
