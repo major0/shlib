@@ -6,7 +6,7 @@
 #
 # The wrapper requires that the following exist as a minimum.
 # <project>/shlib.config
-# <project>/<command> -> <project>/libexec/shlib/shlib-wrapper
+# <project>/<command> -> libexec/shlib/shlib-wrapper
 # <project>/libexec/<project>/<command>
 # <project>/libexec/shlib
 set -e
