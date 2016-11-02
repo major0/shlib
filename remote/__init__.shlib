@@ -106,10 +106,12 @@ __remote_open()
 			# config somewhere.
 			if string.regexp '.*assword: ' "$(expect.line)"; then
 				printf 'Password: '
+				expect.echo(0)
 			fi
 
 			# Possibly found a shell prompt, time to bail...
 			if string.regexp '.*[$#] ' "$(expect.line)"; then
+				expect.echo(1)
 				break
 			fi
 		done
