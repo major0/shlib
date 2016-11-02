@@ -31,6 +31,7 @@ __expect_session()
 	test -d "${__expect_tmpdir}" || die 'failed to make session tmp directory'
 	__expect_stdin="${__expect_tmpdir}/input"
 	__expect_stdout="${__expect_tmpdir}/output"
+	__expect_stderr="${__expect_tmpdir}/error"
 	shlib.atexit __expect_close
 }
 
@@ -44,6 +45,9 @@ __expect_close()
 	if test -e "${__expect_stdout}"; then
 		! test -h "${__expect_stdout}" || exec 4<&-
 		rm "${__expect_stdout}"
+	fi
+	if test -e "${__expect_stderr}"; then
+		rm "${__expect_stderr}"
 	fi
 
 	! test -f "${__expect_tmpdir}/pid" || rm "${__expect_tmpdir}/pid"
@@ -64,11 +68,12 @@ __expect_popen()
 
 	system.mkfifo "${__expect_stdout}" || die 'expect.popen() failed to make stdout'
 	system.mkfifo "${__expect_stdin}" || die 'expect.popen() failed to make stdin'
+	touch "${__expect_stderr}" || die 'expect.open() failed to make stderr'
 
 	#if shlib.hascmd socat; then
 	#	(socat "PIPE:${__expect_stdin}" "EXEC:'$*',pty,setsid,ctty,crlf" | socat STDIN "PIPE:${__expect_stdout}") &
 	#else
-		(exec "$@" <> "${__expect_stdin}" > "${__expect_stdout}" 2>&1 ) &
+		(exec "$@" <> "${__expect_stdin}" > "${__expect_stdout}" 2>"${__expect_stderr}") &
 	#fi
 
 	__expect_pid="$!"
@@ -188,12 +193,22 @@ __expect_timer_stop()
 
 __expect_ready()
 {
-	case "${__expect_pid}" in
-	(0)	! test -e "${__expect_stdin}" || return 0;;
-	(*)	! (cd '/proc/' && test -d "${__expect_pid}") || return 0;;
-	esac
+	if test "${__expect_pid}" -eq '0'; then
+		if test -e "${__expect_stdin}"; then
+			return 0
+		fi
 
-	error 'expect not ready'
+		error 'expect not ready'
+		return 1
+	fi
+
+	if (cd '/proc/' && test -d "${__expect_pid}"); then
+		return 0
+	fi
+
+	if test -e "${__expect_stderr}"; then
+		cat "${__expect_stderr}"
+	fi
 	return 1
 }
 
