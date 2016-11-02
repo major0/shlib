@@ -25,7 +25,6 @@ __shit_usage()
 	  -L, --libdir=LIBDIR	Path to SHLIB libraries
 	  -S, --shells=SHELLS	List of shells to test against
 	  -B, --benchmark	Run performance benchmark tests [default: disabled]
-	  -v, --verbose		Enable verbose execution
 	  -h, --help		Display this help
 	  -x			Trace script execution
 EOF
@@ -36,7 +35,7 @@ SHIT_BENCHMARKS='false'
 SHIT_SHELLS='sh ash dash bash zsh ksh ksh93 lksh pdksh mksh'
 __shit_trace=
 __shit_benchmark=
-while getopts ':hxvBL:S:' __shit_arg; do
+while getopts ':hxBL:S:' __shit_arg; do
 	case "${__shit_arg}" in
 	(L)	test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
 		test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
@@ -44,7 +43,6 @@ while getopts ':hxvBL:S:' __shit_arg; do
 	(S)	SHIT_SHELLS="${SHIT_SHELLS} ${OPTARG}";;
 	(B)	__shit_benchmark='--benchmark';;
 	(h)	__shit_usage;;
-	(v)	set -v;;
 	(x)	__shit_trace='-x';;
 	(:)	__shit_usage "option '-${OPTARG}' requires an argument";;
 	(\?)	: "extended options: index=${OPTIND}, arg=${__shit_arg}', optarg='${OPTARG}'"
