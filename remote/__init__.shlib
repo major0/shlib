@@ -99,26 +99,34 @@ __remote_open()
 
 	expect.open "${@}"
 
-	while expect.read; do
-		# FIXME need to prompt for a password and/or pull one from a
-		# config somewhere.
-		if string.regexp '.*assword: ' "$(expect.line)"; then
-			printf 'Password: '
-		fi
+	while true; do
+		expect.write ''
+		while expect.read; do
+			# FIXME need to prompt for a password and/or pull one from a
+			# config somewhere.
+			if string.regexp '.*assword: ' "$(expect.line)"; then
+				printf 'Password: '
+			fi
 
-		# Possibly found a shell prompt, time to bail...
-		if string.regexp '.*[$#] ' "$(expect.line)"; then
-			break
-		fi
+			# Possibly found a shell prompt, time to bail...
+			if string.regexp '.*[$#] ' "$(expect.line)"; then
+				break
+			fi
+		done
+		expect.timedout || break
 	done
 
 	expect.write "echo COMMAND[mktemp]:\$(mktemp -d \${TMPDIR:-/tmp}/shlib.remote.XXXXXX)"
-	while expect.read; do
-		if string.regexp "^COMMAND\[mktemp\]:*" "$(expect.line)"; then
-			__remote_tmpdir="$(expect.line)"
-			__remote_tmpdir="${__remote_tmpdir#COMMAND\[mktemp\]:}"
-			return 0
-		fi
+	while true; do
+		while expect.read; do
+			if string.regexp "^COMMAND\[mktemp\]:*" "$(expect.line)"; then
+				__remote_tmpdir="$(expect.line)"
+				__remote_tmpdir="${__remote_tmpdir#COMMAND\[mktemp\]:}"
+				return 0
+			fi
+		done
+		expect.timedout || break
+		expect.write ''
 	done
 
 	error 'problem setting up remote session'
