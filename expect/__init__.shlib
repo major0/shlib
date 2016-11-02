@@ -254,6 +254,24 @@ __expect_regexp()
 }
 alias expect.regexp='__expect_regexp '
 
+if shlib.hascmd stty; then
+	__expect_echo_on() { stty echo; }
+	__expect_echo_off() { stty -echo; }
+else
+	shlib.error 'no suitable method for implementing expect.echo'
+	return 1
+fi
+__expect_echo()
+{
+	case "${1}" in
+	(1|true|y|yes)	__expect_echo_on;;
+	(0|false|n|no)  __expect_echo_off;;
+	(*)	shlib.error "invalid argument to expect.echo '${1}'"
+		return 1;;
+	esac
+}
+alias expect.echo='__expect_echo '
+
 shlib.main {
 	for arg; do
 		case "${arg}" in (-h|-help) string.doc 'expect';; esac
