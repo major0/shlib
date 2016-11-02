@@ -75,8 +75,8 @@ __remote_linux_vendor()
 {
 	: '__remote_linux_vendor()'
 	__remote_command sh -c "'test -f /etc/os-release && . /etc/os-release && echo \$ID'" || \
-		sh -c "'test -f /etc/redhat-release && echo redhat'" || \
-		sh -c "'test -f /etc/debian-version && echo debian'" || \
+		__remote_command sh -c "'test -f /etc/redhat-release && echo redhat'" || \
+		__remote_command sh -c "'test -f /etc/debian-version && echo debian'" || \
 		echo linux
 }
 
