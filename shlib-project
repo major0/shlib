@@ -4,7 +4,7 @@
 # This is a simple tool for setting up the developer environment for
 # shlib-based tools.  For the most part this tool acts to aid in boot-strapping
 # ones learning process about the development layout and is not expected to be
-# used for regaular development operations.
+# used for regular development operations.
 set -e
 
 SHLIB_GIT_URL='http://github.com/major0/shlib'
