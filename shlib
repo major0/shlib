@@ -233,10 +233,11 @@ __shlib_lib_resolv()
 		if test -f "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}.shlib"; then
 			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}.shlib"
 		fi
-
-		if test -e "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}/__init__.shlib"; then
-			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}/__init__.shlib"
-		fi
+		for __shlib_lib_resolv_iface in "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}"/*.shlib; do
+			test -f "${__shlib_lib_resolv_iface}" || break
+			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}"
+			break
+		done
 		if ! test -z "${__shlib_lib_resolv_file}"; then
 			__shlib_realpath "${__shlib_lib_resolv_file}"
 			break
@@ -334,11 +335,34 @@ __shlib_import_lib()
 		die "invalid library '${1}'"
 	fi
 
-	# name file
-	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
-
 	# Only allow a library to be imported once per-scope
 	! __shlib_imported "${1}" || return 0
+
+	# name file
+	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
+	set -- "${1}" "${2%%/}"
+
+	# importing whole directory
+	# note: we borrow 'while' here purely so we can break out of nested
+	# conditions
+	while test -d "${2}"; do
+		# Constrain our import to the specified __init__
+		if test -f "${2}/__init__.shlib"; then
+			set -- "${1}" "${2}/__init__.shlib"
+			break
+		fi
+		# Import everything in the directory
+		for __shlib_import_lib_iface in "${2}"/*.shlib; do
+			test -f "${__shlib_import_lib_iface}" || return 0
+			set -- "${1}" "${2}" "${1}.${__shlib_import_lib_iface##*/}"
+			set -- "${1}" "${2}" "${3%.shlib}"
+			__shlib_import_lib "${3}"
+		done
+
+		# Return after importing the directory
+		__shlib_imported "${1}" "${2}"
+		return 0
+	done
 
 	# name file opwd
 	set -- "${1}" "${2}" "${PWD}"
