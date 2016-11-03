@@ -1,9 +1,0 @@
-#!/usr/bin/env shlib
-
-import string.index
-import string.match
-import string.regexp
-import string.toupper
-import string.tolower
-import string.compare
-import string.sub
