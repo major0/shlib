@@ -25,17 +25,6 @@ fi
 LIBEXEC_DIR="${PROJECT_DIR}/libexec"
 progname="${0##*/}"
 
-# This is a partial-installed mode in which shlib is installed into the system
-# but the project is not.  This will most likely result from someone copying
-# the shlib-wrapper into their project as opposed to symlinking it from the
-# submodule. Supported, but not recommended.
-if ! test -d "${LIBEXEC_DIR}"; then
-	test -f "${PROJECT_DIR}/${progname}" || die "invalid script '${progname}'"
-	test -e "$(command -v 'shlib')" || die "missing '${LIBEXEC_DIR}/shlib'"
-	exec shlib --libdir="${PROJECT_DIR}" "${PROJECT_DIR}/${progname}" "$@"
-fi
-
-# ElSE .. This is an integration directory which requires a libexec tree
 test -d "${LIBEXEC_DIR}/${project}" || die "missing '${LIBEXEC_DIR}/${project}'"
 test -f "${LIBEXEC_DIR}/${project}/${progname}" || die "invalid script '${progname}'"
 test -f "${LIBEXEC_DIR}/shlib/shlib" || die "invalid shlib @ '${LIBEXEC_DIR}/shlib'"
