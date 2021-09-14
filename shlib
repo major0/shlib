@@ -4,21 +4,20 @@
 # nothing to use 'set -e' and then ignore its existance.
 set -e
 
-SHLIB_ONLY='false'
 # BusyBox may have builtins which can prevent 'command -v' from returning the
 # expected output, this can be detected by asking 'command -v' for the path to
 # 'sh', which in busybox returns as 'sh'.
 if which sh > /dev/null 2>&1; then
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(which "${1}" 2> /dev/null)"; }
+	__shlib_hascmd() { test -e "$(which "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && which "${1}"; }
 elif whence -p sh > /dev/null 2>&1; then
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(whence -p "${1}" 2> /dev/null)"; }
+	__shlib_hascmd() { test -e "$(whence -p "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && whence -p "${1}"; }
 elif type -P sh > /dev/null 2>&1; then
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(type -P "${1}" 2> /dev/null)"; }
+	__shlib_hascmd() { test -e "$(type -P "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && type -P "${1}"; }
 else
-	__shlib_hascmd() { ! "${SHLIB_ONLY}" || return 1;test -e "$(command -v "${1}" 2> /dev/null)"; }
+	__shlib_hascmd() { test -e "$(command -v "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && command -v "${1}"; }
 fi
 
@@ -189,7 +188,6 @@ __shlib_leaked_vars_filter()
 		(POSIXLY_CORRECT) continue;;
 		(SHLIB_CALL_STACK) continue;;
 		(SHLIB_SHELL)	continue;;
-		(SHLIB_ONLY)	continue;;
 		(OPTARG)	continue;; # zsh
 		(A__z)		continue;; # ksh
 
@@ -526,9 +524,6 @@ if test "$(basename "${0}")" = 'shlib'; then
 
 			(--import|--import=*)
 				SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")";;
-
-			(--shlib-only)
-				readonly SHLIB_ONLY=true;;
 
 			(--report-set)
 				readonly SHLIB_REPORT_SET=true;;
