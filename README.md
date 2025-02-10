@@ -83,7 +83,7 @@ Examples:
 
  1. Run an shlib: `shlib program.shlib`
  2. Run a shell script: `shlib program.sh`
- 3. Shell-like `-c` syntax: `shlib -c 'import hostinfo;hostinfo'`
+ 3. Shell-like `-c` syntax: `shlib -I math -c 'math.seq 0 9'`
 
 See `shlib --help` for various command-line options which change the behavior
 of [shlib][shlib].
