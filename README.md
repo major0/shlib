@@ -114,6 +114,9 @@ See Also
  * [API Reference](doc/__index__.md)
  * [Future features](TODO.md)
  * [License](LICENSE)
+ * [Unix Shell Objects](https://www.biblio.com/9780764570049), ISBN-13: 978-0764570049, ISBN-10: 0764570048
+ * [A new object-oriented programming lanuage: sh](https://dl.acm.org/doi/10.5555/1267257.1267258)
+ * [SHOOP: SHell Object Oriented Programming](https://sourceforge.net/projects/shoop/)
 
 [shlib]: http://github.com/major0/shlib "shlib"
 [ksh]: http://www.kornshell.com/ "Korne Shell"
