@@ -13,8 +13,8 @@ enhancements under the covers (making afore mentioned esoteric hacks totally
 portable and useful for all).  Further more, [shlib][shlib] is self-optimizing
 at *load-time*, meaning that it does not spend time checking the shell
 environment every time an interface is called.  The end result is fast and
-portable shell scripts  which work right regardless of which flavor of
-`/bin/sh` is interpretting them.
+portable shell scripts which, hopefully, work right regardless of which flavor
+of `/bin/sh` is interpretting them.
 
 ## Philosphy ##
 
@@ -45,7 +45,7 @@ For example:
 
 ```sh
 	#!/usr/bin/env shlib
-	
+
 	if shlib.hascmd seq; then
 		__math_seq() { command seq "${@}"; }
 	else
@@ -57,7 +57,7 @@ For example:
 		fi
 	fi
 	alias math.seq='__math_seq '
-	
+
 	shlib.main() { math.seq "${@}"; }
 ```
 
@@ -77,7 +77,7 @@ Command Line
 ------------
 
 [shlib][shlib] can be envoked from the command-line in much the same way as
-traditional /bin/sh.
+traditional `/bin/sh`.
 
 Examples:
 
@@ -104,7 +104,9 @@ Source in shlib
 When all else fails, you can simply source in the [shlib][shlib] top-level
 script into your existing `/bin/sh` scripts.
 
+```sh
 	. /path/to/shlib
+```
 
 See Also
 ========

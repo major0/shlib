@@ -1,24 +1,31 @@
 ## Contributing ##
 
-### Pull Requests ###
+Welcome to the SHLIB Project. Here you will find some basic information on
+how to contribute to the project.
 
-Please submit all pull-request changes on their own git branch.  Any pull
-requests which are not on their own topic branch will be rejected.
+## Reporting Bugs ##
 
-### Unit Tests ###
+Simply open an issue on [GitHub](../issues).
 
-[shlib][shlib] is moving towards a Test-Driven Development model.  This means
-that all new interfaces must be documented, and have unit tests written, before
-the interface is written.  The [shlib][shlib] development environment contains
-git-hooks which try to enforce this model.  This hooks can be enabled by adding
-the following code to the appropriate git-hook script.
+## Submitting Changes
 
-```sh
-if test -x ".hooks/${0##*/}"; then ".hooks/${0##*/}" "$@"; fi
-```
+All changes should:
+- Use [Conventional Commits](https://www.conventionalcommits.org)
+- Should pass local [pre-commit][] tests.
+- Should be submitted as a pull-request to the repository.
 
-See the output of `ls -d -C1 .hooks/*.d/` for a list of script names in
-.git/hooks/ which should be updated.
+## Testing
+
+Local testing is handled by [pre-commit][], which will also be used to
+automatically test any pull-requests in the repositories CI/CD pipeline.
+
+See the [installation instructions](https://pre-commit.com/#install) for
+[pre-commit][] for more details.
+
+## Roadmap
+
+Please review the [roadmap](Roadmap.md) to see where we are in the project
+and how you might be able to help.
 
 ### Coding Style ###
 
@@ -44,7 +51,10 @@ defined by [git][git].
 
  * Do not use process substition `<( )` or `>( )`.
 
- * Use 'test' over `[ ... ]`
+ * Use 'test' over `[ ... ]`: Historically `[` and `]` are filesystem symlinks
+   to the `test` CLI command. While most modern shell's handle `test` as a
+   builtin, most users don't understand that `[` is not part of shell's defined
+   syntax.
 
 #### Rethink your understanding of `test` ####
 
@@ -82,9 +92,11 @@ defined by [git][git].
 
 ##### Accepted Parameter Substitutions #####
 
-   * `${parameter-word}` and its [-=?+] siblings, and their colon'ed "unset or null" form.
+   * `${parameter-word}` and its `[-=?+]` siblings, and their colon'ed "unset or null" form.
 
-   * `${parameter#word}` and its [#%] siblings and their doubled "longest matching" form.
+   * `${parameter#word}` and its `[#%]` siblings and their doubled "longest matching" form.
+
+   * `${#parameter}` for strlen substitution.
 
 ##### Unacceptable shell-ism's #####
 
@@ -97,9 +109,11 @@ hide it inside of an if, or some other source-file to be sourced in).
 
    * Shell-Arrays: `var=(one two three)`
 
-   * strlen substitution: `${#parameter}`
-
    * Pattern replacement: `${parameter/pattern/string}`
 
+[//]: # (References)
+
+[GitHub]: https://github.com
+[pre-commit]: https://pre-commit.com
 [shlib]: http://github.com/major0/shlib "shlib"
 [git]: http://gitscm.com/
