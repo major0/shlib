@@ -40,7 +40,7 @@ __shlib_math_sin()
 }
 alias math.sin='__shlib_math_sin '
 
-shlib.main {
+main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sin';; esac
 	done

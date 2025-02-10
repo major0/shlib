@@ -40,19 +40,11 @@ __shlib_math_int()
 }
 alias math.int='__shlib_math_int '
 
-shlib.main {
+main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.int';; esac
 	done
 	__shlib_math_int "${@}"
-}
-
-shlib.test {
-	test.fail 'empty argument list allowed' __shlib_math_int
-	test.exec __shlib_math_int 1.0
-	test.result 'float to int' '2' __shlib_math_int 2.0
-	test.benchmark __shlib_math_int 3.0
-	test.done
 }
 
 # vim: filetype=sh

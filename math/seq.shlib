@@ -69,7 +69,7 @@ __shlib_math_seq()
 }
 alias math.seq='__shlib_math_seq '
 
-shlib.main {
+main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.seq';; esac
 	done

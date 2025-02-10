@@ -31,7 +31,7 @@ if ! ${ZSH_VERSION+false}; then
 	zmodload zsh/mathfunc
 elif ! ${KSH_VERSION+false}; then
 	readonly SHLIB_SHELL='ksh'
-	alias type > /dev/null 2>&1 || alias type='whence -v '
+	alias type > /dev/null 2>&1 || type() { whence -v "$@*"; }
 elif ! ${BASH_VERSION+false}; then
 	readonly SHLIB_SHELL='bash'
 else
@@ -66,13 +66,15 @@ basename()
 # shlib library routines
 
 # These where defined earlier
-alias hascmd='__shlib_hascmd '
-alias shlib.hascmd='__shlib_hascmd '
-alias shlib.pathcmd='__shlib_pathcmd '
+hascmd() { __shlib_hascmd "$@"; }
+alias shlib.hascmd='hascmd '
+pathcmd() { __shlib_pathcmd "$@"; }
+alias shlib.pathcmd='pathcmd '
 
 # the compliment to hascmd
 __shlib_hasfunc() { type "${1}" 2>&1 | grep -q 'function$'; }
-alias shlib.hasfunc='__shlib_hasfunc '
+hasfunc() { __shlib_hasfunc "$@"; }
+alias shlib.hasfunc='hasfunc '
 
 # FIXME this is not remotely portable, and it beaks our coding style guidelines
 if pwd -P > /dev/null 2>&1; then
@@ -98,7 +100,7 @@ __shlib_optarg()
 	fi
 	test -z "${3}" || echo "${3}"
 }
-alias shlib.optarg='__shlib_optarg '
+optarg() { __shlib_optarg "$@"; }
 
 __shlib_getarg()
 {
@@ -109,7 +111,7 @@ __shlib_getarg()
 	fi
 	echo "${3}"
 }
-alias shlib.getarg='__shlib_getarg '
+getarg() { __shlib_getarg; }
 
 __shlib_shiftarg()
 {
@@ -129,7 +131,7 @@ __shlib_shiftarg()
 	esac
 	OPTIND=1
 }
-alias shlib.shiftarg='__shlib_shiftarg '
+shiftarg() { __shlib_shiftarg "$@"; }
 
 # Not all printf's are created equal.  Lksh/PdKsh don't support %f format
 # strings and Dash and Zsh's printf use single-precision floating point
@@ -151,12 +153,12 @@ else
 fi
 
 __shlib_error() { echo "error: $*" >&2; }
+error() { __shlib_error "$@"; }
 alias shlib.error='__shlib_error '
-alias error='__shlib_error '
 
 __shlib_die() { error "$*"; exit 1; }
+die() { __shlib_die "$@"; }
 alias shlib.die='__shlib_die '
-alias die='__shlib_die '
 
 __shlib_exit()
 {
@@ -179,6 +181,7 @@ __shlib_atexit()
 	trap __shlib_exit 0 TERM HUP INT
 }
 alias shlib.atexit='__shlib_atexit '
+atexit() { __shlib_atexit "$@"; }
 
 __shlib_leaked_vars_filter()
 {
@@ -284,23 +287,6 @@ __shlib_doc_resolv()
 	unset __shlib_doc_resolv_lib
 	unset __shlib_doc_resolv_file
 }
-__shlib_doc()
-{
-	: "__shlib_doc($*)"
-	set -- "${1}" "${1%.*}" "${1##*.}" "$(__shlib_doc_resolv "${1}")"
-	test -e "${4}" || die "no documentation for '${1}'"
-
-	if test -e "${4}"; then
-		sed \
-			-e '/^[[[]/d;/```sh/d;/```/d;s/`//g' \
-			-e 's/[[]\([^]]\{1,\}\)[]][(][^)]*[)]/\1/g' \
-			-e 's/[[]\([^]]\{1,\}\)[]][[][^]]*[]]/\1/g' \
-			"${4%}"
-	fi
-
-	exit 0
-}
-alias shlib.doc='__shlib_doc '
 
 __shlib_imported()
 {
@@ -351,6 +337,7 @@ __shlib_import_lib()
 		fi
 		# Import everything in the directory
 		for __shlib_import_lib_iface in "${2}"/*.shlib; do
+			case "${__shlib_import_lib_iface}" in (*_test.shlib) continue;;esac
 			test -f "${__shlib_import_lib_iface}" || return 0
 			set -- "${1}" "${2}" "${1}.${__shlib_import_lib_iface##*/}"
 			set -- "${1}" "${2}" "${3%.shlib}"
@@ -373,9 +360,6 @@ __shlib_import_lib()
 	. "${2}"
 	__shlib_imported_status="$?"
 	SHLIB_CALL_STACK="${4}"
-
-	# Rest test alias
-	alias shlib.test=': ||'
 
 	cd "${3}"
 	set -- "${__shlib_imported_status}"
@@ -403,12 +387,13 @@ __shlib_import()
 	return "$#"
 }
 alias shlib.import='__shlib_import '
-alias import='__shlib_import '
+import() { __shlib_import "$@"; }
 
 ##
 # These routines are pretty shlib specific.
-alias shlib.main="! test \"\${SHLIB_CALL_STACK}\" = '__main__' || "
-alias shlib.test=': ||'
+__shlib_main() { ! test \"\${SHLIB_CALL_STACK}\" = '__main__'; }
+alias shlib.main='__shlib_main || '
+alias main='__shlib_main || '
 
 __shlib_version() { echo 0.01; }
 __shlib_usage()
@@ -441,15 +426,15 @@ EOF
 alias shlib.usage='__shlib_usage '
 
 # If we were not "installed" then this variable will not have been
-# substituted, and the libexecdir in which we find the 'shlib' front-end will
+# substituted, and the libdir in which we find the 'shlib' front-end will
 # not exist at which point we expect libdir to be relative to ${0}.
 # e.g. <path to shlib>/shlib, <path to shlib>/.
 # Alternatively, an environment may set the SHLIB_PATH to place shlib in
 # disparate locations.
-# e.g. SHLIB_PATH="${TOPDIR}/utils/shlib/libexec" while 'shlib' exists as a
+# e.g. SHLIB_PATH="${TOPDIR}/utils/shlib/lib" while 'shlib' exists as a
 # symlink in "${TOPDIR}/bin/shlib"
 if test -z "${SHLIB_PATH}"; then
-	SHLIB_PATH="@shlib_libexecdir@"
+	SHLIB_PATH="@shlib_libdir@"
 	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}"; then
 		SHLIB_PATH="$(__shlib_realpath "${0%/*}")"
 		SHLIB_PATH="${SHLIB_PATH%/}"

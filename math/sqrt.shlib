@@ -40,7 +40,7 @@ __shlib_math_sqrt()
 }
 alias math.sqrt='__shlib_math_sqrt '
 
-shlib.main {
+main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sqrt';; esac
 	done

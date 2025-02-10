@@ -1,6 +1,6 @@
 #!/usr/bin/env shlib
 
-HOSTINFO="`./config.guess`"
+HOSTINFO="$(./config.guess)"
 HOSTINFO_ARCH="${HOSTINFO%%-*}"
 HOSTINFO_VENDOR="${HOSTINFO#*-}"
 HOSTINFO_VENDOR="${HOSTINFO_VENDOR%%-*}"

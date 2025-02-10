@@ -1,0 +1,12 @@
+shlib.test {
+	test.fail 'no arguments allowed' __shlib_math_calc
+	test.fail 'bad argument list' __shlib_math_calc '1 2 3'
+	test.exec __shlib_math_calc 1
+	test.exec __shlib_math_calc '1 + 1'
+	test.result 'addition' '2' __shlib_math_calc '1 + 1'
+	test.result 'subtraction' '1' __shlib_math_calc '2 - 1'
+	test.result 'division' '10' __shlib_math_calc '20 / 2'
+	test.result 'multiplication' '15' __shlib_math_calc '3 * 5'
+	test.benchmark __shlib_math_calc '12 * 12 + 11 / 3 - 1'
+	test.done
+}

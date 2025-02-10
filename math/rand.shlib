@@ -40,7 +40,7 @@ __shlib_math_rand()
 }
 alias math.rand='__shlib_math_rand '
 
-shlib.main {
+main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.rand';; esac
 	done

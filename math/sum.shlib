@@ -21,7 +21,7 @@ __shlib_math_sum()
 }
 alias math.sum='__shlib_math_sum '
 
-shlib.main {
+main {
 	for arg; do
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sum';; esac
 	done

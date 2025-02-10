@@ -1,0 +1,10 @@
+shlib.test {
+	test.fail 'empty argument list allowed' __shlib_math_cos
+	test.fail 'too many arguments allowed' __shlib_math_cos 1 2
+	test.exec __shlib_math_cos 1
+	__shlib_math_cos_result="$(shlib.printf '%0.10f' "$(__shlib_math_cos 1)")"
+	test.result 'math' '0.5403023059' echo "${__shlib_math_cos_result}"
+	unset __shlib_math_cos_result
+	test.benchmark __shlib_math_cos 1
+	test.done
+}

@@ -1,0 +1,9 @@
+shlib.test {
+	test.fail 'allowed empty argument list' __shlib_math_cmp
+	#test.fail 'allowed bad argument list' __shlib_math_cmp '1 2 3'
+	test.exec __shlib_math_cmp '1'
+	test.pass 'basic comparison' __shlib_math_cmp '1 == 1'
+	test.pass 'floating-point comparison' __shlib_math_cmp '0 == 0.0'
+	test.benchmark __shlib_math_cmp '1 == 1.00000000000000'
+	test.done
+}
