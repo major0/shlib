@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
 # We always use 'set -e' because it works "as expected" on the vast majority of
 # POSIX shells out there .. BASH being the only exception. That said, it hurts
 # nothing to use 'set -e' and then ignore its existance.

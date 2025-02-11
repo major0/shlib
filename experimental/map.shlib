@@ -1,4 +1,6 @@
-#!/usr/bin/env shlib
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
 
 # Based on a bash map() function by Reddit user downdiagonal
 # http://www.reddit.com/r/bashtricks/comments/aks3u/a_functional_programming_style_map_function_for/

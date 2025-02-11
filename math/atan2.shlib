@@ -1,4 +1,6 @@
-#!/usr/bin/env shlib
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
 
 #if test "${SHLIB_SHELL}" = 'ksh' && shlib.hasfunc .sh.math.atan2; then
 #	__shlib_math_atan2_cmd() { echo "$((atan2($1,$2)))"; }
