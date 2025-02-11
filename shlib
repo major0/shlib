@@ -7,6 +7,7 @@ set -e
 # BusyBox may have builtins which can prevent 'command -v' from returning the
 # expected output, this can be detected by asking 'command -v' for the path to
 # 'sh', which in busybox returns as 'sh'.
+# shellcheck disable=SC3045
 if which sh > /dev/null 2>&1; then
 	__shlib_hascmd() { test -e "$(which "${1}" 2> /dev/null)"; }
 	__shlib_pathcmd() { __shlib_hascmd "${1}" && which "${1}"; }
@@ -22,7 +23,7 @@ else
 fi
 
 # Allow 'readonly' to work, even if it wont do what we want
-if ! $(readonly __SHLIB_JUNK >/dev/null 2>&1); then alias readonly=' ';fi
+if ! (readonly __SHLIB_JUNK >/dev/null 2>&1); then alias readonly=' ';fi
 
 # Find the shell-flavor we are using
 if ! ${ZSH_VERSION+false}; then
@@ -31,7 +32,7 @@ if ! ${ZSH_VERSION+false}; then
 	zmodload zsh/mathfunc
 elif ! ${KSH_VERSION+false}; then
 	readonly SHLIB_SHELL='ksh'
-	alias type > /dev/null 2>&1 || type() { whence -v "$@*"; }
+	alias type > /dev/null 2>&1 || type() { whence -v "$*"; }
 elif ! ${BASH_VERSION+false}; then
 	readonly SHLIB_SHELL='bash'
 else
@@ -96,7 +97,7 @@ __shlib_optarg()
 		set -- "${1}" "${2}" "${1#*=}"
 	else
 		case "${2}" in (-*);; (*) set -- "${1}" "${2}" "${2}";; esac
-		OPTIND="$((${OPTIND} + 1))"
+		OPTIND="$((OPTIND + 1))"
 	fi
 	test -z "${3}" || echo "${3}"
 }
@@ -118,13 +119,13 @@ __shlib_shiftarg()
 	: "__shlib_shiftarg: shell=${SHLIB_SHELL}, index=${OPTIND}"
 	case "${SHLIB_SHELL}" in
 	(bash|zsh) # Bash and Zsh don't index $0
-		echo "$((${OPTIND} - 1))";;
+		echo "$((OPTIND - 1))";;
 	(ksh)	# All flavours of Ksh as well as Dash and BusyBox's /bin/sh
 		# count $0 as part of the index position
-		echo "$((${OPTIND} - 2))";;
+		echo "$((OPTIND - 2))";;
 	(*)	# "MOST" /bin/sh shells obey ksh's behavior..
-		if test "$((${OPTIND} - 2))" -ge '0'; then
-			echo "$((${OPTIND} - 2))"
+		if test "$((OPTIND - 2))" -ge '0'; then
+			echo "$((OPTIND - 2))"
 		else # except /bin/sh found in *BSD
 			echo 0
 		fi;;
@@ -138,6 +139,7 @@ shiftarg() { __shlib_shiftarg "$@"; }
 # arithmetic.
 if __shlib_hascmd printf; then
 	if ! printf '%f' 1 > /dev/null 2>&1; then
+		# shellcheck disable=SC2139
 		alias shlib.printf="$(__shlib_pathcmd printf) "
 	else
 		case "$(printf '%0.20f\n' 0.0099887766554433221100)" in
@@ -145,7 +147,8 @@ if __shlib_hascmd printf; then
 			alias shlib.printf='printf '
 			;;
 
-		(*)	alias shlib.printf="$(__shlib_pathcmd printf) ";;
+		(*) # shellcheck disable=SC2139
+		    alias shlib.printf="$(__shlib_pathcmd printf) ";;
 		esac
 	fi
 else
@@ -163,6 +166,7 @@ alias shlib.die='__shlib_die '
 __shlib_exit()
 {
 	: "__shlib_exit($*)"
+	# shellcheck disable=SC2086
 	set -- ${__shlib_atexit_funcs}
 	unset __shlib_atexit_funcs
 	while test "$#" -gt '0'; do
@@ -205,6 +209,7 @@ __shlib_leaked_vars()
 {
 	: "__shlib_leaked_vars($*)"
 	shift $#
+	# shellcheck disable=SC2046
 	set -- $(__shlib_leaked_vars_filter $( ("${SHLIB_SHELL}" -c 'set';set;env)|sed -n 's/=.*//p'|sort|uniq -u))
 	unset __shlib_leaked_shell_vars
 	if test "$#" -ne '0'; then
@@ -223,8 +228,11 @@ __shlib_lib_resolv()
 	else
 		__shlib_lib_resolv_lib="${1}"
 	fi
+	# FIXME expand this in a subshell and "output" all elements of the
+	# path as an array that we can iterate over
 	__shlib_lib_resolv_ifs="${IFS}"
 	IFS=':'
+	# shellcheck disable=SC2086
 	set -- ${SHLIB_PATH}
 	IFS="${__shlib_lib_resolv_ifs}"
 	unset __shlib_lib_resolv_ifs
@@ -263,8 +271,10 @@ __shlib_doc_resolv()
 	else
 		__shlib_doc_resolv_lib="${1}"
 	fi
+	# FIXME handle `:` delimited paths w/out modifying IFS
 	__shlib_doc_resolv_ifs="${IFS}"
 	IFS=':'
+	# shellcheck disable=SC2086
 	set -- ${SHLIB_PATH}
 	IFS="${__shlib_doc_resolv_ifs}"
 	unset __shlib_doc_resolv_ifs
@@ -291,7 +301,7 @@ __shlib_doc_resolv()
 __shlib_imported()
 {
 	: "__shlib_imported($#): $*"
-	__shlib_imported_lib="$(printf '%s' "$1"|tr '[/.]' '_')"
+	__shlib_imported_lib="$(printf '%s' "$1"|tr '/.' '_')"
 	shift
 	set -- "${__shlib_imported_lib}" "$@"
 	unset __shlib_imported_lib
@@ -357,6 +367,7 @@ __shlib_import_lib()
 	set -- "${1}" "${2}" "${3}" "${SHLIB_CALL_STACK}"
 	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}"
 	__shlib_imported "${1}" "${2}"
+	# shellcheck disable=SC1090
 	. "${2}"
 	__shlib_imported_status="$?"
 	SHLIB_CALL_STACK="${4}"
@@ -391,7 +402,7 @@ import() { __shlib_import "$@"; }
 
 ##
 # These routines are pretty shlib specific.
-__shlib_main() { ! test \"\${SHLIB_CALL_STACK}\" = '__main__'; }
+__shlib_main() { ! test "${SHLIB_CALL_STACK}" = '__main__'; }
 alias shlib.main='__shlib_main || '
 alias main='__shlib_main || '
 
@@ -453,7 +464,7 @@ SHLIB_IMPORTS=
 __shlib_atexit_funcs=
 if test "$(basename "${0}")" = 'shlib'; then
 	SHLIB_COMMAND=
-	while getopts ':h:VL:I:T:vxc:' __shlib_arg; do
+	while getopts ':h:VL:I:vxc:' __shlib_arg; do
 		case "${__shlib_arg}" in
 		##
 		# If we are here then everyting went as expected and all
@@ -492,7 +503,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 		# OPTIND at the argument that had the error, a behavior not
 		# decribed by POSIX.
 		(\?)	: "extended options: index=${OPTIND}, arg='${__shlib_arg}', optarg='${OPTARG}'"
-			shift $(__shlib_shiftarg)
+			shift "$(__shlib_shiftarg)"
 			: "extended arg: '${1}'"
 
 			case "${1}" in
@@ -515,7 +526,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 
 			##
 			# Our standard argument handling
-			(--)	OPTIND="$((${OPTIND} + 1))"; break;;
+			(--)	OPTIND="$((OPTIND + 1))"; break;;
 			(-*)	__shlib_usage 'shlib' "unknown option '${1}'"
 				exit 1;;
 			(*)	break;;
@@ -526,7 +537,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 		esac
 	done
 	unset __shlib_arg
-	shift $((${OPTIND} - 1))
+	shift $((OPTIND - 1))
 	OPTIND=1
 	unset OPTARG
 
@@ -548,13 +559,19 @@ if test "$(basename "${0}")" = 'shlib'; then
 		test "$#" -ne '0' || die 'no script specified'
 		test -f "$(__shlib_realpath "${1}")" || die "file does not exist '${1}'"
 
+		# shellcheck disable=SC2034
 		PROGNAME="$(basename "${1}")"
+		# shellcheck disable=SC2034
 		SHLIB_SCRIPT="${1}"
+		# shellcheck disable=SC2034
 		SHLIB_IMPORT_FILE="${SHLIB_SCRIPT}"
-		SHLIB_IMPORT_DIR="$(dirname ${SHLIB_SCRIPT})"
+		# shellcheck disable=SC2034
+		SHLIB_IMPORT_DIR="$(dirname "${SHLIB_SCRIPT}")"
+		# shellcheck disable=SC2034
 		SHLIB_IMPORT_PWD="${PWD}"
 		shift
 
+		# shellcheck disable=SC2034,SC1090
 		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
 	fi
 else # sourced in

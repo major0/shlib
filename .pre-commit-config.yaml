@@ -15,4 +15,4 @@ repos:
   rev: v0.10.0
   hooks:
   -   id: shellcheck
-      #args: ["--severity=warning"]  # Optionally only show errors and warnings
+      args: ['-e', 'SC1090,SC2034']
