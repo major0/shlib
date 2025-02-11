@@ -6,11 +6,11 @@ programming language, it has very little in the way of builtin high-level
 functionality.  To do many things often requires resorting to esoteric hacks
 which wrap other tools. This has lead to a number of variations of the POSIX
 shell ([Korne Shell][ksh], [Z Shell][zsh], [Bash][bash], etc..) which implement
-various high-level features in their own proprietary way.  [shlib][shlib] aims
+various high-level features in their own proprietary way.  [shlib][] aims
 to supply many (all?) of these high-level features using only pure POSIX shell
 syntax, while optimizing the core of any interface via shell-specific
 enhancements under the covers (making afore mentioned esoteric hacks totally
-portable and useful for all).  Further more, [shlib][shlib] is self-optimizing
+portable and useful for all).  Further more, [shlib][] is self-optimizing
 at *load-time*, meaning that it does not spend time checking the shell
 environment every time an interface is called.  The end result is fast and
 portable shell scripts which, hopefully, work right regardless of which flavor
@@ -18,19 +18,19 @@ of `/bin/sh` is interpretting them.
 
 ## Philosphy ##
 
-[shlib][shlib] is written around the goal of providing a portable **dumping
+[shlib][] is written around the goal of providing a portable **dumping
 ground** for various shell tricks and hacks produced throughout the ages.  Such
 things as floating point arithematic, string manipulation, and even just overly
 common routines used by programmers on a day-to-day basis.  With that in mind,
-shlib is a framework which presents a portable interface to the developer, but
+[shlib][] is a framework which presents a portable interface to the developer, but
 which may be implemented via any number of methods under-the-covers at load
 time.
 
 ## What shlib is not ##
 
-[shlib] is not in and of itself a scripting language, or a replacement to
-existing shells.  While various libaries w/in shlib may implement an interface
-using external utilities are shell-specific features, the interfaces
+[shlib][] is not in and of itself a scripting language, or a replacement to
+existing shells.  While various libaries w/in [shlib][] may implement an
+interface using external utilities are shell-specific features, the interfaces
 provided conform to the [Shell Command Language](http://pubs.opengroup.org/onlinepubs/007904975/utilities/xcu_chap02.html)
 as defined by the [OpenGroup](http://www.opengroup.org/).
 
@@ -38,7 +38,7 @@ as defined by the [OpenGroup](http://www.opengroup.org/).
 
 Due to the nature of POSIX shell, libraries can perform tests _when_ they are
 imported, as opposed to doing a test every time an interface is called.  This
-allows [shlib] to implement a single interface via a variety of methods, and
+allows [shlib][] to implement a single interface via a variety of methods, and
 select the method which best fits the local platform.
 
 For example:
@@ -65,18 +65,17 @@ From here a program only need to `import math.seq` to gain access to a
 `math.seq()` function which will call the native `seq` command if available,
 otherwise it will use one implemented in POSIX shell.
 
-
 Usage
 =====
 
-[shlib][shlib] tries hard to be as non-intrussive as possible to software
-developers.  To this end there are a number of ways to integrate [shlib][shlib]
+[shlib][] tries hard to be as non-intrussive as possible to software
+developers.  To this end there are a number of ways to integrate [shlib][]
 into ones software.
 
 Command Line
 ------------
 
-[shlib][shlib] can be envoked from the command-line in much the same way as
+[shlib][] can be envoked from the command-line in much the same way as
 traditional `/bin/sh`.
 
 Examples:
@@ -86,12 +85,12 @@ Examples:
  3. Shell-like `-c` syntax: `shlib -I math -c 'math.seq 0 9'`
 
 See `shlib --help` for various command-line options which change the behavior
-of [shlib][shlib].
+of [shlib][].
 
 hash/bang
 ---------
 
-You can make [shlib][shlib] the interpretter for an existing shell script.
+You can make [shlib][] the interpretter for an existing shell script.
 
 	#!/usr/bin/env shlib
 
@@ -101,7 +100,7 @@ file in this way_).
 Source in shlib
 ---------------
 
-When all else fails, you can simply source in the [shlib][shlib] top-level
+When all else fails, you can simply source in the [shlib][] top-level
 script into your existing `/bin/sh` scripts.
 
 ```sh
