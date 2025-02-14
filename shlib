@@ -420,7 +420,7 @@ __shlib_usage()
 		return 1
 	fi
 	sed -e 's/	//' << EOF
-	usage: shlib [options] [file]
+	usage: shlib [options] [<command> | <file>]
 
 	 options:
 	   -L, --libdir=LIBDIR		Path to SHLIB libraries
@@ -561,10 +561,31 @@ if test "$(basename "${0}")" = 'shlib'; then
 		SHLIB_CALL_STACK='__main__' eval "${SHLIB_COMMAND}"
 	else # We are being "executed", so lets check our argument list.
 		test "$#" -ne '0' || die 'no script specified'
-		test -f "$(__shlib_realpath "${1}")" || die "file does not exist '${1}'"
 
-		# shellcheck disable=SC2034
-		PROGNAME="$(basename "${1}")"
+		# If the command begins with '/' or './' or '../' then it is a file, else
+		# we treat it as a subcommand.
+		case "${1}" in
+		(/*|./*|../*)
+			test -f "$(__shlib_realpath "${1}")" || die "file does not exist '${1}'"
+			PROGNAME="$(basename "${1}")"
+			;;
+
+		(*)	shlib_libexecdir='@shlib_libexecdir@'
+			if ! test -d "${shlib_libexecdir}"; then
+				shlib_libexecdir="$(__shlib_realpath "${0%/*}/libexec")"
+			fi
+			if ! test -f "${shlib_libexecdir}/shlib-${1}"; then
+				__shlib_usage 'shlib' "unknown subcommand '${1}'"
+			fi
+			# shellcheck disable=SC2034
+			PROGNAME="$(basename "${1}")"
+			shlib_subcmd="${1}"
+			shift
+			set -- "${shlib_libexecdir}/shlib-${shlib_subcmd}" "${@}"
+			unset shlib_subcmd
+			;;
+		esac
+
 		# shellcheck disable=SC2034
 		SHLIB_SCRIPT="${1}"
 		# shellcheck disable=SC2034
