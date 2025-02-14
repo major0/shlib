@@ -451,7 +451,7 @@ alias shlib.usage='__shlib_usage '
 if test -z "${SHLIB_PATH}"; then
 	SHLIB_PATH="@shlib_libdir@"
 	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}"; then
-		SHLIB_PATH="$(__shlib_realpath "${0%/*}")"
+		SHLIB_PATH="$(__shlib_realpath "${0%/*}/lib")"
 		SHLIB_PATH="${SHLIB_PATH%/}"
 	fi
 	export SHLIB_PATH
