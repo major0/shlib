@@ -1,0 +1,17 @@
+NAME='shlib'
+DESCRIPTION='SHLIB is a Shell Library framework'
+HOMEPAGE='https://github.com/major0/shlib'
+LICENSE='MIT'
+VERSION='0.1.0'
+
+pkg_install() {
+	LIBDIR="${LIBDIR}/shlib"
+	LIBEXECDIR="${LIBEXECDIR}/shlib"
+	dobin --template 'shlib'
+	dodoc 'README.md' 'LICENSE' doc/*
+
+	(cd lib && for d in *; do test "${d}" = 'deprecated' || if test -d "${d}"; then doshlib "${d}";fi; done)
+
+	exeinto "${LIBEXECDIR}"
+	doexe libexec/*
+}
