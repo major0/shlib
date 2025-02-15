@@ -581,7 +581,7 @@ if test "$(basename "${0}")" = 'shlib'; then
 			PROGNAME="$(basename "${1}")"
 			shlib_subcmd="${1}"
 			shift
-			set -- "${shlib_libexecdir}/shlib-${shlib_subcmd}" "${@}"
+			set -- "${shlib_libexecdir%%/}/shlib-${shlib_subcmd}" "${@}"
 			unset shlib_subcmd
 			;;
 		esac
