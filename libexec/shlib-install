@@ -1,0 +1,301 @@
+#!/usr/bin/env shlib
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Shlib Installer
+#
+# This command provides a sort of subset Gentoo's ebuild functionality as
+# documented here: https://devmanual.gentoo.org/eclass-reference/ebuild/index.html
+#
+# All of this code was written based on the documentation and w/out inspecting any
+# of Gentoo's upstream sources, so any bugs are purely a result of performing a
+# blind/cleanroom implementation. It is worth noting that this is a dramatic subset
+# of functionality when compared to ebuild. We make no support for destination
+# root installs, or working directories, or anything of the like. We really only
+# care about performing a basic install of packages into the target platform.
+#
+# Packages can leverage this install framework by adding a `shlib.install` file
+# into the `topdir` of their package. Realistically, this framework can be used
+# by any backage, not just shlib based packages.
+fperms() {
+	: "fprms: $*"
+	docmd chmod "${@}"
+}
+fowners() {
+	: "fowners: $*"
+	docmd chown "${@}"
+}
+docmd() {
+	: "docmd: $*"
+	if test "${DRYRUN}" != 'false'; then
+		echo "do: $*" >&2
+	else
+		"${@}"
+	fi
+}
+diropts() {
+	: "diropts: $*"
+	DIROPTS="$*"
+}
+dodir() {
+	: "dodir: $*"
+	docmd mkdir ${DIROPTS:=-m0755} -p "${1}"
+}
+
+into() { PREFIX="${1}"; }
+dobin() {
+	: "dobin: $*"
+	dodir "${BINDIR}"
+
+	if test "${1}" = '--template'; then
+		shift
+		while test "$#" -gt '0'; do
+			dotemplate "${1}" "${BINDIR}/${1}"
+			fperms 0755 "${BINDIR}/${1}"
+			shift
+		done
+	else
+		docmd install -m0755 -t "${BINDIR}" "${@}"
+	fi
+}
+dosbin() {
+	: "dosbin: $*"
+	dodir "${SBINDIR}"
+
+	if test "${1}" = '--template'; then
+		shift
+		while test "$#" -gt '0'; do
+			dotemplate "${1}" "${SBINDIR}/${1}"
+			fperms 0755 "${SBINDIR}/${1}"
+			shift
+		done
+	else
+		docmd install -m0755 -t "${SBINDIR}" "${@}"
+	fi
+}
+
+__cpio()
+{(
+	: "__cpio: $*"
+	# read __cpio_path from stdin and recreate said path at "${1}"
+	# We actually ignore any paths that are directories and only
+	# create directories that lead to files.
+	while read __cpio_path; do
+		! test -d "${__cpio_path}" || continue
+		test -d "${1}/${__cpio_path%/*}" || dodir "${1}/${__cpio_path%/*}"
+		docmd install -m0644 -t "${1}/${__cpio_path%/*}" "${__cpio_path}"
+	done
+	unset __cpio_path
+)}
+__doshlib_files() {
+	: "__doshlib_files: $*"
+	find "${1}" -type f -name '*.shlib' | grep -v '*-test.shlib'
+}
+doshlib() {
+	: "doshlib: $*"
+	# FIXME Should this _always_ be installed into our global shlib_path?
+	while test "$#" -gt '0'; do
+		__doshlib_files "${1}" | __cpio "${LIBDIR}"
+		shift
+	done
+}
+
+dotemplate() {
+	: "dotemplate: $*"
+	# Due to sed's redirection we can't use `docmd` here
+	if test "${DRYRUN}" = 'true'; then
+		echo do: sed \
+			-e "s|@shlib_bindir@|${BINDIR}|g" \
+			-e "s|@shlib_libdir@|${LIBDIR}|g" \
+			-e "s|@shlib_libexecdir@|${LIBEXECDIR}|g" \
+			-e "s|@shlib_docdir@|${DOCDIR}|g" \
+			-e "s|@shlib_mandir@|${MANDIR}|g" \
+			"${1}" "${2}"
+	else
+		sed \
+			-e "s|@shlib_bindir@|${BINDIR}|g" \
+			-e "s|@shlib_libdir@|${LIBDIR}|g" \
+			-e "s|@shlib_libexecdir@|${LIBEXECDIR}|g" \
+			-e "s|@shlib_docdir@|${DOCDIR}|g" \
+			-e "s|@shlib_mandir@|${MANDIR}|g" \
+			"${1}" > "${2}"
+	fi
+}
+
+exeinto() {
+	: "exeinto: $*"
+	EXEPREFIX="${1}"
+}
+exeopts() {
+	: "exeopts: $*"
+	EXEOPTS="$*" # FIXME capture multiple params?
+}
+doexe() {
+	: "doexe: $*"
+	dodir "${EXEPREFIX%%/}"
+	docmd install ${EXEOPTS:=-m0755} -t "${EXEPREFIX%%/}" "${@}"
+}
+
+insinto() {
+	: "insinto: $*"
+	INSPREFIX="${1}"
+}
+insopts() {
+	: "insopt: $*"
+	INSOPTS="$*" # FIXME mulptiple params?
+}
+doins() {
+	: "doins: $*"
+	dodir "${INSPREFIX%%/}"
+	docmd install ${INSOPTS:=-m0644} -t "${INSPREFIX%%/}" "${@}"
+}
+
+docinto() {
+	: "docinto: $*"
+	DOCINTO="${1}" # this will always be relative to `docdir`
+}
+dodoc() {
+	: "dodoc: $*"
+	__dodoc_dest="${DOCDIR%%/}/${DOCINTO%%/}/"
+	dodir "${__dodoc_dest%%/}"
+	docmd install -m 0644 -t "${__dodoc_dest%%/}" "${@}"
+	unset __dodoc_dest
+}
+
+usage() {
+	if test "$#" -gt '0'; then
+		error "$*"
+		echo "try '${0} --help'" >&2
+		exit 1
+	fi
+
+	sed -e 's/	//'<<EOF
+	usage: ${0} [options]
+
+	options:
+	  -n, --dry-run		Don't do anything, just print what would be done
+	  -x, --trace		Trace script execution
+	  -h, --help		Display this help
+
+	 install options:
+	  --prefix=DIR		Install in DIR
+	  --bindir=DIR		Install binaries in DIR
+	  --sbindir=DIR		Install system binaries in DIR
+	  --libdir=DIR		Install libraries in DIR
+	  --libexecdir=DIR	Install library executables in DIR
+	  --docdir=DIR		Install documentation in DIR
+	  --mandir=DIR		Install man pages in DIR
+
+EOF
+	exit 0 # Requests for help are never an error
+}
+
+main {
+	: "main: $*"
+	DRYRUN='false'
+	while getopts ':h:x' __opt_arg; do
+		# Traditional POSIX short-option handling
+		case "${__opt_arg}" in
+		(h)	usage;;
+		(n)	DRYRUN='true';;
+		(x)	set -x;;
+
+		# We evoked `getopts` with a `:` prefix optstring which allows us
+		# to inspect any and all non-opts w/out terminating option
+		# parsing. I.e. we can look for long-opts via POSIX `getopts`.
+		# One would argue that we can simply use `getopt(1)`, but that
+		# CLI utility is not entirely portable between all flavours of
+		# Unix.
+		(\?)	: "extended options: index=${OPTIND}, arg='${__opt_arg}', optarg='${OPTARG}'"
+			shift "$(__shlib_shiftarg)"
+			OPTIND=1
+			: "extended arg: '${1}'"
+
+			case "${1}" in
+			(--dry-run) DRYRUN='true';;
+			(--trace) set -x;;
+			(help|--help) usage;;
+
+			(--prefix|--prefix=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				PREFIX="${OPTARG}";;
+
+			(--bindir|--bindir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				BINDIR="${OPTARG}";;
+
+			(--sbindir|--sbindir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				SBINDIR="${OPTARG}";;
+
+
+			(--libdir|--libdir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				LIBDIR="${OPTARG}";;
+
+			(--libexecdir|--libexecdir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				LIBEXECDIR="${OPTARG}";;
+
+			(--docdir|--docdir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				DOCDIR="${OPTARG}";;
+
+			(--mandir|--mandir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				MANDIR="${OPTARG}";;
+
+			(--debug) set -x;;
+
+			# Posixly Correct
+			(--)	OPTIND="$((OPTIND + 1))"; break;;
+			(-*)	usage "unknown option '${1}'";;
+			(*)	break;;
+			esac
+
+			shift "${OPTIND}"
+			OPTIND=1;;
+		esac
+	done
+	unset __opt_arg
+	shift $((OPTIND - 1))
+	OPTIND=1
+	unset OPTARG
+
+	PREFIX="${PREFIX:-/usr/local}"
+	BINDIR="${BINDIR:-${PREFIX}/bin}"
+	SBINDIR="${SBINDIR:-${PREFIX}/sbin}"
+	LIBDIR="${LIBDIR:-${PREFIX}/lib}"
+	LIBEXECDIR="${LIBEXECDIR:-${PREFIX}/libexec}"
+	DOCDIR="${DOCDIR:-${PREFIX}/share/doc}/"
+	MANDIR="${MANDIR:-${PREFIX}/share/man}"
+
+	if ! test -f "${PWD}/shlib.install"; then
+		die "no shlib.install in current directory"
+	fi
+
+	NAME=
+	DESCRIPTION=
+	VERSION=
+	pkg_install() { :; }
+	(
+		. "${PWD}/shlib.install"
+
+		if test -z "${NAME}"; then
+		die "missing NAME in shlib.install"
+		fi
+
+		DOCDIR="${DOCDIR%%/}/${NAME}"
+		pkg_install
+	)
+}
+
+# vim: filetype=sh
