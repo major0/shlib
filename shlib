@@ -81,18 +81,28 @@ __shlib_hasfunc() { type "${1}" 2>&1 | grep -q 'function$'; }
 hasfunc() { __shlib_hasfunc "$@"; }
 alias shlib.hasfunc='hasfunc '
 
-# FIXME this is not remotely portable, and it beaks our coding style guidelines
 if pwd -P > /dev/null 2>&1; then
-	__shlib_realpath_pwd() {( cd "${1}" >/dev/null 2>&1 && echo "$(pwd -P)/${2}"; )}
+	__shlib_pwd() { pwd -P; }
 else
-	__shlib_realpath_pwd() {( cd "${1}" >/dev/null 2>&1 && echo "$(pwd)/${2}"; )}
+	# FIXME should we manually interpret the PWD and readlink any
+	# links encountered and attempt to resolve it?
+	__shlib_pwd() { pwd; }
 fi
-__shlib_realpath() {
-	if ! test -d "${1}"; then
-		set -- "$(dirname "${1}")" "$(basename "${1}")"
-	fi
-	__shlib_realpath_pwd "${@}"
-}
+
+# FIXME this is not remotely portable, and it beaks our coding style guidelines
+if __shlib_hascmd realpath; then
+	__shlib_realpath() { command realpath "${1}"; }
+else
+	__shlib_realpath() {(
+		if test -d "${1}"; then
+			cd "${1}" >/dev/null 2>&1 && __shlib_pwd
+		elif test -d "${1%/*}"; then
+			cd "${1%/*}" >/dev/null 2>&1 && echo "$(__shlib_pwd)/${1##*/}"
+		else
+			die "directory does not exist '${1%/*}'"
+		fi
+	)}
+fi
 alias shlib.realpath='__shlib_realpath '
 
 __shlib_optarg()
