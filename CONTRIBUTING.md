@@ -27,6 +27,62 @@ See the [installation instructions](https://pre-commit.com/#install) for
 Please review the [roadmap](Roadmap.md) to see where we are in the project
 and how you might be able to help.
 
+## Implementing an Interface
+
+[shlib][] is, at its core, an abstraction over the zoo of Unix commands and
+their countless variants.  An interface exists so that a script author can
+call one portable function that _just works_, regardless of which `/bin/sh`,
+which flavour of `awk`, or which vendor's `install` happens to be present.
+How that interface is implemented under the covers is chosen at load time (see
+the *load-time optimization* section of the [README](README.md)) by cost, not
+by dogma.
+
+When adding or reworking an interface, choose an implementation in this order:
+
+1. **Keep hot paths in-process (pure shell), even when it is verbose.**  The
+   dominant cost in shell is not the number of statements executed, it is
+   `fork()`/`exec()`.  An interface that is likely to be called repeatedly —
+   string manipulation, arithmetic, array handling — should be written in pure
+   shell so that it never leaves the interpreter.  A single `$(awk ...)` per
+   call is disastrous inside a loop; even a long-winded shell implementation
+   will run circles around it.
+
+   Load-time selection alone does not buy this: if the method chosen at import
+   time still forks a helper on every call, the hot-path cost is still paid on
+   every call.  Prefer a method that stays in-process.
+
+2. **Prefer a simple, portable POSIX shell implementation whenever one is
+   feasible.**  Pure POSIX shell needs no external dependency, cannot drift
+   between platforms, and never forks.  Reach for it by default.
+
+3. **Call out to the OS when there is no honest pure-shell implementation.**
+   Some operations cannot be done without a syscall: `mkdir`, `chmod`,
+   `chown`, and archive tools such as `tar`, `pax`, and `cpio` are the obvious
+   examples, and network I/O (`nc`, `socat`, `curl`, a shell's `/dev/tcp`) is
+   the hardest case of all, as almost nothing is standardised.  Wrapping the
+   command is the *correct* implementation here.  shlib's job is then to hide
+   the differences between the variants — GNU vs. BSD vs. BusyBox flag syntax —
+   and to select the best available tool at load time.
+
+### Shell-specific fast paths ###
+
+A shell-specific implementation (Ksh/Zsh floating-point `$(( ))`, Bash's
+`/dev/tcp`, and so on) is welcome as an *in-process* fast path, but only when:
+
+ * there is no universal POSIX way to achieve the same result, and
+
+ * it is layered on top of a portable fallback so the interface still works
+   everywhere.
+
+Select it at load time by branching on `SHLIB_SHELL` (or by probing with
+`shlib.hascmd`/`shlib.hasfunc`), never on every call.
+
+### Rule of thumb ###
+
+Reserve `fork`/`exec` for cold-path work and for genuinely OS-level
+operations.  Anything computational and frequently called belongs in the
+interpreter.
+
 ### Coding Style ###
 
 The coding-style in [shlib][shlib] borrows heavily from the coding-style
