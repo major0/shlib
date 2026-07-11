@@ -1,12 +1,39 @@
-shlib.test {
-	test.fail 'no arguments allowed' __shlib_math_calc
-	test.fail 'bad argument list' __shlib_math_calc '1 2 3'
-	test.exec __shlib_math_calc 1
-	test.exec __shlib_math_calc '1 + 1'
-	test.result 'addition' '2' __shlib_math_calc '1 + 1'
-	test.result 'subtraction' '1' __shlib_math_calc '2 - 1'
-	test.result 'division' '10' __shlib_math_calc '20 / 2'
-	test.result 'multiplication' '15' __shlib_math_calc '3 * 5'
-	test.benchmark __shlib_math_calc '12 * 12 + 11 / 3 - 1'
-	test.done
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.calc
+
+test_no_arguments() {
+	test.error __shlib_math_calc
 }
+
+test_bad_argument_list() {
+	test.error __shlib_math_calc '1 2 3'
+}
+
+test_single_value() {
+	test.ok __shlib_math_calc 1
+}
+
+test_expression() {
+	test.ok __shlib_math_calc '1 + 1'
+}
+
+test_addition() {
+	test.eq 2 "$(__shlib_math_calc '1 + 1')" 'addition'
+}
+
+test_subtraction() {
+	test.eq 1 "$(__shlib_math_calc '2 - 1')" 'subtraction'
+}
+
+test_division() {
+	test.eq 10 "$(__shlib_math_calc '20 / 2')" 'division'
+}
+
+test_multiplication() {
+	test.eq 15 "$(__shlib_math_calc '3 * 5')" 'multiplication'
+}
+
+# vim: filetype=sh

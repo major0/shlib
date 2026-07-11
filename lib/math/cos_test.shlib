@@ -1,10 +1,23 @@
-shlib.test {
-	test.fail 'empty argument list allowed' __shlib_math_cos
-	test.fail 'too many arguments allowed' __shlib_math_cos 1 2
-	test.exec __shlib_math_cos 1
-	__shlib_math_cos_result="$(shlib.printf '%0.10f' "$(__shlib_math_cos 1)")"
-	test.result 'math' '0.5403023059' echo "${__shlib_math_cos_result}"
-	unset __shlib_math_cos_result
-	test.benchmark __shlib_math_cos 1
-	test.done
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.cos
+
+test_no_arguments() {
+	test.error __shlib_math_cos
 }
+
+test_too_many_arguments() {
+	test.error __shlib_math_cos 1 2
+}
+
+test_exec() {
+	test.ok __shlib_math_cos 1
+}
+
+test_value() {
+	test.eq '0.5403023059' "$(shlib.printf '%0.10f' "$(__shlib_math_cos 1)")" 'cos(1)'
+}
+
+# vim: filetype=sh

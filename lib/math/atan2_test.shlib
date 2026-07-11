@@ -1,11 +1,27 @@
-shlib.test {
-	test.fail 'no arguments allowed' __shlib_math_atan2
-	test.fail 'too few arguments allowed' __shlib_math_atan2 1
-	test.fail 'too many arguments allowed' __shlib_math_atan2 1 2 3
-	test.exec __shlib_math_atan2 1 0
-	__shlib_math_atan2_result="$(shlib.printf '%0.7f' "$(__shlib_math_atan2 1 0)")"
-	test.result 'math' '1.5707963' echo "${__shlib_math_atan2_result}"
-	unset __shlib_math_atan2_result
-	test.benchmark __shlib_math_atan2 1 0
-	test.done
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.atan2
+
+test_no_arguments() {
+	test.error __shlib_math_atan2
 }
+
+test_too_few_arguments() {
+	test.error __shlib_math_atan2 1
+}
+
+test_too_many_arguments() {
+	test.error __shlib_math_atan2 1 2 3
+}
+
+test_exec() {
+	test.ok __shlib_math_atan2 1 0
+}
+
+test_value() {
+	test.eq '1.5707963' "$(shlib.printf '%0.7f' "$(__shlib_math_atan2 1 0)")" 'atan2(1, 0)'
+}
+
+# vim: filetype=sh

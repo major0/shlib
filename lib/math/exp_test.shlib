@@ -1,8 +1,23 @@
-shlib.test {
-	test.fail 'empty argument list allowed' __shlib_math_exp
-	test.fail 'too many arguments allowed' __shlib_math_exp 1 2
-	test.exec __shlib_math_exp '1'
-	test.result 'exponent' '2.71828' __shlib_math_exp 1
-	test.benchmark __shlib_math_exp '1'
-	test.done
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.exp
+
+test_no_arguments() {
+	test.error __shlib_math_exp
 }
+
+test_too_many_arguments() {
+	test.error __shlib_math_exp 1 2
+}
+
+test_exec() {
+	test.ok __shlib_math_exp 1
+}
+
+test_value() {
+	test.eq '2.71828' "$(__shlib_math_exp 1)" 'exp(1)'
+}
+
+# vim: filetype=sh
