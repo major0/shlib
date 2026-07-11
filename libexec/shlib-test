@@ -1,0 +1,255 @@
+#!/usr/bin/env shlib
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# shlib test - discover and run '<iface>_test.shlib' test files.
+#
+# Targets may be given as a path to a test file, a directory to search, a
+# library name to resolve via SHLIB_PATH (e.g. 'math' or 'math.calc'), or the
+# special target 'all' to walk the whole SHLIB_PATH.  See lib/test/__index__.md
+# for how to write test files.
+
+import test
+
+usage()
+{
+	if test "$#" -gt '0'; then
+		error "$*"
+		echo "try '${PROGNAME} --help'" >&2
+		exit 1
+	fi
+
+	sed -e 's/	//' << EOF
+	usage: ${PROGNAME} [options] (all | <lib>[.<iface>] | <path>) ...
+
+	 options:
+	   -v, --verbose	Report each assertion, not just failures
+	   -x			Trace test execution
+	   -h, --help		Display this help
+EOF
+	exit 0 # Requests for help are never an error
+}
+
+# __shlib_test_walk <dir>
+# Recursively print the '*_test.shlib' files under <dir>, one per line.  A
+# directory containing a '.shlib_notest' marker is skipped entirely.
+__shlib_test_walk()
+{
+	test -d "${1}" || return 0
+	! test -e "${1}/.shlib_notest" || return 0
+	for __shlib_test_walk_entry in "${1}"/*; do
+		test -e "${__shlib_test_walk_entry}" || continue
+		if test -d "${__shlib_test_walk_entry}"; then
+			__shlib_test_walk "${__shlib_test_walk_entry}"
+		else
+			case "${__shlib_test_walk_entry}" in
+			(*_test.shlib) echo "${__shlib_test_walk_entry}";;
+			esac
+		fi
+	done
+	unset __shlib_test_walk_entry
+}
+
+# __shlib_test_collect <target>
+# Resolve a single target to a list of test files, one per line.
+__shlib_test_collect()
+{
+	case "${1}" in
+	([aA][lL][lL])
+		__shlib_test_collect_ifs="${IFS}"
+		IFS=':'
+		# shellcheck disable=SC2086
+		set -- ${SHLIB_PATH}
+		IFS="${__shlib_test_collect_ifs}"
+		unset __shlib_test_collect_ifs
+		for __shlib_test_collect_dir; do
+			__shlib_test_walk "${__shlib_test_collect_dir}"
+		done
+		unset __shlib_test_collect_dir
+		return 0;;
+	esac
+
+	# An explicit path takes precedence over library-name resolution.
+	if test -f "${1}"; then
+		echo "${1}"
+		return 0
+	fi
+	if test -d "${1}"; then
+		__shlib_test_walk "${1}"
+		return 0
+	fi
+
+	# Otherwise treat the target as a library name and resolve it.
+	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
+	if test -z "${2}"; then
+		error "cannot resolve test target '${1}'"
+		return 1
+	fi
+	if test -d "${2}"; then
+		__shlib_test_walk "${2}"
+		return 0
+	fi
+
+	# A single interface file: <iface>.shlib -> <iface>_test.shlib
+	set -- "${1}" "${2%.shlib}_test.shlib"
+	if test -f "${2}"; then
+		echo "${2}"
+		return 0
+	fi
+	error "no test file for '${1}' (expected '${2}')"
+	return 1
+}
+
+# __shlib_test_names <file>
+# Print the 'test_<name>' function names defined in <file>, in definition
+# order.  A definition is a line that begins with 'test_' and contains '('.
+__shlib_test_names()
+{
+	while IFS= read -r __shlib_test_names_line; do
+		case "${__shlib_test_names_line}" in
+		(test_*'('*)
+			# 'test_name()' or 'test_name ()' -> 'test_name'.  Function
+			# names contain no blanks, so cutting at the first '(' and
+			# then at the first blank yields the bare name.
+			__shlib_test_names_name="${__shlib_test_names_line%%'('*}"
+			__shlib_test_names_name="${__shlib_test_names_name%%[ 	]*}"
+			echo "${__shlib_test_names_name}";;
+		esac
+	done < "${1}"
+	unset __shlib_test_names_line __shlib_test_names_name
+}
+
+# __shlib_test_invoke <name>
+# Body of a single test case.  MUST be run in its own subshell, e.g.
+# '( __shlib_test_invoke test_foo )', so that 'exit', 'set -e' and any leaked
+# state are contained.  The subshell's exit status classifies the result:
+# 0 = pass, SHLIB_TEST_SKIP = skip, anything else = fail.
+__shlib_test_invoke()
+{
+	SHLIB_TEST_STATUS=0
+	SHLIB_TEST_NAME="${1}"
+	if command -v teardown > /dev/null 2>&1; then
+		trap teardown EXIT
+	fi
+	if command -v setup > /dev/null 2>&1; then
+		setup
+	fi
+	"${1}"
+	exit "${SHLIB_TEST_STATUS}"
+}
+
+# __shlib_test_run_file <file>
+# Load a test file, run each of its test cases, and update the run totals.
+__shlib_test_run_file()
+{
+	SHLIB_TEST_FILES="$((SHLIB_TEST_FILES + 1))"
+	echo "# ${1}"
+
+	# Load the test file.  Guard 'set -e' so a load failure is reported as a
+	# failing file rather than aborting the whole run.
+	set +e
+	# shellcheck disable=SC1090
+	. "${1}"
+	__shlib_test_run_file_load="$?"
+	set -e
+	if test "${__shlib_test_run_file_load}" -ne '0'; then
+		echo "not ok - ${1} # failed to load (exit ${__shlib_test_run_file_load})"
+		SHLIB_TEST_FAIL="$((SHLIB_TEST_FAIL + 1))"
+		unset __shlib_test_run_file_load
+		return 0
+	fi
+
+	__shlib_test_run_file_names="$(__shlib_test_names "${1}")"
+	if test -z "${__shlib_test_run_file_names}"; then
+		echo "# no tests in ${1}"
+	fi
+
+	if command -v setup_file > /dev/null 2>&1; then
+		setup_file
+	fi
+
+	for __shlib_test_run_file_name in ${__shlib_test_run_file_names}; do
+		SHLIB_TEST_TESTS="$((SHLIB_TEST_TESTS + 1))"
+		set +e
+		( __shlib_test_invoke "${__shlib_test_run_file_name}" )
+		__shlib_test_run_file_rc="$?"
+		set -e
+		case "${__shlib_test_run_file_rc}" in
+		(0)	SHLIB_TEST_PASS="$((SHLIB_TEST_PASS + 1))"
+			echo "ok - ${__shlib_test_run_file_name}";;
+		("${SHLIB_TEST_SKIP}")
+			SHLIB_TEST_SKIPPED="$((SHLIB_TEST_SKIPPED + 1))"
+			echo "ok - ${__shlib_test_run_file_name} # SKIP";;
+		(*)	SHLIB_TEST_FAIL="$((SHLIB_TEST_FAIL + 1))"
+			echo "not ok - ${__shlib_test_run_file_name}";;
+		esac
+	done
+
+	if command -v teardown_file > /dev/null 2>&1; then
+		teardown_file
+	fi
+
+	# Unset this file's test cases and hooks so they cannot leak into the
+	# next file.
+	# shellcheck disable=SC2086
+	unset -f ${__shlib_test_run_file_names} setup teardown setup_file teardown_file > /dev/null 2>&1 || true
+	unset __shlib_test_run_file_load __shlib_test_run_file_names
+	unset __shlib_test_run_file_name __shlib_test_run_file_rc
+	return 0
+}
+
+main {
+	SHLIB_TEST_FILES=0
+	SHLIB_TEST_TESTS=0
+	SHLIB_TEST_PASS=0
+	SHLIB_TEST_FAIL=0
+	SHLIB_TEST_SKIPPED=0
+
+	while getopts ':hvx' __shlib_test_arg; do
+		case "${__shlib_test_arg}" in
+		(h)	usage;;
+		(v)	SHLIB_TEST_VERBOSE='true';;
+		(x)	set -x;;
+		(\?)	shift "$(__shlib_shiftarg)"
+			OPTIND=1
+			case "${1}" in
+			(--help)	usage;;
+			(--verbose)	SHLIB_TEST_VERBOSE='true';;
+			(--)		OPTIND="$((OPTIND + 1))"; break;;
+			(-*)		usage "unknown option '${1}'";;
+			(*)		break;;
+			esac
+			shift "${OPTIND}"
+			OPTIND=1;;
+		esac
+	done
+	unset __shlib_test_arg
+	shift "$((OPTIND - 1))"
+	OPTIND=1
+	unset OPTARG
+
+	test "$#" -gt '0' || usage 'no test target specified'
+
+	# Expand every target into a flat list of test files.
+	__shlib_test_targets="$(for __shlib_test_target; do
+		__shlib_test_collect "${__shlib_test_target}"
+	done)"
+	unset __shlib_test_target
+
+	if test -z "${__shlib_test_targets}"; then
+		die 'no test files found'
+	fi
+
+	for __shlib_test_file in ${__shlib_test_targets}; do
+		__shlib_test_run_file "${__shlib_test_file}"
+	done
+	unset __shlib_test_file __shlib_test_targets
+
+	echo '# ----'
+	echo "# files ${SHLIB_TEST_FILES}, tests ${SHLIB_TEST_TESTS}, pass ${SHLIB_TEST_PASS}, fail ${SHLIB_TEST_FAIL}, skip ${SHLIB_TEST_SKIPPED}"
+
+	test "${SHLIB_TEST_FAIL}" -eq '0' || exit 1
+}
+
+# vim: filetype=sh

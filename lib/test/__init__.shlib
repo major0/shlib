@@ -1,0 +1,162 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# shlib test - assertion and runtime helpers for the shlib test framework.
+#
+# Test files are named '<iface>_test.shlib' and define one or more test cases
+# as shell functions named 'test_<name>'.  The 'shlib test' runner discovers
+# these functions and executes each in an isolated subshell.  A file may also
+# define any of the following optional hook functions:
+#
+#	setup		run before each test_<name> in the file
+#	teardown	run after each test_<name> (even on failure or skip)
+#	setup_file	run once before the first test in the file
+#	teardown_file	run once after the last test in the file
+#
+# Assertions are non-fatal by default: a failed assertion records the failure
+# but lets the test continue, so a single test can report several problems in
+# one run.  'test.fatal' and 'test.skip' are the exceptions; they stop the
+# current test immediately.  The whole module is pure shell and calls no
+# external commands.
+
+# 'test.skip' reports via this exit code, following the automake/TAP
+# convention of 77 for a skipped test.
+readonly SHLIB_TEST_SKIP=77
+
+# Per-test state.  The runner (re)initializes these for every test case.
+#  SHLIB_TEST_STATUS - 0 while the current test is passing; set to 1 by the
+#                      first non-fatal assertion failure.
+#  SHLIB_TEST_NAME   - name of the test case currently executing.
+SHLIB_TEST_STATUS=0
+SHLIB_TEST_NAME='<none>'
+
+# __shlib_test_diag <message>...
+# Emit an indented diagnostic for the current test to stderr.
+__shlib_test_diag()
+{
+	echo "#   ${SHLIB_TEST_NAME}: $*" >&2
+}
+
+# test.fail [message]...
+# Record a non-fatal failure and continue the test.
+__shlib_test_fail()
+{
+	SHLIB_TEST_STATUS=1
+	test "$#" -eq '0' || __shlib_test_diag "$@"
+	return 0
+}
+alias test.fail='__shlib_test_fail '
+
+# test.fatal [message]...
+# Record a failure and abort the current test immediately.
+__shlib_test_fatal()
+{
+	test "$#" -eq '0' || __shlib_test_diag "$@"
+	exit 1
+}
+alias test.fatal='__shlib_test_fatal '
+
+# test.skip [reason]...
+# Skip the current test.
+__shlib_test_skip()
+{
+	test "$#" -eq '0' || __shlib_test_diag "SKIP $*"
+	exit "${SHLIB_TEST_SKIP}"
+}
+alias test.skip='__shlib_test_skip '
+
+# test.log [message]...
+# Emit an informational diagnostic without affecting the test result.
+__shlib_test_log()
+{
+	__shlib_test_diag "$@"
+}
+alias test.log='__shlib_test_log '
+
+# test.ok <command> [args]...
+# Assert that running <command> succeeds (exits zero).  The command runs in a
+# subshell so that a fatal error (e.g. a shell arithmetic or syntax error) is
+# contained and surfaces as an ordinary non-zero status.
+__shlib_test_ok()
+{
+	set +e
+	( "$@" ) >/dev/null 2>&1
+	__shlib_test_ok_status="$?"
+	set -e
+	if test "${__shlib_test_ok_status}" -ne '0'; then
+		__shlib_test_fail "expected success but got exit ${__shlib_test_ok_status}: $*"
+	fi
+	unset __shlib_test_ok_status
+	return 0
+}
+alias test.ok='__shlib_test_ok '
+
+# test.error <command> [args]...
+# Assert that running <command> fails (exits non-zero).  The command runs in a
+# subshell so that a fatal error (e.g. a shell arithmetic or syntax error) is
+# contained and counts as the expected failure rather than killing the test.
+__shlib_test_error()
+{
+	set +e
+	( "$@" ) >/dev/null 2>&1
+	__shlib_test_error_status="$?"
+	set -e
+	if test "${__shlib_test_error_status}" -eq '0'; then
+		__shlib_test_fail "expected failure but command succeeded: $*"
+	fi
+	unset __shlib_test_error_status
+	return 0
+}
+alias test.error='__shlib_test_error '
+
+# test.eq <expected> <actual> [message]
+# Assert that two strings are equal.
+__shlib_test_eq()
+{
+	if test "${1}" = "${2}"; then
+		return 0
+	fi
+	if test "$#" -gt '2'; then
+		__shlib_test_fail "${3}: expected '${1}', got '${2}'"
+	else
+		__shlib_test_fail "expected '${1}', got '${2}'"
+	fi
+	return 0
+}
+alias test.eq='__shlib_test_eq '
+
+# test.ne <unexpected> <actual> [message]
+# Assert that two strings differ.
+__shlib_test_ne()
+{
+	if test "${1}" != "${2}"; then
+		return 0
+	fi
+	if test "$#" -gt '2'; then
+		__shlib_test_fail "${3}: expected a value other than '${1}'"
+	else
+		__shlib_test_fail "expected a value other than '${1}'"
+	fi
+	return 0
+}
+alias test.ne='__shlib_test_ne '
+
+# test.match <pattern> <value> [message]
+# Assert that <value> matches the shell glob <pattern>.
+__shlib_test_match()
+{
+	# shellcheck disable=SC2254
+	case "${2}" in
+	(${1})	return 0;;
+	esac
+	if test "$#" -gt '2'; then
+		__shlib_test_fail "${3}: '${2}' does not match pattern '${1}'"
+	else
+		__shlib_test_fail "'${2}' does not match pattern '${1}'"
+	fi
+	return 0
+}
+alias test.match='__shlib_test_match '
+
+# vim: filetype=sh
