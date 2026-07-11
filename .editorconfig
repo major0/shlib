@@ -5,4 +5,7 @@ root = true
 [*]
 end_of_line = lf
 insert_final_newline = true
+# space or tab
 indent_style = tab
+# if indent_style is set to space
+#indent_size = 4
