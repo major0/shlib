@@ -14,23 +14,26 @@ git diff --cached --diff-filter A --name-only|while read filename; do
 		fi
 	fi
 
-	# New libraries and interfaces must come with documentation and unit tests.
+	# New libraries and interfaces must come with documentation and unit
+	# tests.  Tests live beside the code in '<iface>_test.shlib' files.
 	case "${filename}" in
 	(*/__init__.shlib)
+		# A library directory documents itself via '__index__.md'; its
+		# tests live in the individual interface '*_test.shlib' files.
 		if ! test -f "${filename%__init__.shlib}__index__.md"; then
 			die "missing documentation for '${filename%/__init__.shlib}'"
 		fi
+		;;
 
-		if ! test -f "${filename%__init__.shlib}__index__.shit"; then
-			die "missing tests for '${filename%/__init__.shlib}'"
-		fi
+	(*_test.shlib)
+		# Test files carry no documentation or tests of their own.
 		;;
 
 	(*.shlib)
 		if ! test -f "${filename%.shlib}.md"; then
 			die "missing documentation for '${filename}'"
 		fi
-		if ! test -f "${filename%.shlib}.shit"; then
+		if ! test -f "${filename%.shlib}_test.shlib"; then
 			die "missing tests for '${filename}'"
 		fi
 		;;
