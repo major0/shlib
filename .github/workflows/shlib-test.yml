@@ -1,0 +1,35 @@
+# Reusable workflow: run the whole shlib test suite under a single shell.
+#
+# It is called from ci.yml once per shell via a matrix, so every shell is
+# exercised concurrently.  The suite itself is just the stand-alone tooling:
+#     <shell> ./shlib test all
+name: shlib-test
+
+on:
+  workflow_call:
+    inputs:
+      shell:
+        description: 'Shell used to interpret shlib while running the suite'
+        required: true
+        type: string
+
+jobs:
+  test:
+    name: ${{ inputs.shell }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ${{ inputs.shell }}
+        env:
+          SHELL_UNDER_TEST: ${{ inputs.shell }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends "${SHELL_UNDER_TEST}"
+
+      - name: Run the test suite
+        env:
+          SHELL_UNDER_TEST: ${{ inputs.shell }}
+        run: |
+          "${SHELL_UNDER_TEST}" ./shlib test all

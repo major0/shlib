@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  # Linting is wired up but intentionally non-blocking for now: the existing
+  # tree is not yet shellcheck-clean, and it is being brought into compliance
+  # incrementally.  Drop 'continue-on-error' once the tree is clean.
+  lint:
+    name: lint (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Standard hooks
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: shellcheck (.sh and .shlib)
+        run: pre-commit run shellcheck --all-files --hook-stage manual --show-diff-on-failure
+
+  # Run the full test suite under every supported shell, in parallel.  The
+  # first five are verified locally; posh and yash are stricter POSIX shells
+  # included to surface portability gaps.  'fail-fast: false' lets each shell
+  # report independently.
+  test:
+    name: test
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [dash, bash, ksh, mksh, zsh, posh, yash]
+    uses: ./.github/workflows/shlib-test.yml
+    with:
+      shell: ${{ matrix.shell }}
