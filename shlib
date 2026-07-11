@@ -89,20 +89,54 @@ else
 	__shlib_pwd() { pwd; }
 fi
 
-# FIXME this is not remotely portable, and it beaks our coding style guidelines
-if __shlib_hascmd realpath; then
-	__shlib_realpath() { command realpath "${1}"; }
-else
-	__shlib_realpath() {(
-		if test -d "${1}"; then
-			cd "${1}" >/dev/null 2>&1 && __shlib_pwd
-		elif test -d "${1%/*}"; then
-			cd "${1%/*}" >/dev/null 2>&1 && echo "$(__shlib_pwd)/${1##*/}"
-		else
-			die "directory does not exist '${1%/*}'"
-		fi
-	)}
-fi
+## realpath
+# Almost every Unix tool breaks POSIX handling of paths, this includes
+# almost every "POSIX" compliant shell; pdksh, zsh, dash, and busybox's
+# sh; as well as GNU's realpath utility. It is also likely that nearly
+# all shell scripts, install scripts, and a plethora of SDKs which
+# handle/interpret the path likely violate POSIX path resolution.
+#
+# The core of the problem stems from a failure to understand POSIX's
+# definition of multiple `/` entries in a path.
+#
+# https://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266
+# 3.266 Pathname:
+#	A character string that is used to identify a file. In the context
+#	of IEEE Std 1003.1-2001, a pathname consists of, at most,
+#	{PATH_MAX} bytes, including the terminating null byte. It has an
+#	optional beginning slash, followed by zero or more filenames
+#	eparated by slashes. A pathname may optionally contain one or more
+#	trailing slashes.
+#
+#	**Multiple successive slashes are considered to be the same as one slash.**
+#
+# Most users assume this is the whole of the issue, but:
+#
+# https://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11
+# 4.11 Pathname Resolution
+#	A pathname consisting of a single slash shall resolve to the root
+#	directory of the process. A null pathname shall not be
+#	successfully resolved.
+#
+#	**A pathname that begins with two successive slashes may be
+#	interpreted in an implementation-defined manner, although more
+#	than two leading slashes shall be treated as a single slash.**
+#
+# This means that ALL tools, libraries, SDKs, applications which are
+# passed a path as an input must _always_ retain the `//` prefix on
+# the path when passing the path to the OS, as these paths are
+# allowed to be interpretted differntly by the OS. Failure to do this
+# may result in any and all of these applications failing to work on
+# the target platform.
+__shlib_realpath() {(
+	if test -d "${1}"; then
+		cd "${1}" >/dev/null 2>&1 && __shlib_pwd
+	elif test -d "${1%/*}"; then
+		cd "${1%/*}" >/dev/null 2>&1 && echo "$(__shlib_pwd)/${1##*/}"
+	else
+		die "directory does not exist '${1%/*}'"
+	fi
+)}
 alias shlib.realpath='__shlib_realpath '
 
 __shlib_optarg()
