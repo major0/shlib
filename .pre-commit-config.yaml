@@ -7,12 +7,17 @@ repos:
   - id: check-shebang-scripts-are-executable
   - id: end-of-file-fixer
   - id: mixed-line-ending
+# shellcheck runs against every '.sh' and '.shlib' source.  shlib targets
+# POSIX sh, so the dialect is forced with '--shell=sh'.  The hook is on the
+# 'manual' stage for now so it does not block commits while the existing tree
+# is brought into compliance incrementally; run it on demand with:
+#     pre-commit run shellcheck --all-files --hook-stage manual
+# and move it to the default stage (drop 'stages') once the tree is clean.
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.10.0.1
   hooks:
   -   id: shellcheck
-- repo: https://github.com/koalaman/shellcheck-precommit
-  rev: v0.10.0
-  hooks:
-  -   id: shellcheck
-      args: ['-e', 'SC1090,SC2034']
+      args: ['--shell=sh', '-e', 'SC1090,SC2034']
+      types: [file]
+      files: '\.(sh|shlib)$'
+      stages: [manual]

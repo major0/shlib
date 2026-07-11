@@ -1,0 +1,13 @@
+# ShellCheck configuration for shlib.
+#
+# shlib libraries are POSIX sh and are sourced rather than executed, and they
+# lean on a few deliberate idioms that ShellCheck cannot see through.  The
+# disables below cover those idioms so that ShellCheck can still usefully lint
+# everything else.
+#
+#   SC1083 / SC1089  the `main { ... }` (and `shlib.main { ... }`) construct,
+#                    which is an alias for `__shlib_main || { ... }`
+#   SC2148           `.shlib` files are sourced and carry no shebang
+#   SC1090           non-constant `.` (source) targets resolved at runtime
+#   SC2034           variables consumed via `eval`/alias indirection
+disable=SC1083,SC1089,SC2148,SC1090,SC2034
