@@ -114,25 +114,22 @@ existed.  Two things still work under ksh93:
    lives in that library's own file and is consumed from a *later* imported
    one.
 
-Neither workaround can be applied wholesale, though.  The entire [shlib][]
-public API is alias-based, so forcing every call site through `$(...)` would
-mean a subshell (a fork) per call.  And "define the alias in a prior unit" is
-not something [shlib][] can guarantee: `import` is just a shell command that
-runs at execution time and sources a file into the current shell -- it has no
-power to reach back and change how the interpreting shell already parsed the
-file that called it.  Imports can also be lazy (sitting inside a function body
-and firing only when the function runs, Python-style), so there is no way to
-ensure every dependency down the tree is resolved *before* the body that uses
-it is parsed.
+[shlib][] papers over this the same way it re-parses would-be-unavailable
+aliases elsewhere: by **re-baking functions after import**.  Once the outermost
+`import` has unwound -- every alias down the dependency tree now defined --
+[shlib][] walks each defined function (via ksh's own `typeset` introspection)
+and re-declares it through `eval`.  That re-parse happens with the aliases in
+effect, so they finally bake into the bodies that use them.  It runs only under
+ksh93 (`SHLIB_SHELL_IMPL` reports `ksh93`; see *Shell identity* below) and is a
+no-op on every other shell.  (Technique adapted from
+[alganet's c89cc.sh](https://gist.github.com/alganet/2b89c4368f8d23d033961d8a3deb5c19).)
 
-For these reasons **[shlib][] does not support ksh93.**  It identifies the
-implementation at startup (`SHLIB_SHELL_IMPL` reports `ksh93`; see *Shell
-identity* below) and refuses to run, printing an error to stderr and exiting
-non-zero.  This deviation cannot be papered over the way the Bash ones can, and
-carrying best-effort support for a shell that cannot be made correct is not
-worth the maintenance.  Should a portable way to force prior-unit dependency
-loading ever appear, unblocking is a one-line change; until then, use one of
-the conforming shells in the test matrix.
+One case remains: a bare alias used at the **top level** of the same parse unit
+-- for example `shlib -c 'import boo; boo.func'`, or an `import` followed by a
+bare call at a script's top level -- cannot be re-baked, because that inline
+command is not inside a function for the re-bake to reach.  For those, use the
+`$(...)` form, put the call inside a function (or `main { ... }`), or import in
+a prior unit with `shlib -I boo -c 'boo.func'`.
 
 ## Shell identity ##
 
