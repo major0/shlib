@@ -103,8 +103,10 @@ strictly a violation.)
 This does not affect normal [shlib][] use: a library's aliases are defined in
 that library's own file and consumed from a *later* imported file -- the
 prior-unit case, which ksh93 handles correctly.  It only bites code that
-defines an alias and then relies on it within the very same sourced file, a
-pattern [shlib][] avoids by convention.
+defines an alias and then relies on it within the very same sourced file.
+[shlib][] avoids that pattern *specifically* to stay compatible with ksh93 --
+it is a constraint forced by this breakage, not a stylistic convention shlib
+would otherwise adopt.
 
 Usage
 =====
