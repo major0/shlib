@@ -38,8 +38,7 @@ the test framework and the package-versioning design (see doc/packages.md).
   split ksh93/mksh/lksh/pdksh).  Remaining: convert the runtime heuristics --
   `shiftarg`'s *BSD `OPTIND` guess, the `printf` selection, the math
   native-gating -- to branch on `SHLIB_SHELL_IMPL` instead of re-probing.  Also
-  distinguish `dash` from BusyBox `sh` (both currently report `impl=sh`), and
-  decide whether the ksh93 best-effort advisory should escalate to a hard block.
+  distinguish `dash` from BusyBox `sh` (both currently report `impl=sh`).
 
 - **Documentation system.**  Extract documentation from the `.shlib` sources
   instead of maintaining parallel `.md` files.  Expose via `shlib doc
@@ -56,25 +55,37 @@ the test framework and the package-versioning design (see doc/packages.md).
   `<prefix>/lib/shlib/<package>/v<version>` layout, and `import <package>` /
   `import <package>@v<version>`.
 
-- **Pure-shell math.**  Replace the `awk`/`ksh`/`zsh` external fallbacks and the
-  ksh93/zsh native `$(( fn() ))` branches in the math library with pure-shell
-  fixed-point implementations.  Removes fork-per-call, works on every shell,
-  and clears the ShellCheck `-s sh` parse errors those branches cause.
+- **Pure-shell math.**  Replace the remaining `awk`/`zsh` external fallbacks and
+  the zsh native `$(( fn() ))` branches in the math library with pure-shell
+  fixed-point implementations.  (The ksh93 native `.sh.math.*` branches and the
+  external `ksh -c` per-call forks are already gone with the ksh93 block.)
+  Removes fork-per-call, works on every shell, and clears the ShellCheck `-s
+  sh` parse errors the `$(( fn() ))` branches cause.  `calc.shlib`/`cmp.shlib`
+  still carry generic ksh integer `$(())`/`(())` fallbacks (valid on mksh/lksh);
+  fold those in here too.
 
 ## Portability
 
-- **ksh93 alias baking.**  Under ksh93 a same-file-imported alias bakes only
-  when invoked inside command substitution (`$( )`), not as a bare command,
-  because ksh93 compiles a whole dot-sourced file as one parse unit.  shlib's
-  normal idiom -- interfaces emit to stdout and callers capture with `$()` --
-  satisfies this.  README entry corrected (commit 9e55ac3).  Remaining work is
-  architectural, under the package system: a consumer bakes a bare alias only
-  when the defining library was sourced in a *prior* parse unit, so the package
-  loader should topologically pre-load a manifest's DEPENDS before the consumer
-  body.  Note this can only ever be best-effort: `import` is a runtime command
-  with no control over the interpreting shell's parse boundaries, and imports
-  may be lazy (inside function bodies), so full pre-body resolution of the
-  import tree cannot be guaranteed.
+- **ksh93 -- unsupported (resolved).**  ksh93 compiles a whole dot-sourced file
+  (and a `-c` string) as one parse unit, so a same-unit alias never bakes, and
+  the entire shlib API is alias-based.  This cannot be forced from POSIX shell:
+  `import` is a runtime command with no control over the interpreting shell's
+  parse boundaries, and imports may be lazy (inside function bodies), so the
+  import tree cannot be guaranteed resolved before a consuming body is parsed.
+  Decision: shlib refuses to run under ksh93 (bootstrap detects
+  `SHLIB_SHELL_IMPL=ksh93` and errors out).  The ksh93-specific math paths (dead
+  native `.sh.math.*` branches and per-call external `ksh -c` forks) were
+  removed.  Re-enabling is a one-line change if a portable prior-unit
+  dependency-load mechanism ever lands (would live in the package loader as a
+  topological pre-load of a manifest's DEPENDS).
+
+- **`-c` is a single parse unit.**  `shlib -c 'import X; X.func'` cannot bake
+  `X`'s alias for the bare `X.func` on *any* shell, because the `-c` string is
+  run through one `eval` (one parse unit) -- same alias parse-time rule as the
+  ksh93 case.  Documented workaround is `-I X -c 'X.func'` (import runs before
+  the eval).  A cleaner fix ties into the existing shlib FIXME to write the
+  `-c` string to a temp script and source it instead of `eval`-ing it, which
+  would let a multi-line `-c` bake aliases the way a real script does.
 
 - **Unsupported shells.**  Add `posh` (no `alias` builtin -- cannot run shlib)
   and `sash` (not a POSIX-sh drop-in) to the README "Nonconforming shells"
@@ -83,17 +94,18 @@ the test framework and the package-versioning design (see doc/packages.md).
 
 ## Testing and CI
 
-- **Fix the CI matrix.**  `.github/workflows/ci.yml` still lists `posh`, which
-  cannot run shlib and would fail every run.  Drop it; add `lksh`, `ksh93`, and
-  `busybox`.  Handle the `busybox sh` invocation and the fact that `lksh` ships
-  in the `mksh` package and `ksh93` in the `ksh` package (shell name != apt
-  package).
+- **Grow the CI matrix.**  The matrix is now `[dash, bash, mksh, zsh, yash]`
+  (dropped `posh`, which cannot run shlib, and `ksh` = AT&T ksh93, now refused).
+  Still to add: `lksh` and `busybox`.  Handle the `busybox sh` invocation and
+  the fact that `lksh` ships in the `mksh` apt package (shell name != package).
+  Do *not* add ksh93 -- it is unsupported.
 
 - **Diamond / versioned-alias test.**  Land a `versioning_test.shlib` that
   imports two fake packages (`footest` -> `boov1`, `bartest` -> `boov2`), each
   binding the same alias to a version-distinct symbol, and assert each resolves
-  to its own version.  Invoke the aliases via `$()` so it passes under ksh93.
-  Fixture delivery: the runner prepends each test file's own directory to
+  to its own version.  (ksh93 accommodation no longer needed -- it is
+  unsupported.)  Fixture delivery: the runner prepends each test file's own
+  directory to
   `SHLIB_PATH`, so fixtures co-located with a test import by simple name with
   no per-test configuration; keep the diamond test and its fixtures together in
   `lib/test/versioning/`.
