@@ -36,10 +36,9 @@ if ! (readonly __SHLIB_JUNK >/dev/null 2>&1); then alias readonly=' ';fi
 #   SHLIB_SHELL_VERSION implementation version string, when the shell exposes
 #                       one (empty otherwise)
 # The family is what shlib branches on internally; the implementation and
-# version are published for callers and for the ksh93 advisory below.  We key
-# ksh disambiguation off KSH_VERSION rather than ksh93's `.sh.version`, because
-# a literal `.sh.version` reference is a parse-time syntax error on other shells
-# and would break this file wholesale.
+# version are published for callers.  Only the family is resolved here from the
+# universally-safe *_VERSION probes; the finer implementation is resolved below,
+# behind a family guard, so nothing shell-specific is parsed on the wrong shell.
 if ! ${ZSH_VERSION+false}; then
 	readonly SHLIB_SHELL='zsh'
 	readonly SHLIB_SHELL_IMPL='zsh'
@@ -49,13 +48,6 @@ if ! ${ZSH_VERSION+false}; then
 elif ! ${KSH_VERSION+false}; then
 	readonly SHLIB_SHELL='ksh'
 	readonly SHLIB_SHELL_VERSION="${KSH_VERSION}"
-	case "${KSH_VERSION}" in
-	(*AJM*)		readonly SHLIB_SHELL_IMPL='ksh93';;
-	(*MIRBSD*)	readonly SHLIB_SHELL_IMPL='mksh';;
-	(*LEGACY*)	readonly SHLIB_SHELL_IMPL='lksh';;
-	(*'PD KSH'*)	readonly SHLIB_SHELL_IMPL='pdksh';;
-	(*)		readonly SHLIB_SHELL_IMPL='ksh';;
-	esac
 	alias type > /dev/null 2>&1 || type() { whence -v "$*"; }
 elif ! ${BASH_VERSION+false}; then
 	readonly SHLIB_SHELL='bash'
@@ -71,12 +63,31 @@ else
 	readonly SHLIB_SHELL_VERSION=''
 fi
 
-# ksh93 compiles a whole dot-sourced file as a single parse unit, so it cannot
-# expand an alias defined and used within that same unit (see the README
-# "Nonconforming shells" section).  shlib still runs there, but support is
-# best-effort; advise once on stderr unless the caller opts out via SHLIB_QUIET.
-if test "${SHLIB_SHELL_IMPL}" = 'ksh93' && test -z "${SHLIB_QUIET-}"; then
-	echo 'shlib: warning: ksh93 alias handling is nonconforming; support is best-effort (set SHLIB_QUIET=1 to silence)' >&2
+# The ksh family all report SHLIB_SHELL=ksh; resolve the concrete implementation
+# here, behind the family guard, so any ksh-specific matching stays away from
+# the parsers of the other shells.  KSH_VERSION content is portable to match.
+if test "${SHLIB_SHELL}" = 'ksh'; then
+	case "${KSH_VERSION}" in
+	(*AJM*)		readonly SHLIB_SHELL_IMPL='ksh93';;
+	(*MIRBSD*)	readonly SHLIB_SHELL_IMPL='mksh';;
+	(*LEGACY*)	readonly SHLIB_SHELL_IMPL='lksh';;
+	(*'PD KSH'*)	readonly SHLIB_SHELL_IMPL='pdksh';;
+	(*)		readonly SHLIB_SHELL_IMPL='ksh';;
+	esac
+
+	# AT&T ksh93 is refused.  It compiles a whole dot-sourced file (and a `-c`
+	# string) as one parse unit, so it cannot expand an alias defined and used
+	# within that same unit -- and the entire shlib public API is alias-based.
+	# Unlike the Bash deviations, this cannot be papered over in POSIX shell
+	# (see the "Nonconforming shells" section of the README), so shlib does not
+	# support it.  `return` cleanly stops a sourced load; `exit` covers the
+	# executed case.  Both leave a non-zero status.
+	if test "${SHLIB_SHELL_IMPL}" = 'ksh93'; then
+		echo 'shlib: error: AT&T ksh93 is not supported: its single-parse-unit alias handling is nonconforming (see the README "Nonconforming shells" section)' >&2
+		# Only ksh93 reaches this; its top-level `return` terminates an
+		# executed script and cleanly unwinds a sourced one.
+		return 1
+	fi
 fi
 
 # Always request the shell obey POSIX
