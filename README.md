@@ -114,30 +114,25 @@ existed.  Two things still work under ksh93:
    lives in that library's own file and is consumed from a *later* imported
    one.
 
-It is tempting to state this as a rule -- "always load a dependency in a prior
-unit" -- but [shlib][] cannot actually enforce it, for two reasons:
+Neither workaround can be applied wholesale, though.  The entire [shlib][]
+public API is alias-based, so forcing every call site through `$(...)` would
+mean a subshell (a fork) per call.  And "define the alias in a prior unit" is
+not something [shlib][] can guarantee: `import` is just a shell command that
+runs at execution time and sources a file into the current shell -- it has no
+power to reach back and change how the interpreting shell already parsed the
+file that called it.  Imports can also be lazy (sitting inside a function body
+and firing only when the function runs, Python-style), so there is no way to
+ensure every dependency down the tree is resolved *before* the body that uses
+it is parsed.
 
- * **`import` is just a shell command.**  It runs at execution time and does
-   nothing more than source a file into the current shell.  It has no power to
-   reach back and change how the interpreting shell parses or compiles the file
-   it was called from; the parsing-unit boundary is fixed by the shell, not by
-   [shlib][].
- * **Imports can be lazy.**  Like Python, an `import` may sit inside a function
-   body and only fire when that function is called.  There is therefore no way
-   to guarantee that every dependency down the import tree is resolved *before*
-   the body that uses it is parsed.
-
-So "define the alias in a prior unit" is a property of how the code happens to
-be arranged, not a guarantee [shlib][] can make.  On ksh93 specifically, code
-that must use an alias in the same unit that could have defined it should reach
-for the `$(...)` form.
-
-Because this cannot be papered over the way the Bash deviations can, ksh93 is
-supported only on a **best-effort** basis.  [shlib][] detects it (see *Shell
-identity* below, where `SHLIB_SHELL_IMPL` reports `ksh93`) and prints a one-time
-advisory to stderr at startup; set `SHLIB_QUIET=1` to silence it.  If you
-control the interpreter, one of the conforming shells listed in the test matrix
-is the safer choice.
+For these reasons **[shlib][] does not support ksh93.**  It identifies the
+implementation at startup (`SHLIB_SHELL_IMPL` reports `ksh93`; see *Shell
+identity* below) and refuses to run, printing an error to stderr and exiting
+non-zero.  This deviation cannot be papered over the way the Bash ones can, and
+carrying best-effort support for a shell that cannot be made correct is not
+worth the maintenance.  Should a portable way to force prior-unit dependency
+loading ever appear, unblocking is a one-line change; until then, use one of
+the conforming shells in the test matrix.
 
 ## Shell identity ##
 
@@ -174,6 +169,17 @@ Examples:
  1. Run an shlib: `shlib program.shlib`
  2. Run a shell script: `shlib program.sh`
  3. Shell-like `-c` syntax: `shlib -I math -c 'math.seq 0 9'`
+
+Note the `-I math` in example 3.  A `-c` string is evaluated as a **single
+parse unit**, so an alias imported *inside* it is not yet in effect for a bare
+call in that same string -- `shlib -c 'import math; math.seq 0 9'` fails with
+`math.seq: not found`.  This is not a ksh93 quirk; it is the same parse-time
+alias rule (see *Nonconforming shells*) and it holds on every shell, because
+aliases only expand for input parsed after the alias is defined.  Importing
+with `-I` sidesteps it: the import runs *before* the `-c` string is parsed, so
+the alias is already defined and bakes normally.  The same is true for a script
+run via `shlib <file>` -- there the `import` and the call land on separate
+lines (separate parse units), so a plain in-file `import` works without `-I`.
 
 See `shlib --help` for various command-line options which change the behavior
 of [shlib][].
