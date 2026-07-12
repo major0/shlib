@@ -29,18 +29,54 @@ fi
 # Allow 'readonly' to work, even if it wont do what we want
 if ! (readonly __SHLIB_JUNK >/dev/null 2>&1); then alias readonly=' ';fi
 
-# Find the shell-flavor we are using
+# Identify the running shell along three axes:
+#   SHLIB_SHELL         family/dialect: zsh, ksh, bash, sh
+#   SHLIB_SHELL_IMPL    concrete implementation: zsh, bash, ksh93, mksh, lksh,
+#                       pdksh, ksh, yash, sh
+#   SHLIB_SHELL_VERSION implementation version string, when the shell exposes
+#                       one (empty otherwise)
+# The family is what shlib branches on internally; the implementation and
+# version are published for callers and for the ksh93 advisory below.  We key
+# ksh disambiguation off KSH_VERSION rather than ksh93's `.sh.version`, because
+# a literal `.sh.version` reference is a parse-time syntax error on other shells
+# and would break this file wholesale.
 if ! ${ZSH_VERSION+false}; then
 	readonly SHLIB_SHELL='zsh'
+	readonly SHLIB_SHELL_IMPL='zsh'
+	readonly SHLIB_SHELL_VERSION="${ZSH_VERSION}"
 	emulate ksh
 	zmodload zsh/mathfunc
 elif ! ${KSH_VERSION+false}; then
 	readonly SHLIB_SHELL='ksh'
+	readonly SHLIB_SHELL_VERSION="${KSH_VERSION}"
+	case "${KSH_VERSION}" in
+	(*AJM*)		readonly SHLIB_SHELL_IMPL='ksh93';;
+	(*MIRBSD*)	readonly SHLIB_SHELL_IMPL='mksh';;
+	(*LEGACY*)	readonly SHLIB_SHELL_IMPL='lksh';;
+	(*'PD KSH'*)	readonly SHLIB_SHELL_IMPL='pdksh';;
+	(*)		readonly SHLIB_SHELL_IMPL='ksh';;
+	esac
 	alias type > /dev/null 2>&1 || type() { whence -v "$*"; }
 elif ! ${BASH_VERSION+false}; then
 	readonly SHLIB_SHELL='bash'
+	readonly SHLIB_SHELL_IMPL='bash'
+	readonly SHLIB_SHELL_VERSION="${BASH_VERSION}"
+elif ! ${YASH_VERSION+false}; then
+	readonly SHLIB_SHELL='sh'
+	readonly SHLIB_SHELL_IMPL='yash'
+	readonly SHLIB_SHELL_VERSION="${YASH_VERSION}"
 else
 	readonly SHLIB_SHELL='sh'
+	readonly SHLIB_SHELL_IMPL='sh'
+	readonly SHLIB_SHELL_VERSION=''
+fi
+
+# ksh93 compiles a whole dot-sourced file as a single parse unit, so it cannot
+# expand an alias defined and used within that same unit (see the README
+# "Nonconforming shells" section).  shlib still runs there, but support is
+# best-effort; advise once on stderr unless the caller opts out via SHLIB_QUIET.
+if test "${SHLIB_SHELL_IMPL}" = 'ksh93' && test -z "${SHLIB_QUIET-}"; then
+	echo 'shlib: warning: ksh93 alias handling is nonconforming; support is best-effort (set SHLIB_QUIET=1 to silence)' >&2
 fi
 
 # Always request the shell obey POSIX
