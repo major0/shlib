@@ -61,11 +61,17 @@ the test framework and the package-versioning design (see doc/packages.md).
 ## Portability
 
 - **ksh93 alias baking.**  Under ksh93 a same-file-imported alias bakes only
-  when invoked inside command substitution (`$( )`), not as a bare command.
-  shlib's normal idiom -- interfaces emit to stdout and callers capture with
-  `$()` -- satisfies this.  Document it as a coding guideline and correct the
-  README "Nonconforming shells" ksh93 entry, which currently overstates the
-  limitation.
+  when invoked inside command substitution (`$( )`), not as a bare command,
+  because ksh93 compiles a whole dot-sourced file as one parse unit.  shlib's
+  normal idiom -- interfaces emit to stdout and callers capture with `$()` --
+  satisfies this.  README entry corrected (commit 9e55ac3).  Remaining work is
+  architectural, under the package system: a consumer bakes a bare alias only
+  when the defining library was sourced in a *prior* parse unit, so the package
+  loader should topologically pre-load a manifest's DEPENDS before the consumer
+  body.  Note this can only ever be best-effort: `import` is a runtime command
+  with no control over the interpreting shell's parse boundaries, and imports
+  may be lazy (inside function bodies), so full pre-body resolution of the
+  import tree cannot be guaranteed.
 
 - **Unsupported shells.**  Add `posh` (no `alias` builtin -- cannot run shlib)
   and `sash` (not a POSIX-sh drop-in) to the README "Nonconforming shells"
