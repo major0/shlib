@@ -1,9 +1,109 @@
-# dir
+# shlib TODO
+
+Tracked work for shlib, grouped by kind.  Items were surfaced while building
+the test framework and the package-versioning design (see doc/packages.md).
+
+## Known bugs
+
+- **Hyphens break library names.**  `__shlib_imported` maps a library name to
+  `__shlib_<name>_imported` with `tr '/.' '_'`, which does not sanitize `-`
+  (or other non-identifier characters), yielding an invalid function name and a
+  hard failure on `import foo-bar`.  Either sanitize such characters or require
+  and document identifier-safe library names.
+
+- **`-L <relative-dir>` stops resolving after an import.**  Importing a library
+  `cd`s into that library's directory, so a relative entry in `SHLIB_PATH` no
+  longer resolves afterward.  `-L` should be resolved to an absolute path
+  before being added to `SHLIB_PATH`.
+
+- **`shlib.doc` / `__shlib_doc` is undefined.**  The core `-h`/`--help`
+  handling and every interface's `main {}` block call it, so `shlib --help
+  <topic>` and interface `-h` fail.  Folds into the documentation-system work
+  below.
+
+- **`math.calc` cannot reject malformed input cleanly.**  It reads `$?` after a
+  `set --` (always 0), so a bad expression relies on a fatal shell arithmetic
+  error instead of returning non-zero.
+
+- **`math.sum` calls a bare `calc`** (undefined) instead of `math.calc`.
+
+- **`hostinfo` uses a relative `./config.guess`** (works only from the right
+  cwd) and depends on `nproc`.
+
+## Core enhancements
+
+- **Shell identity.**  Expose the shell family, implementation, and version as
+  read-only `SHLIB_SHELL` / `SHLIB_SHELL_IMPL` / `SHLIB_SHELL_VERSION` (detected
+  from `ZSH_VERSION`/`BASH_VERSION`/`KSH_VERSION`/`POSH_VERSION`).  Then convert
+  the runtime heuristics -- `shiftarg`'s *BSD `OPTIND` guess, the `printf`
+  selection, the math native-gating -- into clean implementation checks.
+
+- **Documentation system.**  Extract documentation from the `.shlib` sources
+  instead of maintaining parallel `.md` files.  Expose via `shlib doc
+  <package>` and `shlib doc <package>.<interface>`, with `@<version>` support.
+  Retire the per-interface `.md` files and fix the dangling `shlib.doc` once
+  done.
+
+- **CLI cleanup.**  Remove `--shlib-only`; rename `--report-set` to
+  `--detect-var-leak`.
+
+- **Package system.**  Implement versioned packages per doc/packages.md: a
+  manifest (NAME/VERSION/SLOT/DEPENDS), install-time slot mangling and
+  dependency resolution to direct versioned symbols, the
+  `<prefix>/lib/shlib/<package>/v<version>` layout, and `import <package>` /
+  `import <package>@v<version>`.
+
+- **Pure-shell math.**  Replace the `awk`/`ksh`/`zsh` external fallbacks and the
+  ksh93/zsh native `$(( fn() ))` branches in the math library with pure-shell
+  fixed-point implementations.  Removes fork-per-call, works on every shell,
+  and clears the ShellCheck `-s sh` parse errors those branches cause.
+
+## Portability
+
+- **ksh93 alias baking.**  Under ksh93 a same-file-imported alias bakes only
+  when invoked inside command substitution (`$( )`), not as a bare command.
+  shlib's normal idiom -- interfaces emit to stdout and callers capture with
+  `$()` -- satisfies this.  Document it as a coding guideline and correct the
+  README "Nonconforming shells" ksh93 entry, which currently overstates the
+  limitation.
+
+- **Unsupported shells.**  Add `posh` (no `alias` builtin -- cannot run shlib)
+  and `sash` (not a POSIX-sh drop-in) to the README "Nonconforming shells"
+  section as a distinct "cannot run shlib" category, separate from Bash (which
+  is worked around).
+
+## Testing and CI
+
+- **Fix the CI matrix.**  `.github/workflows/ci.yml` still lists `posh`, which
+  cannot run shlib and would fail every run.  Drop it; add `lksh`, `ksh93`, and
+  `busybox`.  Handle the `busybox sh` invocation and the fact that `lksh` ships
+  in the `mksh` package and `ksh93` in the `ksh` package (shell name != apt
+  package).
+
+- **Diamond / versioned-alias test.**  Land a `versioning_test.shlib` that
+  imports two fake packages (`footest` -> `boov1`, `bartest` -> `boov2`), each
+  binding the same alias to a version-distinct symbol, and assert each resolves
+  to its own version.  Invoke the aliases via `$()` so it passes under ksh93.
+  Fixture delivery: the runner prepends each test file's own directory to
+  `SHLIB_PATH`, so fixtures co-located with a test import by simple name with
+  no per-test configuration; keep the diamond test and its fixtures together in
+  `lib/test/versioning/`.
+
+- **Test framework growth.**  Add benchmarks (`bench_*`) and tests for `shlib
+  <file>`, `shlib -c`, and `#!/usr/bin/env shlib` (existing but untested).
+
+- **Retire the old runner.**  Remove `lib/deprecated/run-tests.sh` and
+  `lib/deprecated/Testing.md`, superseded by `run-tests.sh` and the `lib/test`
+  framework.
+
+## Planned modules
+
+### dir
 Interface for walking and acting upon directory structures.
  - walk
  - isempty
 
-# lock
+### lock
 Portable locks for enforcing exclusion. Likely depends on shlib.mktemp and the
 dir.* interaces.
  - init
@@ -11,24 +111,24 @@ dir.* interaces.
  - unlock
  - destroy
 
-db
+### db
 Simple directory structured database supporting key=value pairs. Will likely
 depend on dir.* and the lock.* interfaces.
 
-# url
+### url
 Interface for the manipulation of URLs
  - escape <string>
  - each <url>
  - fetch <url>
 
-# archive
+### archive
 Universal archive wrapper to various archive commands.
  - create <archive> <pattern>
  - add <archive> <pattern>
  - extract <archive> <pattern>
  - find <archive> <pattern>
 
-# fd
+### fd
 File descriptor management.  Shell does not really do any FD management for us,
 unlike the underlying OS.  So we need to track all out FDs manualy and figure
 out what is or isn't in use.
@@ -36,7 +136,7 @@ out what is or isn't in use.
  - free <fd>
  - dup <fd>
 
-# log (depends on fd.*)
+### log (depends on fd.*)
 Sane logger interface which allows the opening of multilpe log locations and
 the writing to multiple log locations based on a single log message. This will
 depend on the fd.* interface.
@@ -48,7 +148,7 @@ depend on the fd.* interface.
  - info: log.write info <message>
  - debug: log.write debug <message>
 
-# mktemp
+### mktemp
 Portable replacement to mktemp that can do most (all?) of the things we expect
 from the Linux mktemp, but which automatically adds an automatic shlib.atexit()
 to the generated path to garantee its cleanup.  It is also possible that we can
