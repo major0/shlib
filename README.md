@@ -65,6 +65,47 @@ From here a program only need to `import math.seq` to gain access to a
 `math.seq()` function which will call the native `seq` command if available,
 otherwise it will use one implemented in POSIX shell.
 
+## Nonconforming shells ##
+
+Several widely-used shells deviate from POSIX in ways that affect [shlib][].
+Where the deviation can be papered over, [shlib][] does so transparently and
+the shell is fully supported; where it cannot, the shell is listed here so its
+limits are known.
+
+### Bash ###
+
+Bash is fully supported, but only because [shlib][] works around two POSIX
+violations internally:
+
+ * **Alias expansion is disabled in non-interactive shells.**  POSIX performs
+   alias substitution while parsing every command; Bash suppresses it unless
+   the shell is interactive (or `shopt -s expand_aliases` is set).  Because the
+   entire [shlib][] public API is alias-based, [shlib][] forces POSIX mode with
+   `readonly POSIXLY_CORRECT=posix`, which restores POSIX alias expansion.
+
+ * **`getopts` mis-indexes `OPTIND`.**  Bash (and Zsh) do not count `$0` in
+   `OPTIND`, and during error handling they leave `OPTIND` pointing at the
+   offending argument -- behaviour POSIX does not describe.  [shlib][]
+   compensates in its internal `shiftarg` routine, which branches on the
+   detected shell to recover the correct shift count so that the long-option
+   parsing built on top of `getopts` behaves identically everywhere.
+
+### AT&T Ksh 93 ###
+
+Observed in `Version AJM 93u+m/1.0.8`.  When a file is *dot-sourced*
+(`. file`), ksh93 compiles the whole file as a single unit, so an alias that is
+both **defined and used within that same file** is not yet in effect when a
+later function in the file is parsed -- the alias fails to "bake" into the
+function body.  (Run as a top-level script it reads line-by-line and behaves as
+expected.  POSIX leaves this same-parse-unit case unspecified, so it is not
+strictly a violation.)
+
+This does not affect normal [shlib][] use: a library's aliases are defined in
+that library's own file and consumed from a *later* imported file -- the
+prior-unit case, which ksh93 handles correctly.  It only bites code that
+defines an alias and then relies on it within the very same sourced file, a
+pattern [shlib][] avoids by convention.
+
 Usage
 =====
 
