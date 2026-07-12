@@ -3,6 +3,8 @@
 #
 # Shells that are not present are skipped.  posh (no `alias` builtin) and sash
 # (not a POSIX-sh drop-in) cannot run shlib and are intentionally excluded.
+# AT&T ksh93 is detected at runtime and skipped as unsupported: shlib refuses to
+# run under it because its single-parse-unit alias handling is nonconforming.
 #
 # Usage: run-tests.sh [<test-target>]      (default target: all)
 set -eu
@@ -71,6 +73,14 @@ for shell in ${SHELLS}; do
 	esac
 	if ! command -v "${1}" > /dev/null 2>&1; then
 		printf 'skip  %-8s (not installed)\n' "${shell}"
+		skipped=$((skipped + 1))
+		continue
+	fi
+	# AT&T ksh93 is unsupported: its single-parse-unit alias handling is
+	# nonconforming and shlib refuses to run under it.  Whichever command name
+	# resolves to ksh93 (often bare `ksh`), detect it by KSH_VERSION and skip.
+	if "$@" -c "case \${KSH_VERSION:-} in (*AJM*) exit 0;; esac; exit 1" 2>/dev/null; then
+		printf 'skip  %-8s (unsupported: ksh93)\n' "${shell}"
 		skipped=$((skipped + 1))
 		continue
 	fi
