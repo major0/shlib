@@ -32,16 +32,16 @@ jobs:
         run: pre-commit run shellcheck --all-files --hook-stage manual --show-diff-on-failure
 
   # Run the full test suite under every supported shell, in parallel.
-  # 'fail-fast: false' lets each shell report independently.  Excluded: AT&T
-  # ksh93 (the Ubuntu `ksh` package) is refused by shlib as nonconforming, and
-  # posh has no `alias` builtin so it cannot run shlib at all.  Adding lksh and
-  # busybox is tracked separately (they need bespoke install/invocation steps).
+  # 'fail-fast: false' lets each shell report independently.  `ksh` on Ubuntu is
+  # AT&T ksh93, which shlib supports via function re-baking.  posh is excluded
+  # (no `alias` builtin, cannot run shlib).  Adding lksh and busybox is tracked
+  # separately (they need bespoke install/invocation steps).
   test:
     name: test
     strategy:
       fail-fast: false
       matrix:
-        shell: [dash, bash, mksh, zsh, yash]
+        shell: [dash, bash, ksh, mksh, zsh, yash]
     uses: ./.github/workflows/shlib-test.yml
     with:
       shell: ${{ matrix.shell }}
