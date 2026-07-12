@@ -92,21 +92,45 @@ violations internally:
 
 ### AT&T Ksh 93 ###
 
-Observed in `Version AJM 93u+m/1.0.8`.  When a file is *dot-sourced*
-(`. file`), ksh93 compiles the whole file as a single unit, so an alias that is
-both **defined and used within that same file** is not yet in effect when a
-later function in the file is parsed -- the alias fails to "bake" into the
-function body.  (Run as a top-level script it reads line-by-line and behaves as
-expected.  POSIX leaves this same-parse-unit case unspecified, so it is not
-strictly a violation.)
+Observed in `Version AJM 93u+m/1.0.8`.  Aliases are a *parse-time*
+substitution: an alias only takes effect for commands parsed **after** the
+command that defines it has finished parsing (see
+[SC2262](https://www.shellcheck.net/wiki/SC2262)).  The unit of parsing is the
+catch.  Conforming shells close a parsing unit at each newline, so a definition
+on one line is in effect for the next.  ksh93 compiles a whole *dot-sourced*
+file (`. file`) -- and a whole `-c` string -- as a **single** parsing unit.
 
-This does not affect normal [shlib][] use: a library's aliases are defined in
-that library's own file and consumed from a *later* imported file -- the
-prior-unit case, which ksh93 handles correctly.  It only bites code that
-defines an alias and then relies on it within the very same sourced file.
-[shlib][] avoids that pattern *specifically* to stay compatible with ksh93 --
-it is a constraint forced by this breakage, not a stylistic convention shlib
-would otherwise adopt.
+The practical consequence: within one dot-sourced file, an alias that is both
+**defined and then used bare** does not "bake" into the code that uses it,
+because the entire file was already compiled as one unit before the alias
+existed.  Two things still work under ksh93:
+
+ * **Deferred re-parse.**  Wrapping the call in a command substitution --
+   `$(boo.func)` instead of a bare `boo.func` -- works, because the substituted
+   text is re-parsed at *run* time, after the alias is defined.
+ * **Prior-unit definition.**  If the alias is defined in a *separately sourced*
+   file that finished parsing earlier, a later file consuming it bakes
+   correctly.  This is the normal [shlib][] arrangement: a library's alias
+   lives in that library's own file and is consumed from a *later* imported
+   one.
+
+It is tempting to state this as a rule -- "always load a dependency in a prior
+unit" -- but [shlib][] cannot actually enforce it, for two reasons:
+
+ * **`import` is just a shell command.**  It runs at execution time and does
+   nothing more than source a file into the current shell.  It has no power to
+   reach back and change how the interpreting shell parses or compiles the file
+   it was called from; the parsing-unit boundary is fixed by the shell, not by
+   [shlib][].
+ * **Imports can be lazy.**  Like Python, an `import` may sit inside a function
+   body and only fire when that function is called.  There is therefore no way
+   to guarantee that every dependency down the import tree is resolved *before*
+   the body that uses it is parsed.
+
+So "define the alias in a prior unit" is a property of how the code happens to
+be arranged, not a guarantee [shlib][] can make.  On ksh93 specifically, code
+that must use an alias in the same unit that could have defined it should reach
+for the `$(...)` form.
 
 Usage
 =====
