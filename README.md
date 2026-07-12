@@ -132,6 +132,30 @@ be arranged, not a guarantee [shlib][] can make.  On ksh93 specifically, code
 that must use an alias in the same unit that could have defined it should reach
 for the `$(...)` form.
 
+Because this cannot be papered over the way the Bash deviations can, ksh93 is
+supported only on a **best-effort** basis.  [shlib][] detects it (see *Shell
+identity* below, where `SHLIB_SHELL_IMPL` reports `ksh93`) and prints a one-time
+advisory to stderr at startup; set `SHLIB_QUIET=1` to silence it.  If you
+control the interpreter, one of the conforming shells listed in the test matrix
+is the safer choice.
+
+## Shell identity ##
+
+At startup [shlib][] identifies the interpreter it is running under and
+publishes three read-only variables (read-only on shells that support it):
+
+| Variable              | Meaning                        | Examples                                         |
+| --------------------- | ------------------------------ | ------------------------------------------------ |
+| `SHLIB_SHELL`         | dialect / family               | `sh`, `bash`, `ksh`, `zsh`                        |
+| `SHLIB_SHELL_IMPL`    | concrete implementation        | `sh`, `bash`, `ksh93`, `mksh`, `lksh`, `pdksh`, `yash`, `zsh` |
+| `SHLIB_SHELL_VERSION` | implementation version string  | `5.2.21(1)-release`, `Version AJM 93u+m/1.0.8`    |
+
+`SHLIB_SHELL` is the axis [shlib][] branches on internally; the whole ksh family
+(`ksh93`, `mksh`, `lksh`, `pdksh`) shares `SHLIB_SHELL=ksh`.  Use
+`SHLIB_SHELL_IMPL` when behaviour differs between implementations of the same
+family.  `SHLIB_SHELL_VERSION` is whatever the shell reports and is empty when
+the shell exposes no version (for example a plain `dash` or BusyBox `sh`).
+
 Usage
 =====
 

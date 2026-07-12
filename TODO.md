@@ -32,11 +32,14 @@ the test framework and the package-versioning design (see doc/packages.md).
 
 ## Core enhancements
 
-- **Shell identity.**  Expose the shell family, implementation, and version as
-  read-only `SHLIB_SHELL` / `SHLIB_SHELL_IMPL` / `SHLIB_SHELL_VERSION` (detected
-  from `ZSH_VERSION`/`BASH_VERSION`/`KSH_VERSION`/`POSH_VERSION`).  Then convert
-  the runtime heuristics -- `shiftarg`'s *BSD `OPTIND` guess, the `printf`
-  selection, the math native-gating -- into clean implementation checks.
+- **Shell identity.**  *(detection done)* Read-only `SHLIB_SHELL` /
+  `SHLIB_SHELL_IMPL` / `SHLIB_SHELL_VERSION` are now published from the bootstrap
+  (`ZSH_VERSION`/`BASH_VERSION`/`YASH_VERSION` plus `KSH_VERSION` content to
+  split ksh93/mksh/lksh/pdksh).  Remaining: convert the runtime heuristics --
+  `shiftarg`'s *BSD `OPTIND` guess, the `printf` selection, the math
+  native-gating -- to branch on `SHLIB_SHELL_IMPL` instead of re-probing.  Also
+  distinguish `dash` from BusyBox `sh` (both currently report `impl=sh`), and
+  decide whether the ksh93 best-effort advisory should escalate to a hard block.
 
 - **Documentation system.**  Extract documentation from the `.shlib` sources
   instead of maintaining parallel `.md` files.  Expose via `shlib doc
