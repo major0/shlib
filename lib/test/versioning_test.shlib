@@ -1,0 +1,45 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Regression guard for the coexistence guarantee behind shlib package
+# versioning (see doc/packages.md): two versions of an interface, stamped into
+# version-distinct symbols at install time, live side by side in the one
+# global namespace, and a consumer resolved to a given version calls exactly
+# that version.
+#
+# The guard deliberately uses direct symbol calls and no aliases.  Install-time
+# resolution binds a consumer's dependency calls to the direct versioned
+# symbol, so this mirrors that; it also avoids relying on same-file alias
+# baking, which ksh93 does not perform for dot-sourced files (see the
+# "Nonconforming shells" section of the README).  The prior-unit alias baking
+# that shlib does rely on is exercised by every other test file through the
+# framework's own test.* aliases.
+
+# Two versions of an interface, coexisting as the install-time slot stamp
+# leaves them: distinct internal symbols.
+__shlib_poo_v1_thing() { echo 'v1'; }
+__shlib_poo_v2_thing() { echo 'v2'; }
+
+# Consumers as the installer leaves them: each dependency call resolved to the
+# version it declared. Both authors wrote a plain, version-agnostic call.
+__shlib_versiontest_boo() { __shlib_poo_v1_thing; }
+__shlib_versiontest_bar() { __shlib_poo_v2_thing; }
+
+teardown_file() {
+	unset -f __shlib_poo_v1_thing __shlib_poo_v2_thing \
+		__shlib_versiontest_boo __shlib_versiontest_bar \
+		2>/dev/null || true
+}
+
+test_versioned_symbols_coexist() {
+	test.eq 'v1' "$(__shlib_poo_v1_thing)" 'poo v1 symbol'
+	test.eq 'v2' "$(__shlib_poo_v2_thing)" 'poo v2 symbol'
+}
+
+test_consumers_call_their_declared_version() {
+	test.eq 'v1' "$(__shlib_versiontest_boo)" 'boo resolved to poo@v1'
+	test.eq 'v2' "$(__shlib_versiontest_bar)" 'bar resolved to poo@v2'
+}
+
+# vim: filetype=sh
