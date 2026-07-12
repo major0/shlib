@@ -66,18 +66,18 @@ the test framework and the package-versioning design (see doc/packages.md).
 
 ## Portability
 
-- **ksh93 -- unsupported (resolved).**  ksh93 compiles a whole dot-sourced file
-  (and a `-c` string) as one parse unit, so a same-unit alias never bakes, and
-  the entire shlib API is alias-based.  This cannot be forced from POSIX shell:
-  `import` is a runtime command with no control over the interpreting shell's
-  parse boundaries, and imports may be lazy (inside function bodies), so the
-  import tree cannot be guaranteed resolved before a consuming body is parsed.
-  Decision: shlib refuses to run under ksh93 (bootstrap detects
-  `SHLIB_SHELL_IMPL=ksh93` and errors out).  The ksh93-specific math paths (dead
-  native `.sh.math.*` branches and per-call external `ksh -c` forks) were
-  removed.  Re-enabling is a one-line change if a portable prior-unit
-  dependency-load mechanism ever lands (would live in the package loader as a
-  topological pre-load of a manifest's DEPENDS).
+- **ksh93 -- supported via function re-baking (resolved).**  ksh93 compiles a
+  whole dot-sourced file (and a `-c` string) as one parse unit, so a same-unit
+  alias never bakes into a function defined in that unit -- and the shlib API is
+  alias-based.  `__shlib_rebake` fixes this: when the outermost `import` unwinds
+  (all aliases defined), it re-declares every function via `typeset -f`/`eval`
+  so the re-parse bakes the aliases in.  Guarded to `SHLIB_SHELL_IMPL=ksh93`;
+  no-op elsewhere.  (Was briefly hard-blocked; the re-bake technique, adapted
+  from alganet's c89cc.sh, restored support.)  Remaining: (1) top-level bare
+  alias use in the same unit still cannot be re-baked (not inside a function) --
+  document/accept; (2) re-bake is O(functions) per top-level import under
+  ksh93 -- fine for now, revisit if it bites; (3) once packages exist, the
+  loader could re-bake per package rather than globally.
 
 - **`-c` is a single parse unit.**  `shlib -c 'import X; X.func'` cannot bake
   `X`'s alias for the bare `X.func` on *any* shell, because the `-c` string is
@@ -94,18 +94,18 @@ the test framework and the package-versioning design (see doc/packages.md).
 
 ## Testing and CI
 
-- **Grow the CI matrix.**  The matrix is now `[dash, bash, mksh, zsh, yash]`
-  (dropped `posh`, which cannot run shlib, and `ksh` = AT&T ksh93, now refused).
-  Still to add: `lksh` and `busybox`.  Handle the `busybox sh` invocation and
-  the fact that `lksh` ships in the `mksh` apt package (shell name != package).
-  Do *not* add ksh93 -- it is unsupported.
+- **Grow the CI matrix.**  The matrix is now `[dash, bash, ksh, mksh, zsh,
+  yash]` (`ksh` = AT&T ksh93, supported via re-baking; `posh` excluded -- no
+  `alias` builtin).  Still to add: `lksh` and `busybox`.  Handle the `busybox
+  sh` invocation and the fact that `lksh` ships in the `mksh` apt package (shell
+  name != package).
 
 - **Diamond / versioned-alias test.**  Land a `versioning_test.shlib` that
   imports two fake packages (`footest` -> `boov1`, `bartest` -> `boov2`), each
   binding the same alias to a version-distinct symbol, and assert each resolves
-  to its own version.  (ksh93 accommodation no longer needed -- it is
-  unsupported.)  Fixture delivery: the runner prepends each test file's own
-  directory to
+  to its own version.  Calling the aliases inside test functions keeps it
+  working under ksh93 (the re-bake covers function bodies).  Fixture delivery:
+  the runner prepends each test file's own directory to
   `SHLIB_PATH`, so fixtures co-located with a test import by simple name with
   no per-test configuration; keep the diamond test and its fixtures together in
   `lib/test/versioning/`.
