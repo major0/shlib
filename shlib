@@ -74,20 +74,6 @@ if test "${SHLIB_SHELL}" = 'ksh'; then
 	(*'PD KSH'*)	readonly SHLIB_SHELL_IMPL='pdksh';;
 	(*)		readonly SHLIB_SHELL_IMPL='ksh';;
 	esac
-
-	# AT&T ksh93 is refused.  It compiles a whole dot-sourced file (and a `-c`
-	# string) as one parse unit, so it cannot expand an alias defined and used
-	# within that same unit -- and the entire shlib public API is alias-based.
-	# Unlike the Bash deviations, this cannot be papered over in POSIX shell
-	# (see the "Nonconforming shells" section of the README), so shlib does not
-	# support it.  `return` cleanly stops a sourced load; `exit` covers the
-	# executed case.  Both leave a non-zero status.
-	if test "${SHLIB_SHELL_IMPL}" = 'ksh93'; then
-		echo 'shlib: error: AT&T ksh93 is not supported: its single-parse-unit alias handling is nonconforming (see the README "Nonconforming shells" section)' >&2
-		# Only ksh93 reaches this; its top-level `return` terminates an
-		# executed script and cleanly unwinds a sourced one.
-		return 1
-	fi
 fi
 
 # Always request the shell obey POSIX
@@ -473,10 +459,35 @@ __shlib_import_lib()
 	return "${1}"
 }
 
+## __shlib_rebake
+# ksh93 compiles a whole dot-sourced file as a single parse unit, so an alias
+# defined in that unit is not expanded into a function that is also defined in
+# it -- and the shlib public API is entirely alias-based.  Once every alias is
+# defined, re-declaring each function via `eval` re-parses its body with the
+# aliases in effect, baking them in.  Applied only under ksh93 (guarded at the
+# call site) using ksh's own `typeset` introspection.  Re-declaring a function
+# that is currently on the call stack is safe in ksh93: the running instance
+# finishes with its old body and the new body applies on the next call.
+# Technique adapted from alganet's c89cc.sh.
+__shlib_rebake()
+{
+	# shellcheck disable=SC3044  # typeset is ksh93-only; this runs only there
+	for __shlib_rebake_fn in $(typeset +f); do
+		# ksh93 lists function names with a trailing '()'; strip it.
+		__shlib_rebake_fn="${__shlib_rebake_fn%'()'}"
+		case "${__shlib_rebake_fn}" in (__shlib_rebake) continue;; esac
+		# shellcheck disable=SC3044
+		__shlib_rebake_body="$(typeset -f "${__shlib_rebake_fn}" 2>/dev/null)" || continue
+		eval "${__shlib_rebake_fn} () {${__shlib_rebake_body#*\{}" 2>/dev/null || :
+	done
+	unset __shlib_rebake_fn __shlib_rebake_body
+}
+
 # FIXME support 'import <routine> from <lib>'?
 __shlib_import()
 {
 	: "__shlib_import($*)"
+	__shlib_import_depth=$((${__shlib_import_depth:-0} + 1))
 	while test "$#" -gt '0'; do
 		# OpenBSD's /bin/sh will trigger an exit if we do this test
 		# while 'set -e' is active.
@@ -490,6 +501,14 @@ __shlib_import()
 		set -e
 		shift
 	done
+	# Once the outermost import has unwound (all aliases down the tree now
+	# defined), re-bake functions so ksh93 expands those aliases into the
+	# bodies that use them.  No-op on every other shell.
+	__shlib_import_depth=$((__shlib_import_depth - 1))
+	if test "${__shlib_import_depth}" -eq '0'; then
+		test "${SHLIB_SHELL_IMPL}" != 'ksh93' || __shlib_rebake
+		unset __shlib_import_depth
+	fi
 	return "$#"
 }
 alias shlib.import='__shlib_import '
