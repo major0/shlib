@@ -10,7 +10,7 @@ __shlib_array_insert()
 	eval set -- "${1}"
 	set -- "${__shlib_array_insert_data}" "${@}"
 	unset __shlib_array_insert_data
-	printf '%s\n' "$(__shlib_array "$@")"
+	__shlib_array "$@"
 }
 
 # vim: filetype=sh
