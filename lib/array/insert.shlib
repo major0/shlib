@@ -12,5 +12,6 @@ __shlib_array_insert()
 	unset __shlib_array_insert_data
 	__shlib_array "$@"
 }
+alias array.insert='__shlib_array_insert '
 
 # vim: filetype=sh

@@ -9,5 +9,6 @@ __shlib_array_join()
 	eval set -- "${@}"
 	__shlib_array "$@"
 }
+alias array.join='__shlib_array_join '
 
 # vim: filetype=sh
