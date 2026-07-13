@@ -2,7 +2,7 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-__shlib_array_length() { eval set -- "${1}"; echo "$#"; }
+__shlib_array_length() { eval set -- "${1}"; SHLIB_RESULT="$#"; }
 alias array.length='__shlib_array_length '
 
 # vim: filetype=sh

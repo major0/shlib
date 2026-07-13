@@ -13,7 +13,7 @@ __shlib_array_index()
 		__shlib_array_index_shift=$((__shlib_array_index_shift - 1))
 	done
 	unset __shlib_array_index_shift
-	printf '%s\n' "${1}"
+	SHLIB_RESULT="${1}"
 }
 alias array.index='__shlib_array_index '
 

@@ -2,31 +2,28 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-case "${SHLIB_SHELL}" in
-(bash|ksh|zsh)
-	__shlib_string_escape() { printf '%q' "$1"; };;
-(*)
-	if shlib.hascmd sed; then
-		__shlib_string_escape() { printf '%s' "$1" | sed -e 's/\([[:space:][:punct:]]\)/\\\1/g'; }
-	else
-		__shlib_string_escape()
-		{
-			while ! test -z "${1}"; do
-				__shlib_string_prefix="${1%%[[:punct:]]*}"
-				test -z "${__shlib_string_prefix}" || printf '%s' "${__shlib_string_prefix}"
-				set -- "${1#${__shlib_string_prefix}}"
-				__shlib_string_suffix="${1#?}"
-				if ! test -z "${__shlib_string_suffix}"; then
-					printf '\\%s' "${1%${__shlib_string_suffix}}"
-				fi
-				set -- "${__shlib_string_suffix}"
-			done
-			unset __shlib_string_prefix
-			unset __shlib_string_suffix
-		}
-	fi
-	;;
-esac
+## string.escape <string>
+# Quote <string> into a single shell word that evaluates back to the original.
+# It uses single-quote quoting -- every `'` becomes `'\''` and the whole string
+# is wrapped in `'...'` -- which is pure parameter expansion: no subshell and no
+# external tool, and it safely handles every byte, including spaces, newlines,
+# glob characters, and quotes.  The quoted word is published in `SHLIB_RESULT`.
+__shlib_string_escape()
+{
+	__shlib_string_escape_q="'"
+	__shlib_string_escape_out=''
+	__shlib_string_escape_in="${1}"
+	while case "${__shlib_string_escape_in}" in
+		(*${__shlib_string_escape_q}*)	: ;;
+		(*)				false ;;
+		esac
+	do
+		__shlib_string_escape_out="${__shlib_string_escape_out}${__shlib_string_escape_in%%"${__shlib_string_escape_q}"*}${__shlib_string_escape_q}\\${__shlib_string_escape_q}${__shlib_string_escape_q}"
+		__shlib_string_escape_in="${__shlib_string_escape_in#*"${__shlib_string_escape_q}"}"
+	done
+	SHLIB_RESULT="${__shlib_string_escape_q}${__shlib_string_escape_out}${__shlib_string_escape_in}${__shlib_string_escape_q}"
+	unset __shlib_string_escape_q __shlib_string_escape_out __shlib_string_escape_in
+}
 alias string.escape='__shlib_string_escape '
 
 shlib.main {
@@ -34,6 +31,7 @@ shlib.main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'string.escape';; esac
 	done
 	__shlib_string_escape "${*}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

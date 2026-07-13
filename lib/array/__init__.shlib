@@ -15,11 +15,13 @@ import array.tail
 
 __shlib_array()
 {
-	test "$#" -gt '0' || return 0
+	__shlib_array_out=''
 	for __shlib_array_entry; do
-		printf "'%s' \\\\\n" "$(string.escape "${__shlib_array_entry}")"
+		string.escape "${__shlib_array_entry}"
+		__shlib_array_out="${__shlib_array_out}${SHLIB_RESULT} "
 	done
-	echo " "
+	SHLIB_RESULT="${__shlib_array_out}"
+	unset __shlib_array_out __shlib_array_entry
 }
 alias array='__shlib_array '
 
@@ -28,7 +30,8 @@ shlib.main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'array';; esac
 	done
 
-	__shlib_array "$@" || exit 1
+	__shlib_array "$@"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

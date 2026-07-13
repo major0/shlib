@@ -17,19 +17,28 @@ __shlib_map()
 		return 1
         fi
 
-	__shlib_map_cmd=
+	array
+	__shlib_map_cmd="${SHLIB_RESULT}"
         until string.regexp '.*:$' "${1}"; do
-		__shlib_map_cmd="$(array.append "${__shlib_map_cmd}" "${1}")"
+		array.append "${__shlib_map_cmd}" "${1}"
+		__shlib_map_cmd="${SHLIB_RESULT}"
 		shift
         done
-	__shlib_map_cmd="$(array.append "${__shlib_map_cmd}" "${1%:}")"
+	array.append "${__shlib_map_cmd}" "${1%:}"
+	__shlib_map_cmd="${SHLIB_RESULT}"
 	shift
 
-	__shlib_map_items="$(array "${@}")"
-	while __shlib_map_item="$(array.head "${__shlib_map_items}")"; do
-		__shlib_map_items="$(array.shift "${__shlib_map_items}")"
+	array "${@}"
+	__shlib_map_items="${SHLIB_RESULT}"
+	array.length "${__shlib_map_items}"
+	while test "${SHLIB_RESULT}" -gt '0'; do
+		array.head "${__shlib_map_items}"
+		__shlib_map_item="${SHLIB_RESULT}"
+		array.shift "${__shlib_map_items}"
+		__shlib_map_items="${SHLIB_RESULT}"
 		eval set -- "${__shlib_map_cmd}" "\"${__shlib_map_item}\""
 		"${@}"
+		array.length "${__shlib_map_items}"
 	done
 	unset __shlib_map_items
 	unset __shlib_map_item

@@ -5,7 +5,7 @@
 __shlib_array_head()
 {
 	eval set -- "${1}"
-	printf '%s\n' "${1}"
+	SHLIB_RESULT="${1}"
 }
 alias array.head='__shlib_array_head '
 

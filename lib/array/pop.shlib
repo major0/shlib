@@ -6,13 +6,15 @@ import string.escape
 
 __shlib_array_pop()
 {
+	__shlib_array_pop_out=''
 	eval set -- "${1}"
-	__shlib_array_pop_index=0
-	while test "${__shlib_array_pop_index}" -lt "$#"; do
-		printf "'%s' \\\\\n" "$(string.escape "$1")"
+	while test "$#" -gt '0'; do
+		string.escape "$1"
+		__shlib_array_pop_out="${__shlib_array_pop_out}${SHLIB_RESULT} "
 		shift
 	done
-	echo " "
+	SHLIB_RESULT="${__shlib_array_pop_out}"
+	unset __shlib_array_pop_out
 }
 
 # vim: filetype=sh
