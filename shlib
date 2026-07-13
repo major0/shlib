@@ -276,6 +276,7 @@ __shlib_leaked_vars_filter()
 		(POSIXLY_CORRECT) continue;;
 		(SHLIB_CALL_STACK) continue;;
 		(SHLIB_SHELL)	continue;;
+		(SHLIB_RESULT)	continue;; # interface result register
 		(OPTARG)	continue;; # zsh
 		(A__z)		continue;; # ksh
 
