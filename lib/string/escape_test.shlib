@@ -1,0 +1,58 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import string.escape
+
+# string.escape publishes a single-quoted word in SHLIB_RESULT.
+test_plain() {
+	__shlib_string_escape 'plain'
+	test.eq "'plain'" "${SHLIB_RESULT}" 'plain word'
+}
+
+test_single_quote() {
+	__shlib_string_escape "it's"
+	test.eq "'it'\\''s'" "${SHLIB_RESULT}" 'embedded single quote'
+}
+
+test_empty() {
+	__shlib_string_escape ''
+	test.eq "''" "${SHLIB_RESULT}" 'empty string'
+}
+
+# Every escaped value must eval back to exactly the original, as one word.
+test_roundtrip() {
+	for __t in 'plain' 'a b c' "it's" "a'b'c" 'x*y?[z]' 'q"r' \
+		'semi;pipe|amp&' 'trailing ' ''; do
+		__in="${__t}"
+		__shlib_string_escape "${__in}"
+		eval "set -- ${SHLIB_RESULT}"
+		test.eq "${__in}" "${1:-}" "roundtrip value [${__in}]"
+		test.eq '1' "$#" "roundtrip single word [${__in}]"
+	done
+	unset __t __in
+}
+
+# Expansion-trigger characters must survive literally (the escape must not let
+# eval expand them).  Built with escaped double quotes so the source stays
+# literal without single-quoting a '$'.
+test_expansion_chars() {
+	__in="dollar \$HOME backtick \`cmd\` back\\slash"
+	__shlib_string_escape "${__in}"
+	eval "set -- ${SHLIB_RESULT}"
+	test.eq "${__in}" "${1:-}" 'expansion characters preserved'
+	test.eq '1' "$#" 'expansion characters single word'
+	unset __in
+}
+
+test_newline() {
+	__in='line1
+line2'
+	__shlib_string_escape "${__in}"
+	eval "set -- ${SHLIB_RESULT}"
+	test.eq "${__in}" "${1:-}" 'newline preserved'
+	test.eq '1' "$#" 'newline single word'
+	unset __in
+}
+
+# vim: filetype=sh

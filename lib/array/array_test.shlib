@@ -1,0 +1,106 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import array
+
+# All array interfaces publish their result in SHLIB_RESULT.
+
+test_length() {
+	__shlib_array one two three
+	__shlib_array_length "${SHLIB_RESULT}"
+	test.eq '3' "${SHLIB_RESULT}" 'length of three-element array'
+}
+
+test_empty_length() {
+	__shlib_array
+	__shlib_array_length "${SHLIB_RESULT}"
+	test.eq '0' "${SHLIB_RESULT}" 'length of empty array'
+}
+
+test_head() {
+	__shlib_array alpha beta gamma
+	__shlib_array_head "${SHLIB_RESULT}"
+	test.eq 'alpha' "${SHLIB_RESULT}" 'head'
+}
+
+test_tail() {
+	__shlib_array alpha beta gamma
+	__shlib_array_tail "${SHLIB_RESULT}"
+	test.eq 'gamma' "${SHLIB_RESULT}" 'tail'
+}
+
+test_index() {
+	__shlib_array a b c d
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_index "${__arr}" 1
+	test.eq 'a' "${SHLIB_RESULT}" 'index 1'
+	__shlib_array_index "${__arr}" 3
+	test.eq 'c' "${SHLIB_RESULT}" 'index 3'
+	unset __arr
+}
+
+test_append() {
+	__shlib_array a b
+	__shlib_array_append "${SHLIB_RESULT}" c
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_length "${__arr}"
+	test.eq '3' "${SHLIB_RESULT}" 'length after append'
+	__shlib_array_tail "${__arr}"
+	test.eq 'c' "${SHLIB_RESULT}" 'tail after append'
+	unset __arr
+}
+
+test_insert() {
+	__shlib_array b c
+	__shlib_array_insert "${SHLIB_RESULT}" a
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_length "${__arr}"
+	test.eq '3' "${SHLIB_RESULT}" 'length after insert'
+	__shlib_array_head "${__arr}"
+	test.eq 'a' "${SHLIB_RESULT}" 'head after insert'
+	unset __arr
+}
+
+test_shift() {
+	__shlib_array a b c
+	__shlib_array_shift "${SHLIB_RESULT}"
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_length "${__arr}"
+	test.eq '2' "${SHLIB_RESULT}" 'length after shift'
+	__shlib_array_head "${__arr}"
+	test.eq 'b' "${SHLIB_RESULT}" 'head after shift'
+	unset __arr
+}
+
+test_shift_empty_errors() {
+	__shlib_array
+	test.error __shlib_array_shift "${SHLIB_RESULT}"
+}
+
+test_join() {
+	__shlib_array a b
+	__x="${SHLIB_RESULT}"
+	__shlib_array c d
+	__shlib_array_join "${__x}" "${SHLIB_RESULT}"
+	__shlib_array_length "${SHLIB_RESULT}"
+	test.eq '4' "${SHLIB_RESULT}" 'length after join'
+	unset __x
+}
+
+# Special characters must survive the serialize/eval round-trip.
+test_special_chars() {
+	__shlib_array 'a b' "it's" 'x*y'
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_length "${__arr}"
+	test.eq '3' "${SHLIB_RESULT}" 'special-char length'
+	__shlib_array_head "${__arr}"
+	test.eq 'a b' "${SHLIB_RESULT}" 'space preserved'
+	__shlib_array_index "${__arr}" 2
+	test.eq "it's" "${SHLIB_RESULT}" 'single quote preserved'
+	__shlib_array_tail "${__arr}"
+	test.eq 'x*y' "${SHLIB_RESULT}" 'glob char preserved'
+	unset __arr
+}
+
+# vim: filetype=sh
