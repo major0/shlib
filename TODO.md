@@ -30,6 +30,13 @@ the test framework and the package-versioning design (see doc/packages.md).
 - **`hostinfo` uses a relative `./config.guess`** (works only from the right
   cwd) and depends on `nproc`.
 
+- **`array.pop` has no alias and wrong semantics.**  `array/pop.shlib` defines
+  `__shlib_array_pop` but never aliases it (like the insert/join bug that was
+  fixed), and its body re-serializes the whole array rather than removing and
+  returning the last element.  Decide the intended `pop` semantics, implement
+  them, and add the `array.pop` alias -- or remove the file if `pop` is not
+  wanted.
+
 ## Core enhancements
 
 - **Shell identity.**  *(detection done)* Read-only `SHLIB_SHELL` /
@@ -39,6 +46,24 @@ the test framework and the package-versioning design (see doc/packages.md).
   `shiftarg`'s *BSD `OPTIND` guess, the `printf` selection, the math
   native-gating -- to branch on `SHLIB_SHELL_IMPL` instead of re-probing.  Also
   distinguish `dash` from BusyBox `sh` (both currently report `impl=sh`).
+
+- **SHLIB_RESULT result-register convention.**  *(piloted)* Interfaces publish
+  their value into the shell-global `SHLIB_RESULT` and their status via native
+  `return`/`$?`, instead of writing to stdout and being captured with `$(...)`.
+  This removes a subshell fork per call (the cost being brutal in loops).
+  Rules: set `SHLIB_RESULT` last (tail position), read it immediately (same
+  timing as `$?`/`$!`), interfaces emit nothing to stdout, and only the CLI
+  boundary (`shlib.main`) prints it.  There is no `shlib.return` helper -- a
+  function's `return` cannot set its caller's `$?` (proven), so it is a plain
+  assignment plus native `return`.  Piloted on `string.escape` and the `array`
+  lib (leak filter already exempts `SHLIB_RESULT`).  Remaining: (1) pin the
+  convention in a `doc/` note and a steering rule before it spreads; (2) roll it
+  out to the rest of `string`, then `math`, etc. -- each interface is a
+  flag-day migration that must move together with its callers and tests, since
+  the moment it stops echoing every `$(...)` caller breaks; (3) a fork-free
+  interface can only build its result with pure parameter expansion, so libs
+  that lean on external tools (e.g. anything needing `printf`/`sed`) want a
+  pure-shell rewrite first.
 
 - **Documentation system.**  Extract documentation from the `.shlib` sources
   instead of maintaining parallel `.md` files.  Expose via `shlib doc
