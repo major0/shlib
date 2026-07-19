@@ -1,0 +1,71 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Tests for the static FHS layout walker.  Rather than fabricate a fixture
+# tree, the walker is dry-run against shlib's own source tree (the tests
+# already run from the repo root), which doubles as proof that shlib installs
+# itself.  DRYRUN=true makes docmd echo to stderr and dotemplate echo to
+# stdout, so capturing 2>&1 collects every action without touching disk.
+
+import package
+
+setup() {
+	DRYRUN=true
+	BINDIR=/opt/bin
+	SBINDIR=/opt/sbin
+	LIBDIR=/opt/lib
+	LIBEXECDIR=/opt/libexec
+	DOCDIR=/opt/share/doc
+	MANDIR=/opt/share/man
+	NAME=shlib
+}
+
+test_requires_name() {
+	NAME=''
+	test.error pkg_install_tree .
+}
+
+test_missing_srcdir_dies() {
+	test.error pkg_install_tree /nonexistent/package/dir
+}
+
+test_launcher_is_templated_into_bindir() {
+	out="$(pkg_install_tree . 2>&1)"
+	# dobin --template routes the launcher through sed into BINDIR.
+	test.match '*sed*/opt/bin/shlib*' "${out}" 'launcher templated to BINDIR'
+}
+
+test_libraries_go_to_libdir_shlib() {
+	out="$(pkg_install_tree . 2>&1)"
+	test.match '*install -m0644 array/*.shlib /opt/lib/shlib/array/*' "${out}" \
+		'lib/array -> LIBDIR/shlib/array'
+}
+
+test_libexec_goes_to_libexecdir_name() {
+	out="$(pkg_install_tree . 2>&1)"
+	test.match '*-t /opt/libexec/shlib libexec/*' "${out}" \
+		'libexec -> LIBEXECDIR/NAME'
+}
+
+test_docs_go_to_docdir_name() {
+	out="$(pkg_install_tree . 2>&1)"
+	test.match '*-t /opt/share/doc/shlib README.md*' "${out}" 'README -> DOCDIR/NAME'
+	test.match '*-t /opt/share/doc/shlib LICENSE*' "${out}" 'LICENSE -> DOCDIR/NAME'
+}
+
+test_skips_deprecated_subtree() {
+	out="$(pkg_install_tree . 2>&1)"
+	case "${out}" in
+	(*deprecated*)	test.fail 'the deprecated subtree was installed';;
+	esac
+}
+
+test_excludes_test_libraries() {
+	out="$(pkg_install_tree . 2>&1)"
+	case "${out}" in
+	(*_test.shlib*)	test.fail 'a *_test.shlib library was installed';;
+	esac
+}
+
+# vim: filetype=sh
