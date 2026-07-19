@@ -4,7 +4,10 @@
 
 docmd() {
 	: "docmd: $*"
-	if test "${__pkg_dryrun}" != 'false'; then
+	# DRYRUN is the installer's 'true'/'false' flag, executed as a command
+	# in the same style as the installer's other boolean switches.  When
+	# unset (helpers used outside the installer) commands run for real.
+	if "${DRYRUN:-false}"; then
 		echo "do: $*" >&2
 	else
 		"${@}"

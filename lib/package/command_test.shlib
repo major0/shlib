@@ -1,0 +1,30 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# docmd runs a command, or echoes it under the installer's DRYRUN flag.  These
+# tests exercise the real docmd (no spy), so they live apart from the
+# helper harness.
+
+import package
+
+test_runs_command() {
+	DRYRUN=false
+	test.ok docmd true
+	test.error docmd false
+}
+
+test_dryrun_skips_execution() {
+	# Under dry-run docmd must NOT run the command, so even a failing
+	# command reports success (it was only echoed).
+	DRYRUN=true
+	test.ok docmd false
+}
+
+test_default_executes() {
+	# With no DRYRUN set (helpers used outside the installer) commands run.
+	unset DRYRUN
+	test.error docmd false
+}
+
+# vim: filetype=sh
