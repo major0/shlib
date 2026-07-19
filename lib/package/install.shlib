@@ -1,0 +1,30 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import array
+
+__pkg_ins_prefix() { die 'insinto not called'; }
+insinto() {
+	: "insinto: $*"
+	eval "__pkg_ins_prefix(){ printf '%s' '$1'; }"
+}
+
+insopts() {
+	: "insopt: $*"
+	array "${@}"
+	__pkg_insopts="${SHLIB_RESULT}"
+}
+insopts '-m0644'
+
+doins() {
+	: "doins: $*"
+	dodir "$(__pkg_ins_prefix)"
+	array "${@}"
+	__pkg_doins_args="${SHLIB_RESULT}"
+	eval set -- "${__pkg_insopts}" -t "$(__pkg_ins_prefix)" "${__pkg_doins_args}"
+	unset __pkg_doins_args
+	docmd install "${@}"
+}
+
+# vim: filetype=sh

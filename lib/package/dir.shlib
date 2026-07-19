@@ -1,0 +1,15 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+diropts() {
+	: "diropts: $*"
+	__pkg_diropts="$*"
+}
+
+dodir() {
+	: "dodir: $*"
+	docmd mkdir ${__pkg_diropts:=-m0755} -p "${1}"
+}
+
+# vim: filetype=sh

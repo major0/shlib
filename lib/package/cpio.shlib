@@ -1,0 +1,85 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import array
+
+# A minimalistic implementation of `cpio` suitable for use in shlib
+docpio()
+{(
+	: "pkg_cpio: $*"
+
+	array
+	__docpio_exclude="${SHLIB_RESULT}"
+	while test "$#" -gt '0'; do
+		case "${1}" in
+		(-X|--exclude)
+			test "$#" -gt '1' || die "missing argument for ${1}"
+			case "${2}" in (-*) die "missing argument for ${1}";;esac
+			array.append "${__docpio_exclude}" "${2}"
+			__docpio_exclude="${SHLIB_RESULT}"
+			shift;;
+		(--) shift; break;;
+		(-*) die "invalid option: ${1}";;
+		(*) break;;
+		esac
+		shift
+	done
+
+	# Save the current function args
+	array "$@"
+	__docpio_args="${SHLIB_RESULT}"
+
+	# read __docpio_file from stdin and recreate said path at "${__docpio_destdir}"
+	while read __docpio_file; do
+		# We actually ignore any paths that are directories and
+		# only create directories that lead to files. Any
+		# directories that need to be created "empty" need to use
+		# `keepdir` instead.
+		! test -d "${__docpio_file}" || continue
+
+		# Move the exclude paths onto the function array stack
+		eval set -- "${__docpio_exclude}"
+		for __docpio_exclude; do
+			case "${cpio_file}" in
+			(${__docpio_exclude}) continue 2;;
+			esac
+		done
+
+		# Restore the function args
+		eval set -- "${__docpio_args}"
+
+		# Create leading prefix directories.
+		test -d "${1}/${__docpio_file%/*}" || dodir "${1}/${__docpio_file%/*}"
+
+		# We try to take-care to inspect each destination path and
+		# see if it is prefixed with one of our package paths, and
+		# if so, then to apply the appropriate OPTS for a given
+		# path.
+		__pkg_cpio_dir="${1}/${__pkg_cpio_file%/*}"
+		case "${__pkg_cpio_dir}" in
+		(${__pkg_bindir})
+			dobin "${__docpio_file}";;
+
+		(${__pkg_sbindir})
+			dosbin "${__docpio_file}";;
+
+		(${__pkg_ins_prefix}/*)
+			doins "${__docpio_file}"
+
+		(${__pkg_exe_prefix}/*)
+			doexe "${__docpio_file}";;
+
+		(${__pkg_doc_prefix}/*)
+			docmd install -m0644 -t "${1}/${__docpio_file%/*}" "${__docpio_file}";;
+
+		(*)
+			docmd install -m0644 -t "${1}/${__docpio_file%/*}" "${__docpio_file}";;
+		esac
+	done
+	unset __docpio_file
+	unset __docpio_args
+	unset __docpio_exclude
+)}
+
+# vim: filetype=sh

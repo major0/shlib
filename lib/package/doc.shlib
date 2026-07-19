@@ -1,0 +1,18 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+docinto() {
+	: "docinto: $*"
+	__pkg_doc_into="${1}" # this will always be relative to `docdir`
+}
+
+dodoc() {
+	: "dodoc: $*"
+	__dodoc_dest="${__pkg_doc_prefix%%/}/${__pkg_doc_into%%/}/"
+	dodir "${__dodoc_dest%%/}"
+	docmd install -m 0644 -t "${__dodoc_dest%%/}" "${@}"
+	unset __dodoc_dest
+}
+
+# vim: filetype=sh

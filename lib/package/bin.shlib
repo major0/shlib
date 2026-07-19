@@ -1,0 +1,46 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+__pkg_intodir() { die 'into() must be called with a path first'; }
+into() { __pkg_prefix="${1}"; }
+
+bininto() { __pkg_bindir="${1}"; }
+
+dobin() {
+	: "dobin: $*"
+	: "BINDIR='${__pkg_bindir:=${__pkg_prefix}/bin}'"
+	dodir "${__pkg_bindir}"
+
+	if test "${1}" = '--template'; then
+		shift
+		while test "$#" -gt '0'; do
+			dotemplate "${1}" "${__pkg_bindir}/${1}"
+			fperms 0755 "${__pkg_bindir}/${1}"
+			shift
+		done
+	else
+		docmd install -m0755 -t "${__pkg_bindir}" "${@}"
+	fi
+}
+
+sbininto() { __pkg_sbindir="${1}"; }
+
+dosbin() {
+	: "dosbin: $*"
+	: "SBINDIR='${__pkg_sbindir:=${__pkg_prefix}/sbin}'"
+	dodir "${__pkg_sbindir}"
+
+	if test "${1}" = '--template'; then
+		shift
+		while test "$#" -gt '0'; do
+			dotemplate "${1}" "${__pkg_sbindir}/${1}"
+			fperms 0755 "${__pkg_sbindir}/${1}"
+			shift
+		done
+	else
+		docmd install -m0755 -t "${__pkg_sbindir}" "${@}"
+	fi
+}
+
+# vim: filetype=sh
