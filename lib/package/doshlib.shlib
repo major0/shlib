@@ -1,25 +1,20 @@
 # Copyright (c) 2014-2025 Mark Ferrell
 #
 # Licensed under the MIT License, see LICENSE for details.
+#
+# doshlib installs a directory of *.shlib libraries (excluding *-test.shlib)
+# under the installer's resolved LIBDIR/shlib by default; shlibinto overrides.
 
-import string.escape
-
-__shlibdir() { printf '%s' "${__pkg_prefix}/lib/shlib"; }
-shlibinto() {
-	: "shlibinto: $*"
-	# string.escape publishes a single-quoted word in SHLIB_RESULT, so it
-	# can be embedded directly to bake the (possibly odd) path into the
-	# accessor safely.
-	string.escape "${1}"
-	eval "__shlibdir(){ printf '%s' ${SHLIB_RESULT}; }"
-}
+shlibinto() { __pkg_shlibdir="${1}"; }
 
 doshlib() {
 	: "doshlib: $*"
+	__doshlib_dir="${__pkg_shlibdir:-${LIBDIR}/shlib}"
 	while test "$#" -gt '0'; do
-		find "${1}" -type f -name '*.shlib' | docpio -X '*-test.shlib' "$(__shlibdir)"
+		find "${1}" -type f -name '*.shlib' | docpio -X '*-test.shlib' "${__doshlib_dir}"
 		shift
 	done
+	unset __doshlib_dir
 }
 
 # vim: filetype=sh

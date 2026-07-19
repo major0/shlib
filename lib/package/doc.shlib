@@ -1,17 +1,17 @@
 # Copyright (c) 2014-2025 Mark Ferrell
 #
 # Licensed under the MIT License, see LICENSE for details.
+#
+# dodoc installs documentation under DOCDIR/<package name>; docinto sets an
+# optional subdirectory beneath it (e.g. docinto examples).
 
-docinto() {
-	: "docinto: $*"
-	__pkg_doc_into="${1}" # this will always be relative to `docdir`
-}
+docinto() { __pkg_docsubdir="${1}"; }
 
 dodoc() {
 	: "dodoc: $*"
-	__dodoc_dest="${__pkg_doc_prefix%%/}/${__pkg_doc_into%%/}/"
-	dodir "${__dodoc_dest%%/}"
-	docmd install -m 0644 -t "${__dodoc_dest%%/}" "${@}"
+	__dodoc_dest="${DOCDIR}${NAME:+/${NAME}}${__pkg_docsubdir:+/${__pkg_docsubdir}}"
+	dodir "${__dodoc_dest}"
+	docmd install -m0644 -t "${__dodoc_dest}" "${@}"
 	unset __dodoc_dest
 }
 

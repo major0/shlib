@@ -5,13 +5,14 @@ LICENSE='MIT'
 VERSION='0.1.0'
 
 pkg_install() {
-	LIBDIR="${LIBDIR}/shlib"
-	LIBEXECDIR="${LIBEXECDIR}/shlib"
+	# shlib itself goes to BINDIR; docs to DOCDIR/shlib -- both defaults.
 	dobin --template 'shlib'
 	dodoc 'README.md' 'LICENSE' doc/*
 
-	(cd lib && for d in *; do test "${d}" = 'deprecated' || if test -d "${d}"; then doshlib "${d}";fi; done)
+	# Libraries default to LIBDIR/shlib; install each non-deprecated subtree.
+	(cd lib && for d in *; do test "${d}" = 'deprecated' || if test -d "${d}"; then doshlib "${d}"; fi; done)
 
-	exeinto "${LIBEXECDIR}"
+	# The subcommand helpers live under LIBEXECDIR/shlib.
+	exeinto "${LIBEXECDIR}/shlib"
 	doexe libexec/*
 }

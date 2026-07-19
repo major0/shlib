@@ -1,30 +1,21 @@
 # Copyright (c) 2014-2025 Mark Ferrell
 #
 # Licensed under the MIT License, see LICENSE for details.
+#
+# doins installs miscellaneous files.  Unlike dobin/dodoc there is no sensible
+# default location, so insinto must set the target first (as in ebuild).
 
-import array
-
-__pkg_ins_prefix() { die 'insinto not called'; }
-insinto() {
-	: "insinto: $*"
-	eval "__pkg_ins_prefix(){ printf '%s' '$1'; }"
-}
-
-insopts() {
-	: "insopt: $*"
-	array "${@}"
-	__pkg_insopts="${SHLIB_RESULT}"
-}
+insinto() { __pkg_insdir="${1}"; }
+insopts() { __pkg_insopts="${*}"; }
 insopts '-m0644'
 
 doins() {
 	: "doins: $*"
-	dodir "$(__pkg_ins_prefix)"
-	array "${@}"
-	__pkg_doins_args="${SHLIB_RESULT}"
-	eval set -- "${__pkg_insopts}" -t "$(__pkg_ins_prefix)" "${__pkg_doins_args}"
-	unset __pkg_doins_args
-	docmd install "${@}"
+	test -n "${__pkg_insdir}" || die 'doins: insinto must be called first'
+	dodir "${__pkg_insdir}"
+	# Options intentionally word-split so insopts can carry multiple flags.
+	# shellcheck disable=SC2086
+	docmd install ${__pkg_insopts:--m0644} -t "${__pkg_insdir}" "${@}"
 }
 
 # vim: filetype=sh

@@ -1,23 +1,21 @@
 # Copyright (c) 2014-2025 Mark Ferrell
 #
 # Licensed under the MIT License, see LICENSE for details.
+#
+# doexe installs executables to the installer's resolved LIBEXECDIR by default;
+# exeinto overrides the target and exeopts overrides the install options.
 
-exeopts() {
-	: "exeopts: $*"
-	eval "__pkg_exeopts(){ printf '%s' '${1}'; }"
-}
-exeopts '-m0755'
-
-__pkg_exeinto() { die "exeinto not called"; }
-exeinto() {
-	: "exeinto: $*"
-	eval "__pkg_exeinto(){ printf '%s' '${1}'; }"
-}
+exeopts() { __pkg_exeopts="${*}"; }
+exeinto() { __pkg_exedir="${1}"; }
 
 doexe() {
 	: "doexe: $*"
-	dodir "$(__pkg_exeinto)"
-	docmd install "$(__pkg_exeopts)" -t "$(__pkg_exeinto)" "${@}"
+	__doexe_dir="${__pkg_exedir:-${LIBEXECDIR}}"
+	dodir "${__doexe_dir}"
+	# Options intentionally word-split so exeopts can carry multiple flags.
+	# shellcheck disable=SC2086
+	docmd install ${__pkg_exeopts:--m0755} -t "${__doexe_dir}" "${@}"
+	unset __doexe_dir
 }
 
 # vim: filetype=sh
