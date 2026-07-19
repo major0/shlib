@@ -1,0 +1,103 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Tests for the data-only manifest reader.  The parser never sources the
+# manifest, so the security-critical guarantee under test is that only
+# whitelisted KEY=VALUE fields take effect and that values are stored verbatim
+# (never evaluated).  No filesystem fixtures are used: __pkg_field is exercised
+# with strings and __pkg_read via an in-shell here-document.
+
+import package
+
+test_field_sets_name() {
+	NAME=
+	__pkg_field 'NAME=shlib'
+	test.eq 'shlib' "${NAME}" 'NAME field'
+}
+
+test_field_strips_single_quotes() {
+	NAME=
+	__pkg_field "NAME='shlib'"
+	test.eq 'shlib' "${NAME}" 'single-quoted value'
+}
+
+test_field_strips_double_quotes() {
+	VERSION=
+	__pkg_field 'VERSION="1.2.3"'
+	test.eq '1.2.3' "${VERSION}" 'double-quoted value'
+}
+
+test_field_keeps_inner_text() {
+	DESCRIPTION=
+	__pkg_field "DESCRIPTION='SHLIB is a Shell Library framework'"
+	test.eq 'SHLIB is a Shell Library framework' "${DESCRIPTION}" 'quoted phrase'
+}
+
+test_field_value_with_equals() {
+	HOMEPAGE=
+	__pkg_field 'HOMEPAGE=https://example.com/path?a=b&c=d'
+	test.eq 'https://example.com/path?a=b&c=d' "${HOMEPAGE}" 'value containing ='
+}
+
+test_field_ignores_comment() {
+	NAME=sentinel
+	__pkg_field '# NAME=evil'
+	test.eq 'sentinel' "${NAME}" 'comment line ignored'
+}
+
+test_field_ignores_blank() {
+	NAME=sentinel
+	__pkg_field ''
+	test.eq 'sentinel' "${NAME}" 'blank line ignored'
+}
+
+test_field_ignores_unknown_key() {
+	NAME=sentinel
+	__pkg_field 'EVIL=payload'
+	test.eq 'sentinel' "${NAME}" 'unknown key does not disturb whitelisted fields'
+	test.ok __pkg_field 'EVIL=payload'
+}
+
+test_field_ignores_non_field_line() {
+	NAME=sentinel
+	__pkg_field 'pkg_install() { echo hacked ; }'
+	test.eq 'sentinel' "${NAME}" 'function definition is not a field'
+}
+
+test_field_stores_injection_verbatim() {
+	# If the value were ever eval'd, NAME would become 'pwned'.  Storing the
+	# literal command substitution proves the parser never evaluates values.
+	# The single-quoted literals below are deliberate, hence the SC2016 waiver.
+	NAME=''
+	# shellcheck disable=SC2016
+	__pkg_field 'NAME=$(echo pwned)'
+	# shellcheck disable=SC2016
+	test.eq '$(echo pwned)' "${NAME}" 'command substitution stored literally'
+}
+
+test_read_parses_stream() {
+	NAME=''
+	VERSION=''
+	LICENSE=''
+	DESCRIPTION=''
+	__pkg_read <<-'EOF'
+		# demo manifest
+		NAME=demo
+		VERSION=2.0
+
+		LICENSE='MIT'
+		evil() { echo hacked ; }
+		DESCRIPTION="a demo"
+	EOF
+	test.eq 'demo' "${NAME}" 'NAME from stream'
+	test.eq '2.0' "${VERSION}" 'VERSION from stream'
+	test.eq 'MIT' "${LICENSE}" 'LICENSE from stream'
+	test.eq 'a demo' "${DESCRIPTION}" 'DESCRIPTION from stream'
+}
+
+test_manifest_missing_file_dies() {
+	test.error pkg_manifest /nonexistent/shlib.shpkg
+}
+
+# vim: filetype=sh
