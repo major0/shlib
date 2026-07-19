@@ -4,10 +4,16 @@
 
 import array
 
-# A minimalistic implementation of `cpio` suitable for use in shlib
+# A minimalistic `cpio`-style copy suitable for use in shlib.
+#
+#	<paths on stdin> | docpio [-X <glob>]... <destdir>
+#
+# Each path read from stdin is installed under <destdir>, preserving its
+# relative path.  Directories read on stdin are ignored (only the directories
+# leading to files are created); a path matching any -X <glob> is skipped.
 docpio()
 {(
-	: "pkg_cpio: $*"
+	: "docpio: $*"
 
 	array
 	__docpio_exclude="${SHLIB_RESULT}"
@@ -15,7 +21,7 @@ docpio()
 		case "${1}" in
 		(-X|--exclude)
 			test "$#" -gt '1' || die "missing argument for ${1}"
-			case "${2}" in (-*) die "missing argument for ${1}";;esac
+			case "${2}" in (-*) die "missing argument for ${1}";; esac
 			array.append "${__docpio_exclude}" "${2}"
 			__docpio_exclude="${SHLIB_RESULT}"
 			shift;;
@@ -26,60 +32,33 @@ docpio()
 		shift
 	done
 
-	# Save the current function args
-	array "$@"
-	__docpio_args="${SHLIB_RESULT}"
+	__docpio_destdir="${1%/}"
 
-	# read __docpio_file from stdin and recreate said path at "${__docpio_destdir}"
-	while read __docpio_file; do
-		# We actually ignore any paths that are directories and
-		# only create directories that lead to files. Any
-		# directories that need to be created "empty" need to use
-		# `keepdir` instead.
+	while read -r __docpio_file; do
+		# Only files are installed; skip directories read from stdin.
 		! test -d "${__docpio_file}" || continue
 
-		# Move the exclude paths onto the function array stack
+		# Skip paths matching any -X exclude glob.  Use a distinct loop
+		# variable so the exclude list survives into the next iteration.
 		eval set -- "${__docpio_exclude}"
-		for __docpio_exclude; do
-			case "${cpio_file}" in
-			(${__docpio_exclude}) continue 2;;
+		__docpio_excluded='false'
+		for __docpio_pattern; do
+			# shellcheck disable=SC2254
+			case "${__docpio_file}" in
+			(${__docpio_pattern}) __docpio_excluded='true'; break;;
 			esac
 		done
+		if "${__docpio_excluded}"; then continue; fi
 
-		# Restore the function args
-		eval set -- "${__docpio_args}"
-
-		# Create leading prefix directories.
-		test -d "${1}/${__docpio_file%/*}" || dodir "${1}/${__docpio_file%/*}"
-
-		# We try to take-care to inspect each destination path and
-		# see if it is prefixed with one of our package paths, and
-		# if so, then to apply the appropriate OPTS for a given
-		# path.
-		__pkg_cpio_dir="${1}/${__pkg_cpio_file%/*}"
-		case "${__pkg_cpio_dir}" in
-		(${__pkg_bindir})
-			dobin "${__docpio_file}";;
-
-		(${__pkg_sbindir})
-			dosbin "${__docpio_file}";;
-
-		(${__pkg_ins_prefix}/*)
-			doins "${__docpio_file}"
-
-		(${__pkg_exe_prefix}/*)
-			doexe "${__docpio_file}";;
-
-		(${__pkg_doc_prefix}/*)
-			docmd install -m0644 -t "${1}/${__docpio_file%/*}" "${__docpio_file}";;
-
-		(*)
-			docmd install -m0644 -t "${1}/${__docpio_file%/*}" "${__docpio_file}";;
-		esac
+		# Create the leading directory (or destdir itself for a bare
+		# filename) and install the file preserving its relative path.
+		__docpio_dir="${__docpio_file%/*}"
+		test "${__docpio_dir}" != "${__docpio_file}" || __docpio_dir='.'
+		dodir "${__docpio_destdir}/${__docpio_dir}"
+		docmd install -m0644 "${__docpio_file}" "${__docpio_destdir}/${__docpio_file}"
 	done
-	unset __docpio_file
-	unset __docpio_args
-	unset __docpio_exclude
+	unset __docpio_file __docpio_exclude __docpio_destdir __docpio_dir \
+		__docpio_excluded __docpio_pattern
 )}
 
 # vim: filetype=sh
