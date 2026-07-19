@@ -3,72 +3,98 @@
 # Licensed under the MIT License, see LICENSE for details.
 #
 # Harness for the package install helpers.  Every helper routes its side
-# effects through docmd, so we replace docmd with a spy that records what would
-# run (newline-separated in __pkg_log) and assert against it -- no filesystem is
-# touched.
+# effects through docmd, so we replace docmd with a spy that echoes what would
+# run and capture it with $() -- no filesystem is touched, and it works even for
+# docpio, which runs in its own subshell.
 
 import package
 
 setup() {
-	__pkg_log=''
-	docmd() { __pkg_log="${__pkg_log}$*
-"; }
+	# shellcheck disable=SC2317  # docmd is invoked indirectly by the helpers
+	docmd() { echo "$*"; }
 }
 
 test_dodir() {
-	dodir /opt/app/bin
-	test.match '*mkdir -m0755 -p /opt/app/bin*' "${__pkg_log}" 'dodir mkdir'
+	out="$(dodir /opt/app/bin)"
+	test.match '*mkdir -m0755 -p /opt/app/bin*' "${out}" 'dodir mkdir'
 }
 
 test_dobin() {
 	into /opt/app
-	dobin prog
-	test.match '*install -m0755 -t /opt/app/bin prog*' "${__pkg_log}" 'dobin install'
-	test.match '*mkdir -m0755 -p /opt/app/bin*' "${__pkg_log}" 'dobin makes bindir'
+	out="$(dobin prog)"
+	test.match '*install -m0755 -t /opt/app/bin prog*' "${out}" 'dobin install'
+	test.match '*mkdir -m0755 -p /opt/app/bin*' "${out}" 'dobin makes bindir'
 }
 
 test_bininto_overrides() {
 	into /opt/app
 	bininto /custom/bin
-	dobin prog
-	test.match '*install -m0755 -t /custom/bin prog*' "${__pkg_log}" 'bininto overrides'
+	out="$(dobin prog)"
+	test.match '*install -m0755 -t /custom/bin prog*' "${out}" 'bininto overrides'
 }
 
 test_dosbin() {
 	into /opt/app
-	dosbin daemon
-	test.match '*install -m0755 -t /opt/app/sbin daemon*' "${__pkg_log}" 'dosbin install'
+	out="$(dosbin daemon)"
+	test.match '*install -m0755 -t /opt/app/sbin daemon*' "${out}" 'dosbin install'
 }
 
 test_doins() {
 	insinto /opt/app/share
-	doins data.txt
-	test.match '*install*-t /opt/app/share*data.txt*' "${__pkg_log}" 'doins install'
+	out="$(doins data.txt)"
+	test.match '*install*-t /opt/app/share*data.txt*' "${out}" 'doins install'
 }
 
 test_doexe() {
 	exeinto /opt/app/libexec
-	doexe tool
-	test.match '*install -m0755 -t /opt/app/libexec tool*' "${__pkg_log}" 'doexe install'
+	out="$(doexe tool)"
+	test.match '*install -m0755 -t /opt/app/libexec tool*' "${out}" 'doexe install'
 }
 
 test_dodoc() {
-	# __pkg_doc_prefix is the docdir base the installer must supply (see the
-	# installer-wiring gap); docinto sets the subdir under it.
+	# __pkg_doc_prefix is the docdir base the installer must supply; docinto
+	# sets the subdir under it.
 	__pkg_doc_prefix=/opt/app/share/doc
 	docinto examples
-	dodoc README.md
-	test.match '*install*-t /opt/app/share/doc/examples README.md*' "${__pkg_log}" 'dodoc install'
+	out="$(dodoc README.md)"
+	test.match '*install*-t /opt/app/share/doc/examples README.md*' "${out}" 'dodoc install'
 }
 
 test_fperms() {
-	fperms 0755 /opt/app/bin/prog
-	test.match '*chmod 0755 /opt/app/bin/prog*' "${__pkg_log}" 'fperms chmod'
+	out="$(fperms 0755 /opt/app/bin/prog)"
+	test.match '*chmod 0755 /opt/app/bin/prog*' "${out}" 'fperms chmod'
 }
 
 test_fowners() {
-	fowners root:root /opt/app/bin/prog
-	test.match '*chown root:root /opt/app/bin/prog*' "${__pkg_log}" 'fowners chown'
+	out="$(fowners root:root /opt/app/bin/prog)"
+	test.match '*chown root:root /opt/app/bin/prog*' "${out}" 'fowners chown'
+}
+
+test_docpio() {
+	out="$(printf '%s\n' 'math/calc.shlib' 'array/head.shlib' | docpio /dest)"
+	test.match '*install -m0644 math/calc.shlib /dest/math/calc.shlib*' "${out}" 'docpio first file'
+	test.match '*install -m0644 array/head.shlib /dest/array/head.shlib*' "${out}" 'docpio second file'
+}
+
+test_docpio_exclude() {
+	out="$(printf '%s\n' 'math/calc.shlib' 'math/calc-test.shlib' | docpio -X '*-test.shlib' /dest)"
+	test.match '*install -m0644 math/calc.shlib /dest/math/calc.shlib*' "${out}" 'docpio keeps non-excluded'
+	case "${out}" in
+	(*calc-test.shlib*)	test.fail 'excluded pattern was installed';;
+	esac
+}
+
+test_doshlib() {
+	# Mock find so no real tree is needed; assert doshlib installs .shlib
+	# files under the shlibdir and honours the *-test.shlib exclusion.
+	# shellcheck disable=SC2317  # find is invoked indirectly by doshlib
+	find() { printf '%s\n' 'math/calc.shlib' 'math/calc-test.shlib'; }
+	shlibinto /opt/app/lib/shlib
+	out="$(doshlib math)"
+	test.match '*install -m0644 math/calc.shlib /opt/app/lib/shlib/math/calc.shlib*' "${out}" 'doshlib installs'
+	case "${out}" in
+	(*calc-test.shlib*)	test.fail 'doshlib installed a test file';;
+	esac
 }
 
 # vim: filetype=sh
