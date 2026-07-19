@@ -1,0 +1,74 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Harness for the package install helpers.  Every helper routes its side
+# effects through docmd, so we replace docmd with a spy that records what would
+# run (newline-separated in __pkg_log) and assert against it -- no filesystem is
+# touched.
+
+import package
+
+setup() {
+	__pkg_log=''
+	docmd() { __pkg_log="${__pkg_log}$*
+"; }
+}
+
+test_dodir() {
+	dodir /opt/app/bin
+	test.match '*mkdir -m0755 -p /opt/app/bin*' "${__pkg_log}" 'dodir mkdir'
+}
+
+test_dobin() {
+	into /opt/app
+	dobin prog
+	test.match '*install -m0755 -t /opt/app/bin prog*' "${__pkg_log}" 'dobin install'
+	test.match '*mkdir -m0755 -p /opt/app/bin*' "${__pkg_log}" 'dobin makes bindir'
+}
+
+test_bininto_overrides() {
+	into /opt/app
+	bininto /custom/bin
+	dobin prog
+	test.match '*install -m0755 -t /custom/bin prog*' "${__pkg_log}" 'bininto overrides'
+}
+
+test_dosbin() {
+	into /opt/app
+	dosbin daemon
+	test.match '*install -m0755 -t /opt/app/sbin daemon*' "${__pkg_log}" 'dosbin install'
+}
+
+test_doins() {
+	insinto /opt/app/share
+	doins data.txt
+	test.match '*install*-t /opt/app/share*data.txt*' "${__pkg_log}" 'doins install'
+}
+
+test_doexe() {
+	exeinto /opt/app/libexec
+	doexe tool
+	test.match '*install -m0755 -t /opt/app/libexec tool*' "${__pkg_log}" 'doexe install'
+}
+
+test_dodoc() {
+	# __pkg_doc_prefix is the docdir base the installer must supply (see the
+	# installer-wiring gap); docinto sets the subdir under it.
+	__pkg_doc_prefix=/opt/app/share/doc
+	docinto examples
+	dodoc README.md
+	test.match '*install*-t /opt/app/share/doc/examples README.md*' "${__pkg_log}" 'dodoc install'
+}
+
+test_fperms() {
+	fperms 0755 /opt/app/bin/prog
+	test.match '*chmod 0755 /opt/app/bin/prog*' "${__pkg_log}" 'fperms chmod'
+}
+
+test_fowners() {
+	fowners root:root /opt/app/bin/prog
+	test.match '*chown root:root /opt/app/bin/prog*' "${__pkg_log}" 'fowners chown'
+}
+
+# vim: filetype=sh
