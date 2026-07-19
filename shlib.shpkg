@@ -1,0 +1,11 @@
+# shlib package manifest.
+#
+# This file is DATA, not code: `shlib install` parses it line by line and
+# never sources it, so it cannot define functions or run commands.  Only the
+# whitelisted KEY=VALUE fields below are honoured; the install layout is fixed
+# by the installer, not by the package.
+NAME='shlib'
+VERSION='0.1.0'
+DESCRIPTION='SHLIB is a Shell Library framework'
+HOMEPAGE='https://github.com/major0/shlib'
+LICENSE='MIT'
