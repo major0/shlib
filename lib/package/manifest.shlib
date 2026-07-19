@@ -1,0 +1,81 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Data-only package manifest reader.  A manifest (shlib.shpkg) is parsed as
+# pure data: each line is a KEY=VALUE field drawn from a fixed whitelist and
+# nothing else.  The file is NEVER sourced, so a manifest cannot define
+# functions or run commands -- there is no package-controlled escape hatch
+# (the Go stance).  Comments, blank lines, and unknown keys are ignored, as is
+# any line that is not a whitelisted field (a stray function or command simply
+# has no effect).
+
+# __pkg_field <line>
+# Parse a single manifest line.  If it is a whitelisted KEY=VALUE field, assign
+# VALUE to the matching variable, stripping one surrounding pair of single or
+# double quotes.  No eval is used: the value is stored verbatim and can never
+# be executed.
+__pkg_field() {
+	case "${1}" in
+	(''|'#'*)	return 0;;	# blank line or comment
+	(*=*)		;;		# looks like KEY=VALUE
+	(*)		return 0;;	# no '=' -- not a field
+	esac
+
+	__pkg_field_key="${1%%=*}"
+	__pkg_field_val="${1#*=}"
+
+	# Strip one matching pair of surrounding quotes, if present.
+	case "${__pkg_field_val}" in
+	("'"*"'")	__pkg_field_val="${__pkg_field_val#\'}"
+			__pkg_field_val="${__pkg_field_val%\'}";;
+	('"'*'"')	__pkg_field_val="${__pkg_field_val#\"}"
+			__pkg_field_val="${__pkg_field_val%\"}";;
+	esac
+
+	# Whitelist: assign by name (never by eval).  Unknown keys are ignored.
+	case "${__pkg_field_key}" in
+	(NAME)		NAME="${__pkg_field_val}";;
+	(VERSION)	VERSION="${__pkg_field_val}";;
+	(DESCRIPTION)	DESCRIPTION="${__pkg_field_val}";;
+	(HOMEPAGE)	HOMEPAGE="${__pkg_field_val}";;
+	(LICENSE)	LICENSE="${__pkg_field_val}";;
+	(DEPENDS)	DEPENDS="${__pkg_field_val}";;
+	(*)		: "ignoring unknown manifest key: ${__pkg_field_key}";;
+	esac
+
+	unset __pkg_field_key __pkg_field_val
+}
+
+# __pkg_read
+# Read manifest lines from stdin and apply each via __pkg_field.  Callers
+# redirect a file in (not a pipe) so the loop runs in the current shell and the
+# parsed fields persist.  The `|| test -n` guard captures a final line that is
+# not newline-terminated.
+__pkg_read() {
+	while read -r __pkg_line || test -n "${__pkg_line}"; do
+		__pkg_field "${__pkg_line}"
+	done
+	unset __pkg_line
+}
+
+# pkg_manifest <file>
+# Parse <file> as a data-only manifest, populating NAME/VERSION/DESCRIPTION/
+# HOMEPAGE/LICENSE/DEPENDS.  The fields are reset first so a partial manifest
+# cannot inherit stale values from the environment.  NAME is required.
+pkg_manifest() {
+	: "pkg_manifest: $*"
+	test -f "${1}" || die "pkg_manifest: no such file: ${1}"
+
+	NAME=''
+	VERSION=''
+	DESCRIPTION=''
+	HOMEPAGE=''
+	LICENSE=''
+	DEPENDS=''
+	__pkg_read < "${1}"
+
+	test -n "${NAME}" || die "pkg_manifest: missing NAME in ${1}"
+}
+
+# vim: filetype=sh
