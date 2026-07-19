@@ -100,4 +100,13 @@ test_manifest_missing_file_dies() {
 	test.error pkg_manifest /nonexistent/shlib.shpkg
 }
 
+test_manifest_parses_real_shpkg() {
+	# The suite runs from the repo root, so shlib's own manifest is a real,
+	# unfabricated fixture that proves the data-only reader works end to end.
+	pkg_manifest ./shlib.shpkg
+	test.eq 'shlib' "${NAME}" 'NAME from shlib.shpkg'
+	test.eq 'MIT' "${LICENSE}" 'LICENSE from shlib.shpkg'
+	test.ne '' "${VERSION}" 'VERSION present in shlib.shpkg'
+}
+
 # vim: filetype=sh
