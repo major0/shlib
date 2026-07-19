@@ -74,11 +74,11 @@ test_docinto_subdir() {
 
 test_doshlib_defaults_to_libdir() {
 	# shellcheck disable=SC2317  # find is invoked indirectly by doshlib
-	find() { printf '%s\n' 'math/calc.shlib' 'math/calc-test.shlib'; }
+	find() { printf '%s\n' 'math/calc.shlib' 'math/calc_test.shlib'; }
 	out="$(doshlib math)"
 	test.match '*install -m0644 math/calc.shlib /opt/lib/shlib/math/calc.shlib*' "${out}" 'doshlib -> LIBDIR/shlib'
 	case "${out}" in
-	(*calc-test.shlib*)	test.fail 'doshlib installed a test file';;
+	(*calc_test.shlib*)	test.fail 'doshlib installed a test file';;
 	esac
 }
 

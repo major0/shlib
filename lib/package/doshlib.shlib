@@ -2,7 +2,7 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 #
-# doshlib installs a directory of *.shlib libraries (excluding *-test.shlib)
+# doshlib installs a directory of *.shlib libraries (excluding *_test.shlib)
 # under the installer's resolved LIBDIR/shlib by default; shlibinto overrides.
 
 shlibinto() { __pkg_shlibdir="${1}"; }
@@ -11,7 +11,7 @@ doshlib() {
 	: "doshlib: $*"
 	__doshlib_dir="${__pkg_shlibdir:-${LIBDIR}/shlib}"
 	while test "$#" -gt '0'; do
-		find "${1}" -type f -name '*.shlib' | docpio -X '*-test.shlib' "${__doshlib_dir}"
+		find "${1}" -type f -name '*.shlib' | docpio -X '*_test.shlib' "${__doshlib_dir}"
 		shift
 	done
 	unset __doshlib_dir
