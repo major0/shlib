@@ -9,6 +9,8 @@ diropts() {
 
 dodir() {
 	: "dodir: $*"
+	# Options intentionally word-split so diropts can carry multiple flags.
+	# shellcheck disable=SC2086
 	docmd mkdir ${__pkg_diropts:=-m0755} -p "${1}"
 }
 
