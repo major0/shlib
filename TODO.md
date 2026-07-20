@@ -74,11 +74,25 @@ the test framework and the package-versioning design (see doc/packages.md).
 - **CLI cleanup.**  Remove `--shlib-only`; rename `--report-set` to
   `--detect-var-leak`.
 
-- **Package system.**  Implement versioned packages per doc/packages.md: a
-  manifest (NAME/VERSION/SLOT/DEPENDS), install-time slot mangling and
-  dependency resolution to direct versioned symbols, the
-  `<prefix>/lib/shlib/<package>/v<version>` layout, and `import <package>` /
-  `import <package>@v<version>`.
+- **Package system.**  *(declarative core landed)*  A package ships a data-only
+  `shlib.shpkg` manifest (`pkg_manifest`, whitelist
+  NAME/VERSION/DESCRIPTION/HOMEPAGE/LICENSE/DEPENDS) that is parsed, never
+  sourced -- no per-package install code (the pip/npm/ebuild hole).  A static
+  FHS walker (`pkg_install_tree`) drives the `do*` verbs from a fixed layout;
+  the package gets no say (the Go stance), only the launcher is templated.  See
+  `doc/shpkg.md`.  Remaining:
+  - **Installer front-end.**  `shlib install [<options>] <source>` where
+    `<source>` is a path or URL: normalise a local path to `file://`, dispatch
+    by scheme (`file://` direct, `git` URLs cloned first), glob `*.shpkg`, then
+    `pkg_manifest` + `pkg_install_tree`.  Wire it into `libexec/shlib-install`
+    (which still reads a `.shlib` file and sources it -- replace with the
+    data-only reader).
+  - **Versioning** per doc/packages.md: SLOT/DEPENDS, install-time slot
+    mangling and dependency resolution to versioned symbols, the
+    `<prefix>/lib/shlib/<package>/v<version>` layout, and `import
+    <package>@v<version>`.
+  - **Staging + uninstall.**  `DESTDIR`/`${ED}`-style staging and a `CONTENTS`
+    manifest recorded at install so a package can be removed cleanly.
 
 - **Pure-shell math.**  Replace the remaining `awk`/`zsh` external fallbacks and
   the zsh native `$(( fn() ))` branches in the math library with pure-shell
