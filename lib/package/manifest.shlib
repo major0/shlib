@@ -2,7 +2,7 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 #
-# Data-only package manifest reader.  A manifest (shlib.shpkg) is parsed as
+# Data-only package manifest reader.  A manifest (shpkg.vars) is parsed as
 # pure data: each line is a KEY=VALUE field drawn from a fixed whitelist and
 # nothing else.  The file is NEVER sourced, so a manifest cannot define
 # functions or run commands -- there is no package-controlled escape hatch

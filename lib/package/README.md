@@ -12,7 +12,7 @@ install into the target platform.
 Unlike ebuild, the verbs are **not** called by the package.  shlib uses a
 declarative model (see `doc/shpkg.md`):
 
-- A package ships a data-only `shlib.shpkg` manifest, read by `pkg_manifest`
+- A package ships a data-only `shpkg.vars` manifest, read by `pkg_manifest`
   and never sourced -- there is no `pkg_install()` hook and no per-package
   install code.
 - `pkg_install_tree` (see `layout.shlib`) is a static FHS walker that drives

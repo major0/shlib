@@ -75,7 +75,7 @@ the test framework and the package-versioning design (see doc/packages.md).
   `--detect-var-leak`.
 
 - **Package system.**  *(declarative core landed)*  A package ships a data-only
-  `shlib.shpkg` manifest (`pkg_manifest`, whitelist
+  `shpkg.vars` manifest (`pkg_manifest`, whitelist
   NAME/VERSION/DESCRIPTION/HOMEPAGE/LICENSE/DEPENDS) that is parsed, never
   sourced -- no per-package install code (the pip/npm/ebuild hole).  A static
   FHS walker (`pkg_install_tree`) drives the `do*` verbs from a fixed layout;
@@ -83,9 +83,10 @@ the test framework and the package-versioning design (see doc/packages.md).
   `doc/shpkg.md`.  Remaining:
   - **Installer front-end.**  `shlib install [<options>] <source>` where
     `<source>` is a path or URL: normalise a local path to `file://`, dispatch
-    by scheme (`file://` direct, `git` URLs cloned first), glob `*.shpkg`, then
-    `pkg_manifest` + `pkg_install_tree`.  Wire it into `libexec/shlib-install`
-    (which still reads a `.shlib` file and sources it -- replace with the
+    by scheme (`file://` direct, `git` URLs cloned first), read the fixed
+    `shpkg.vars` at the addressed root, then `pkg_manifest` +
+    `pkg_install_tree`.  Wire it into `libexec/shlib-install` (which still
+    reads a `.shlib` file and sources it -- replace with the
     data-only reader).
   - **Versioning** per doc/packages.md: SLOT/DEPENDS, install-time slot
     mangling and dependency resolution to versioned symbols, the

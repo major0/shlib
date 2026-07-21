@@ -22,9 +22,9 @@ shlib follows the Go stance.  The manifest is parsed as data and is *never*
 sourced, so a package cannot define functions, run commands, or alter its own
 layout.  There is no per-package escape hatch.
 
-## The manifest: `shlib.shpkg`
+## The manifest: `shpkg.vars`
 
-A package places a `shlib.shpkg` file at its top.  It is read line by line by
+A package places a `shpkg.vars` file at its top.  It is read line by line by
 `pkg_manifest`; only a fixed whitelist of `KEY=VALUE` fields is honoured, and
 every other line (comments, blanks, unknown keys, or anything that is not a
 field) is ignored.  Values are assigned by name -- never with `eval` -- so a
@@ -95,7 +95,7 @@ obtains its paths from the runtime at execution time and is installed verbatim.
 
 `<source>` is a path or a URL.  A local path is normalised to a `file://` URL
 and dispatched through the same URL handling as a remote source (`git` URLs are
-cloned first).  The installer then reads `<source>/shlib.shpkg` with
+cloned first).  The installer then reads `<source>/shpkg.vars` with
 `pkg_manifest` and applies `pkg_install_tree`.  shlib installs itself the same
 way:
 
