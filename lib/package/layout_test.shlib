@@ -30,10 +30,10 @@ test_missing_srcdir_dies() {
 	test.error pkg_install_tree /nonexistent/package/dir
 }
 
-test_launcher_is_templated_into_bindir() {
+test_bin_is_templated_into_bindir() {
 	out="$(pkg_install_tree . 2>&1)"
-	# dobin --template routes the launcher through sed into BINDIR.
-	test.match '*sed*/opt/bin/shlib*' "${out}" 'launcher templated to BINDIR'
+	# bin/shlib is routed through sed (templated) into BINDIR.
+	test.match '*sed*/opt/bin/shlib*' "${out}" 'bin/ -> BINDIR (templated)'
 }
 
 test_libraries_go_to_libdir_shlib() {
@@ -50,8 +50,17 @@ test_libexec_goes_to_libexecdir_name() {
 
 test_docs_go_to_docdir_name() {
 	out="$(pkg_install_tree . 2>&1)"
-	test.match '*-t /opt/share/doc/shlib README.md*' "${out}" 'README -> DOCDIR/NAME'
-	test.match '*-t /opt/share/doc/shlib LICENSE*' "${out}" 'LICENSE -> DOCDIR/NAME'
+	test.match '*-t /opt/share/doc/shlib docs/*' "${out}" 'docs/ -> DOCDIR/NAME'
+}
+
+test_root_files_are_not_installed() {
+	# README.md/LICENSE live at the repo root, outside the strict structure,
+	# so the walker must not install them (they belong in docs/ instead).
+	out="$(pkg_install_tree . 2>&1)"
+	case "${out}" in
+	(*-t\ /opt/share/doc/shlib\ README.md*)	test.fail 'root README.md was installed';;
+	(*-t\ /opt/share/doc/shlib\ LICENSE*)	test.fail 'root LICENSE was installed';;
+	esac
 }
 
 test_skips_deprecated_subtree() {
