@@ -1,0 +1,731 @@
+#!/bin/sh
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+# We always use 'set -e' because it works "as expected" on the vast majority of
+# POSIX shells out there .. BASH being the only exception. That said, it hurts
+# nothing to use 'set -e' and then ignore its existance.
+set -e
+
+# BusyBox may have builtins which can prevent 'command -v' from returning the
+# expected output, this can be detected by asking 'command -v' for the path to
+# 'sh', which in busybox returns as 'sh'.
+# shellcheck disable=SC3045
+if which sh > /dev/null 2>&1; then
+	__shlib_hascmd() { test -e "$(which "${1}" 2> /dev/null)"; }
+	__shlib_pathcmd() { __shlib_hascmd "${1}" && which "${1}"; }
+elif whence -p sh > /dev/null 2>&1; then
+	__shlib_hascmd() { test -e "$(whence -p "${1}" 2> /dev/null)"; }
+	__shlib_pathcmd() { __shlib_hascmd "${1}" && whence -p "${1}"; }
+elif type -P sh > /dev/null 2>&1; then
+	__shlib_hascmd() { test -e "$(type -P "${1}" 2> /dev/null)"; }
+	__shlib_pathcmd() { __shlib_hascmd "${1}" && type -P "${1}"; }
+else
+	__shlib_hascmd() { test -e "$(command -v "${1}" 2> /dev/null)"; }
+	__shlib_pathcmd() { __shlib_hascmd "${1}" && command -v "${1}"; }
+fi
+
+# Allow 'readonly' to work, even if it wont do what we want
+if ! (readonly __SHLIB_JUNK >/dev/null 2>&1); then alias readonly=' ';fi
+
+# Identify the running shell along three axes:
+#   SHLIB_SHELL         family/dialect: zsh, ksh, bash, sh
+#   SHLIB_SHELL_IMPL    concrete implementation: zsh, bash, ksh93, mksh, lksh,
+#                       pdksh, ksh, yash, sh
+#   SHLIB_SHELL_VERSION implementation version string, when the shell exposes
+#                       one (empty otherwise)
+# The family is what shlib branches on internally; the implementation and
+# version are published for callers.  Only the family is resolved here from the
+# universally-safe *_VERSION probes; the finer implementation is resolved below,
+# behind a family guard, so nothing shell-specific is parsed on the wrong shell.
+if ! ${ZSH_VERSION+false}; then
+	readonly SHLIB_SHELL='zsh'
+	readonly SHLIB_SHELL_IMPL='zsh'
+	readonly SHLIB_SHELL_VERSION="${ZSH_VERSION}"
+	emulate ksh
+	zmodload zsh/mathfunc
+elif ! ${KSH_VERSION+false}; then
+	readonly SHLIB_SHELL='ksh'
+	readonly SHLIB_SHELL_VERSION="${KSH_VERSION}"
+	alias type > /dev/null 2>&1 || type() { whence -v "$*"; }
+elif ! ${BASH_VERSION+false}; then
+	readonly SHLIB_SHELL='bash'
+	readonly SHLIB_SHELL_IMPL='bash'
+	readonly SHLIB_SHELL_VERSION="${BASH_VERSION}"
+elif ! ${YASH_VERSION+false}; then
+	readonly SHLIB_SHELL='sh'
+	readonly SHLIB_SHELL_IMPL='yash'
+	readonly SHLIB_SHELL_VERSION="${YASH_VERSION}"
+else
+	readonly SHLIB_SHELL='sh'
+	readonly SHLIB_SHELL_IMPL='sh'
+	readonly SHLIB_SHELL_VERSION=''
+fi
+
+# The ksh family all report SHLIB_SHELL=ksh; resolve the concrete implementation
+# here, behind the family guard, so any ksh-specific matching stays away from
+# the parsers of the other shells.  KSH_VERSION content is portable to match.
+if test "${SHLIB_SHELL}" = 'ksh'; then
+	case "${KSH_VERSION}" in
+	(*AJM*)		readonly SHLIB_SHELL_IMPL='ksh93';;
+	(*MIRBSD*)	readonly SHLIB_SHELL_IMPL='mksh';;
+	(*LEGACY*)	readonly SHLIB_SHELL_IMPL='lksh';;
+	(*'PD KSH'*)	readonly SHLIB_SHELL_IMPL='pdksh';;
+	(*)		readonly SHLIB_SHELL_IMPL='ksh';;
+	esac
+fi
+
+# Always request the shell obey POSIX
+readonly POSIXLY_CORRECT=posix
+
+##
+# It tends to be faster to call these as functions vs searching the PATH and
+# then fork/exec'ing them.  On the flip side, we only supply very low-level
+# routines as part of the core shlib.  Everything else MUST be supplied via
+# 'import' libraries.
+if ! __shlib_hascmd let; then let() { for __let_expression; do command eval test '$((${__let_expression}))' -ne 0;done; } fi
+dirname()
+{
+	case "${1}" in (.*);; (/*);; (*) set -- "./${1}";; esac
+	set -- "${1%/*}"
+	test -z "${1}" && set -- '/'
+	echo "${1}"
+}
+basename()
+{
+	set -- "${1%/}"
+	set -- "${1##*/}"
+	test -z "${1}" && set -- '/'
+	echo "${1}"
+}
+
+##
+# shlib library routines
+
+# These where defined earlier
+hascmd() { __shlib_hascmd "$@"; }
+alias shlib.hascmd='hascmd '
+pathcmd() { __shlib_pathcmd "$@"; }
+alias shlib.pathcmd='pathcmd '
+
+# the compliment to hascmd
+__shlib_hasfunc() { type "${1}" 2>&1 | grep -q 'function$'; }
+hasfunc() { __shlib_hasfunc "$@"; }
+alias shlib.hasfunc='hasfunc '
+
+if pwd -P > /dev/null 2>&1; then
+	__shlib_pwd() { pwd -P; }
+else
+	# FIXME should we manually interpret the PWD and readlink any
+	# links encountered and attempt to resolve it?
+	__shlib_pwd() { pwd; }
+fi
+
+## realpath
+# Almost every Unix tool breaks POSIX handling of paths, this includes
+# almost every "POSIX" compliant shell; pdksh, zsh, dash, and busybox's
+# sh; as well as GNU's realpath utility. It is also likely that nearly
+# all shell scripts, install scripts, and a plethora of SDKs which
+# handle/interpret the path likely violate POSIX path resolution.
+#
+# The core of the problem stems from a failure to understand POSIX's
+# definition of multiple `/` entries in a path.
+#
+# https://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266
+# 3.266 Pathname:
+#	A character string that is used to identify a file. In the context
+#	of IEEE Std 1003.1-2001, a pathname consists of, at most,
+#	{PATH_MAX} bytes, including the terminating null byte. It has an
+#	optional beginning slash, followed by zero or more filenames
+#	eparated by slashes. A pathname may optionally contain one or more
+#	trailing slashes.
+#
+#	**Multiple successive slashes are considered to be the same as one slash.**
+#
+# Most users assume this is the whole of the issue, but:
+#
+# https://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11
+# 4.11 Pathname Resolution
+#	A pathname consisting of a single slash shall resolve to the root
+#	directory of the process. A null pathname shall not be
+#	successfully resolved.
+#
+#	**A pathname that begins with two successive slashes may be
+#	interpreted in an implementation-defined manner, although more
+#	than two leading slashes shall be treated as a single slash.**
+#
+# This means that ALL tools, libraries, SDKs, applications which are
+# passed a path as an input must _always_ retain the `//` prefix on
+# the path when passing the path to the OS, as these paths are
+# allowed to be interpretted differntly by the OS. Failure to do this
+# may result in any and all of these applications failing to work on
+# the target platform.
+__shlib_realpath() {(
+	if test -d "${1}"; then
+		cd "${1}" >/dev/null 2>&1 && __shlib_pwd
+	elif test -d "${1%/*}"; then
+		cd "${1%/*}" >/dev/null 2>&1 && echo "$(__shlib_pwd)/${1##*/}"
+	else
+		die "directory does not exist '${1%/*}'"
+	fi
+)}
+alias shlib.realpath='__shlib_realpath '
+
+__shlib_optarg()
+{
+	if test "${1#*=}" != "${1}"; then
+		set -- "${1}" "${2}" "${1#*=}"
+	else
+		case "${2}" in (-*);; (*) set -- "${1}" "${2}" "${2}";; esac
+		OPTIND="$((OPTIND + 1))"
+	fi
+	test -z "${3}" || echo "${3}"
+}
+optarg() { __shlib_optarg "$@"; }
+
+__shlib_getarg()
+{
+	set -- "${1}" "${2}" "$(__shlib_optarg "${@}")"
+	if test -z "${3}"; then
+		__shlib_usage 'shlib' "option '${1%=*}' requires an argument"
+		return 1
+	fi
+	echo "${3}"
+}
+getarg() { __shlib_getarg; }
+
+__shlib_shiftarg()
+{
+	: "__shlib_shiftarg: shell=${SHLIB_SHELL}, index=${OPTIND}"
+	case "${SHLIB_SHELL}" in
+	(bash|zsh) # Bash and Zsh don't index $0
+		echo "$((OPTIND - 1))";;
+	(ksh)	# All flavours of Ksh as well as Dash and BusyBox's /bin/sh
+		# count $0 as part of the index position
+		echo "$((OPTIND - 2))";;
+	(*)	# "MOST" /bin/sh shells obey ksh's behavior..
+		if test "$((OPTIND - 2))" -ge '0'; then
+			echo "$((OPTIND - 2))"
+		else # except /bin/sh found in *BSD
+			echo 0
+		fi;;
+	esac
+	OPTIND=1
+}
+shiftarg() { __shlib_shiftarg "$@"; }
+
+# Not all printf's are created equal.  Lksh/PdKsh don't support %f format
+# strings and Dash and Zsh's printf use single-precision floating point
+# arithmetic.
+if __shlib_hascmd printf; then
+	if ! printf '%f' 1 > /dev/null 2>&1; then
+		# shellcheck disable=SC2139
+		alias shlib.printf="$(__shlib_pathcmd printf) "
+	else
+		case "$(printf '%0.20f\n' 0.0099887766554433221100)" in
+		(0.0099887766554433221100)
+			alias shlib.printf='printf '
+			;;
+
+		(*) # shellcheck disable=SC2139
+		    alias shlib.printf="$(__shlib_pathcmd printf) ";;
+		esac
+	fi
+else
+	alias shlib.printf='printf '
+fi
+
+__shlib_error() { echo "error: $*" >&2; }
+error() { __shlib_error "$@"; }
+alias shlib.error='__shlib_error '
+
+__shlib_die() { error "$*"; exit 1; }
+die() { __shlib_die "$@"; }
+alias shlib.die='__shlib_die '
+
+__shlib_exit()
+{
+	: "__shlib_exit($*)"
+	# shellcheck disable=SC2086
+	set -- ${__shlib_atexit_funcs}
+	unset __shlib_atexit_funcs
+	while test "$#" -gt '0'; do
+		"${1}"
+		shift
+	done
+}
+__shlib_atexit()
+{
+	: "__shlib_atexit($*)"
+	if ! __shlib_hasfunc "${1}"; then
+		trap '' 0
+		die "not a function '${1}'"
+	fi
+	__shlib_atexit_funcs="$1 ${__shlib_atexit_funcs}"
+	trap __shlib_exit 0 TERM HUP INT
+}
+alias shlib.atexit='__shlib_atexit '
+atexit() { __shlib_atexit "$@"; }
+
+__shlib_leaked_vars_filter()
+{
+	: "__shlib_leaked_sh_var($*)"
+	for __shlib_leaked_sh_var; do
+		case "${__shlib_leaked_sh_var}" in
+		(POSIXLY_CORRECT) continue;;
+		(SHLIB_CALL_STACK) continue;;
+		(SHLIB_SHELL)	continue;;
+		(SHLIB_RESULT)	continue;; # interface result register
+		(OPTARG)	continue;; # zsh
+		(A__z)		continue;; # ksh
+
+		# bash
+		(BASH_EXECUTION_STRING|FUNCNAME|PIPESTATUS) continue;;
+		esac
+		echo "${__shlib_leaked_sh_var}"
+	done
+	unset __shlib_leaked_sh_var
+}
+__shlib_leaked_vars()
+{
+	: "__shlib_leaked_vars($*)"
+	shift $#
+	# shellcheck disable=SC2046
+	set -- $(__shlib_leaked_vars_filter $( ("${SHLIB_SHELL}" -c 'set';set;env)|sed -n 's/=.*//p'|sort|uniq -u))
+	unset __shlib_leaked_shell_vars
+	if test "$#" -ne '0'; then
+		echo "## SHLIB SET VARIABLES: $#"
+		for __shlib_leaked_var; do
+			echo "${__shlib_leaked_var}"
+		done
+		unset __shlib_leaked_var
+	fi
+}
+
+__shlib_lib_resolv()
+{
+	if test "${1%.*}" != "${1}"; then
+		__shlib_lib_resolv_lib="${1%.*}/${1##*.}"
+	else
+		__shlib_lib_resolv_lib="${1}"
+	fi
+	# FIXME expand this in a subshell and "output" all elements of the
+	# path as an array that we can iterate over
+	__shlib_lib_resolv_ifs="${IFS}"
+	IFS=':'
+	# shellcheck disable=SC2086
+	set -- ${SHLIB_PATH}
+	IFS="${__shlib_lib_resolv_ifs}"
+	unset __shlib_lib_resolv_ifs
+
+	__shlib_lib_resolv_file=
+	for __shlib_lib_resolv_path; do
+		if test -f "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}.shlib"; then
+			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}.shlib"
+		fi
+		for __shlib_lib_resolv_iface in "${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}"/*.shlib; do
+			test -f "${__shlib_lib_resolv_iface}" || break
+			__shlib_lib_resolv_file="${__shlib_lib_resolv_path}/${__shlib_lib_resolv_lib}"
+			break
+		done
+		if ! test -z "${__shlib_lib_resolv_file}"; then
+			__shlib_realpath "${__shlib_lib_resolv_file}"
+			break
+		fi
+	done
+	unset __shlib_lib_resolv_path
+	unset __shlib_lib_resolv_lib
+	unset __shlib_lib_resolv_file
+}
+
+__shlib_valid() { ! test -z "$(__shlib_lib_resolv "${1}")" || return 1; return 0; }
+
+__shlib_doc_resolv()
+{
+	: "__shlib_doc_resolv($*)"
+	case "${1}" in
+	(shlib)		set -- 'doc';;
+	(shlib.*)	set -- "doc.${1#*.}";;
+	esac
+	if test "${1%.*}" != "${1}"; then
+		__shlib_doc_resolv_lib="${1%.*}/${1##*.}"
+	else
+		__shlib_doc_resolv_lib="${1}"
+	fi
+	# FIXME handle `:` delimited paths w/out modifying IFS
+	__shlib_doc_resolv_ifs="${IFS}"
+	IFS=':'
+	# shellcheck disable=SC2086
+	set -- ${SHLIB_PATH}
+	IFS="${__shlib_doc_resolv_ifs}"
+	unset __shlib_doc_resolv_ifs
+
+	__shlib_doc_resolv_file=
+	for __shlib_doc_resolv_path; do
+		if test -f "${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}.md"; then
+			__shlib_doc_resolv_file="${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}.md"
+		fi
+
+		if test -e "${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}/__index__.md"; then
+			__shlib_doc_resolv_file="${__shlib_doc_resolv_path}/${__shlib_doc_resolv_lib}/__index__.md"
+		fi
+		if ! test -z "${__shlib_doc_resolv_file}"; then
+			__shlib_realpath "${__shlib_doc_resolv_file}"
+			break
+		fi
+	done
+	unset __shlib_doc_resolv_path
+	unset __shlib_doc_resolv_lib
+	unset __shlib_doc_resolv_file
+}
+
+__shlib_imported()
+{
+	: "__shlib_imported($#): $*"
+	__shlib_imported_lib="$(printf '%s' "$1"|tr '/.' '_')"
+	shift
+	set -- "${__shlib_imported_lib}" "$@"
+	unset __shlib_imported_lib
+	: "__shlib_imported($#): $*"
+
+	case "$#" in
+	(1)	eval "__shlib_${1}_imported" > /dev/null 2>&1 || return 1;;
+	(2)	eval "__shlib_${1}_imported() { :; }";;
+	(*)	return 1;;
+	esac
+
+	# We only get this far if $# == 2
+	if __shlib_hasfunc __shlib_imports; then
+		eval "__shlib_imports() { echo '$(__shlib_imports) ${1}'; }"
+	else
+		eval "__shlib_imports() { echo '${1}'; }"
+	fi
+	return 0
+}
+
+__shlib_import_lib()
+{
+	: "__shlib_import_lib($*)"
+	if ! __shlib_valid "${1}"; then
+		die "invalid library '${1}'"
+	fi
+
+	# Only allow a library to be imported once per-scope
+	! __shlib_imported "${1}" || return 0
+
+	# name file
+	set -- "${1}" "$(__shlib_lib_resolv "${1}")"
+	set -- "${1}" "${2%%/}"
+
+	# importing whole directory
+	# note: we borrow 'while' here purely so we can break out of nested
+	# conditions
+	while test -d "${2}"; do
+		# Constrain our import to the specified __init__
+		if test -f "${2}/__init__.shlib"; then
+			set -- "${1}" "${2}/__init__.shlib"
+			break
+		fi
+		# Import everything in the directory
+		for __shlib_import_lib_iface in "${2}"/*.shlib; do
+			case "${__shlib_import_lib_iface}" in (*_test.shlib) continue;;esac
+			test -f "${__shlib_import_lib_iface}" || return 0
+			set -- "${1}" "${2}" "${1}.${__shlib_import_lib_iface##*/}"
+			set -- "${1}" "${2}" "${3%.shlib}"
+			__shlib_import_lib "${3}"
+		done
+
+		# Return after importing the directory
+		__shlib_imported "${1}" "${2}"
+		return 0
+	done
+
+	# name file opwd
+	set -- "${1}" "${2}" "${PWD}"
+	cd "$(dirname "${2}")"
+
+	# name file opwd old_stack
+	set -- "${1}" "${2}" "${3}" "${SHLIB_CALL_STACK}"
+	SHLIB_CALL_STACK="${SHLIB_CALL_STACK} ${1}"
+	__shlib_imported "${1}" "${2}"
+	# shellcheck disable=SC1090
+	. "${2}"
+	__shlib_imported_status="$?"
+	SHLIB_CALL_STACK="${4}"
+
+	cd "${3}"
+	set -- "${__shlib_imported_status}"
+	unset __shlib_imported_status
+	return "${1}"
+}
+
+## __shlib_rebake
+# ksh93 compiles a whole dot-sourced file as a single parse unit, so an alias
+# defined in that unit is not expanded into a function that is also defined in
+# it -- and the shlib public API is entirely alias-based.  Once every alias is
+# defined, re-declaring each function via `eval` re-parses its body with the
+# aliases in effect, baking them in.  Applied only under ksh93 (guarded at the
+# call site) using ksh's own `typeset` introspection.  Re-declaring a function
+# that is currently on the call stack is safe in ksh93: the running instance
+# finishes with its old body and the new body applies on the next call.
+# Technique adapted from alganet's c89cc.sh.
+__shlib_rebake()
+{
+	# shellcheck disable=SC3044  # typeset is ksh93-only; this runs only there
+	for __shlib_rebake_fn in $(typeset +f); do
+		# ksh93 lists function names with a trailing '()'; strip it.
+		__shlib_rebake_fn="${__shlib_rebake_fn%'()'}"
+		case "${__shlib_rebake_fn}" in (__shlib_rebake) continue;; esac
+		# shellcheck disable=SC3044
+		__shlib_rebake_body="$(typeset -f "${__shlib_rebake_fn}" 2>/dev/null)" || continue
+		eval "${__shlib_rebake_fn} () {${__shlib_rebake_body#*\{}" 2>/dev/null || :
+	done
+	unset __shlib_rebake_fn __shlib_rebake_body
+}
+
+# FIXME support 'import <routine> from <lib>'?
+__shlib_import()
+{
+	: "__shlib_import($*)"
+	__shlib_import_depth=$((${__shlib_import_depth:-0} + 1))
+	while test "$#" -gt '0'; do
+		# OpenBSD's /bin/sh will trigger an exit if we do this test
+		# while 'set -e' is active.
+		set +e
+		if ! eval "${1}_imported" 2>/dev/null; then
+			if ! __shlib_import_lib "${1}"; then
+				set -- $?
+				break
+			fi
+		fi
+		set -e
+		shift
+	done
+	# Once the outermost import has unwound (all aliases down the tree now
+	# defined), re-bake functions so ksh93 expands those aliases into the
+	# bodies that use them.  No-op on every other shell.
+	__shlib_import_depth=$((__shlib_import_depth - 1))
+	if test "${__shlib_import_depth}" -eq '0'; then
+		test "${SHLIB_SHELL_IMPL}" != 'ksh93' || __shlib_rebake
+		unset __shlib_import_depth
+	fi
+	return "$#"
+}
+alias shlib.import='__shlib_import '
+import() { __shlib_import "$@"; }
+
+##
+# These routines are pretty shlib specific.
+__shlib_main() { ! test "${SHLIB_CALL_STACK}" = '__main__'; }
+alias shlib.main='__shlib_main || '
+alias main='__shlib_main || '
+
+__shlib_version() { echo 0.01; }
+__shlib_usage()
+{
+	: "__shlib_usage($*)"
+	if test "$#" -gt '0'; then
+		error "${2}"
+		echo "try '${1} --help'" >&2
+		return 1
+	fi
+	sed -e 's/	//' << EOF
+	usage: shlib [options] [<command> | <file>]
+
+	 options:
+	   -L, --libdir=LIBDIR		Path to SHLIB libraries
+	   -I, --import=LIB		Import specified lib(s)
+	   -v, --verbose		Enable verbose execution
+	   -V, --version		Display shlib version
+	   -h, --help			Display this help
+
+	 shell opts:
+	   -c STRING			Execute commands given in STRING
+	   -x				Trace script execution
+	   --shlib-only			Only use shlib versions of commands
+	   --report-set			Report set non-environ variables at termination
+
+EOF
+	exit 0
+}
+alias shlib.usage='__shlib_usage '
+
+# If we were not "installed" then this variable will not have been
+# substituted, and the libdir in which we find the 'shlib' front-end will
+# not exist at which point we expect libdir to be relative to ${0}.
+# e.g. <path to shlib>/shlib, <path to shlib>/.
+# Alternatively, an environment may set the SHLIB_PATH to place shlib in
+# disparate locations.
+# e.g. SHLIB_PATH="${TOPDIR}/utils/shlib/lib" while 'shlib' exists as a
+# symlink in "${TOPDIR}/bin/shlib"
+if test -z "${SHLIB_PATH}"; then
+	SHLIB_PATH="@shlib_libdir@"
+	if ! test -d "${SHLIB_PATH}" && test -d "${0%/*}"; then
+		# Running from source: lib/ sits beside the launcher when it is
+		# invoked as <top>/shlib (a dev symlink), or one level up when it
+		# is invoked directly as <top>/bin/shlib.
+		if test -d "${0%/*}/lib"; then
+			SHLIB_PATH="$(__shlib_realpath "${0%/*}/lib")"
+		else
+			SHLIB_PATH="$(__shlib_realpath "${0%/*}/../lib")"
+		fi
+		SHLIB_PATH="${SHLIB_PATH%/}"
+	fi
+	export SHLIB_PATH
+
+	# Note: Checking for library validity is done at import(), this allows
+	# setting SHLIB_PATH dynamically at runtime.
+fi
+
+# If our basename is 'shlib' then we are the master program, else we are likely
+# being 'sourced' by some other script which wants to utilize shlib as a
+# library.
+
+SHLIB_IMPORTS=
+__shlib_atexit_funcs=
+if test "$(basename "${0}")" = 'shlib'; then
+	SHLIB_COMMAND=
+	while getopts ':h:VL:I:vxc:' __shlib_arg; do
+		case "${__shlib_arg}" in
+		##
+		# If we are here then everyting went as expected and all
+		# arguments to options have been supplied and the world is
+		# beautiful
+		(h)	__shlib_doc "${OPTARG}";;
+		(V)	echo "shlib version $(__shlib_version)"; exit 0;;
+		(L)	test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
+			test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
+			SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
+		(I)	SHLIB_IMPORTS="${SHLIB_IMPORTS} ${OPTARG}";;
+
+		# Support some traditional sh arguments.
+		(v)	set -v;;
+		(x)	set -x;;
+		(c)	if ! test -z "${SHLIB_COMMAND}"; then
+				__shlib_usage 'shlib' "option '${1}' already specified"
+				exit 1
+			fi
+			SHLIB_COMMAND="${OPTARG}";;
+
+		# Missing optional arguments
+		(:)	case "${OPTARG}" in
+			(h) __shlib_usage; exit 0;; # -h's argument is optional
+			(*) __shlib_usage 'shlib' "option '-${OPTARG}' requires an argument"
+			    exit 1;;
+			esac;;
+
+		## Long Argument handling
+		# POSIX: Each time it is invoked, the getopts utility shall
+		# place the value of the next option in the shell variable
+		# specified by the 'name' operand and the index of the next
+		# argument to be processed in the shell variable OPTIND.
+		#
+		# NOTE - During error handling Bash and Zsh "appear" to point
+		# OPTIND at the argument that had the error, a behavior not
+		# decribed by POSIX.
+		(\?)	: "extended options: index=${OPTIND}, arg='${__shlib_arg}', optarg='${OPTARG}'"
+			shift "$(__shlib_shiftarg)"
+			: "extended arg: '${1}'"
+
+			case "${1}" in
+			(--help)
+				OPTARG="$(__shlib_optarg "${1}" "${2}")"
+				test -z "${OPTARG}" || __shlib_doc "${OPTARG}"
+				__shlib_usage; exit 0;;
+
+			(--libdir|--libdir=*)
+				OPTARG="$(__shlib_getarg "${1}" "${2}")"
+				test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
+				test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
+				SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
+
+			(--import|--import=*)
+				SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")";;
+
+			(--report-set)
+				readonly SHLIB_REPORT_SET=true;;
+
+			##
+			# Our standard argument handling
+			(--)	OPTIND="$((OPTIND + 1))"; break;;
+			(-*)	__shlib_usage 'shlib' "unknown option '${1}'"
+				exit 1;;
+			(*)	break;;
+			esac
+
+			shift ${OPTIND}
+			OPTIND=1;;
+		esac
+	done
+	unset __shlib_arg
+	shift $((OPTIND - 1))
+	OPTIND=1
+	unset OPTARG
+
+	# Register the leak detector first so that it is called last.
+	${SHLIB_REPORT_SET+false} || __shlib_atexit __shlib_leaked_vars
+	unset SHLIB_REPORT_SET
+
+	# Initialize shlib
+	for __shlib_lib_to_import in ${SHLIB_IMPORTS}; do
+		import "${__shlib_lib_to_import}"
+	done
+	unset SHLIB_IMPORTS
+	unset -f __shlib_version
+
+	# FIXME write SHLIB_COMMAND to a temp SHLIB_SCRIPT to avoid the use of 'eval'
+	if ! test -z "${SHLIB_COMMAND}"; then
+		SHLIB_CALL_STACK='__main__' eval "${SHLIB_COMMAND}"
+	else # We are being "executed", so lets check our argument list.
+		test "$#" -ne '0' || die 'no script specified'
+
+		# If the command begins with '/' or './' or '../' then it is a file, else
+		# we treat it as a subcommand.
+		case "${1}" in
+		(/*|./*|../*)
+			test -f "$(__shlib_realpath "${1}")" || die "file does not exist '${1}'"
+			PROGNAME="$(basename "${1}")"
+			;;
+
+		(*)	shlib_libexecdir='@shlib_libexecdir@'
+			if ! test -d "${shlib_libexecdir}"; then
+				# Beside the launcher (dev symlink) or one level up
+				# when invoked directly as <top>/bin/shlib.
+				if test -d "${0%/*}/libexec"; then
+					shlib_libexecdir="$(__shlib_realpath "${0%/*}/libexec")"
+				else
+					shlib_libexecdir="$(__shlib_realpath "${0%/*}/../libexec")"
+				fi
+			fi
+			if ! test -f "${shlib_libexecdir}/shlib-${1}"; then
+				__shlib_usage 'shlib' "unknown subcommand '${1}'"
+			fi
+			# shellcheck disable=SC2034
+			PROGNAME="$(basename "${1}")"
+			shlib_subcmd="${1}"
+			shift
+			set -- "${shlib_libexecdir%%/}/shlib-${shlib_subcmd}" "${@}"
+			unset shlib_subcmd
+			;;
+		esac
+
+		# shellcheck disable=SC2034
+		SHLIB_SCRIPT="${1}"
+		# shellcheck disable=SC2034
+		SHLIB_IMPORT_FILE="${SHLIB_SCRIPT}"
+		# shellcheck disable=SC2034
+		SHLIB_IMPORT_DIR="$(dirname "${SHLIB_SCRIPT}")"
+		# shellcheck disable=SC2034
+		SHLIB_IMPORT_PWD="${PWD}"
+		shift
+
+		# shellcheck disable=SC2034,SC1090
+		SHLIB_CALL_STACK='__main__' . "${SHLIB_SCRIPT}"
+	fi
+else # sourced in
+	unset -f __shlib_version
+	SHLIB_CALL_STACK='__main__'
+fi
+
+# vim: filetype=sh
