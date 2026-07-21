@@ -5,23 +5,23 @@
 # Static FHS layout walker.
 #
 # `shlib install` handles only shlib packages: every executable is a
-# `#!/usr/bin/env shlib` script and every library is a *.shlib file.  Because
-# of that the install layout is fixed and the package gets no say in it -- the
-# rules below are applied, in order, against the package source tree.  The do*
-# verbs are the walker's internal engine; a package can never call them,
-# because its manifest is parsed as data and is never sourced.
+# `#!/usr/bin/env shlib` script and every library is a *.shlib file.  A package
+# is a directory holding a shpkg.vars manifest and a strict subset of the
+# standard unix layout; only these directories are installed, and the package
+# gets no say in where they land.  The do* verbs are the walker's internal
+# engine; a package can never call them (its manifest is data, never sourced).
 #
-# Only the top-level launcher is templated.  It is the one file that must know
-# its own install paths (it bootstraps SHLIB_PATH and the libexec dir before
-# the shlib runtime exists); every other shlib script obtains its paths from
-# the runtime at execution time, so it is installed verbatim.
+#   bin/*      -> BINDIR            (templated, 0755)
+#   lib/*      -> LIBDIR/shlib      (0644, excludes *_test.shlib)
+#   libexec/*  -> LIBEXECDIR/<name> (0755)
+#   docs/*     -> DOCDIR/<name>     (0644)
 #
-#   <name>       (top-level launcher) -> BINDIR            (templated, 0755)
-#   bin/*                             -> BINDIR            (0755)
-#   sbin/*                            -> SBINDIR           (0755)
-#   libexec/*                         -> LIBEXECDIR/<name> (0755)
-#   lib/*/ (skip deprecated)          -> LIBDIR/shlib      (0644, no *_test)
-#   README* LICENSE* doc/*            -> DOCDIR/<name>     (0644)
+# Only bin/ is templated: a launcher must know its own install paths before the
+# shlib runtime exists (it is the sole place the @shlib_*@ tokens appear); a
+# script with no tokens is copied unchanged.  Any subdirectory that is not one
+# of these four is ignored -- a nested package (its own shpkg.vars) is a module
+# in its own right and is installed only when addressed directly, never pulled
+# in by its parent (as in Go).
 
 pkg_install_tree() {
 	: "pkg_install_tree: $*"
@@ -32,24 +32,27 @@ pkg_install_tree() {
 
 	(cd "${__pkg_src}" || die "pkg_install_tree: cannot enter ${__pkg_src}"
 
-	# 1. Top-level launcher named after the package -> BINDIR, templated.
-	if test -f "${NAME}"; then
-		dobin --template "${NAME}"
-	fi
-
-	# 2/3. bin/ and sbin/ scripts -> BINDIR/SBINDIR, verbatim.
+	# bin/ -> BINDIR, templated.  Enter bin/ so each verb sees a bare
+	# filename (dobin --template names the destination after its argument).
 	if test -d bin; then
-		for __pkg_f in bin/*; do
-			test -f "${__pkg_f}" && dobin "${__pkg_f}"
-		done
-	fi
-	if test -d sbin; then
-		for __pkg_f in sbin/*; do
-			test -f "${__pkg_f}" && dosbin "${__pkg_f}"
-		done
+		(cd bin && for __pkg_f in *; do
+			test -f "${__pkg_f}" || continue
+			dobin --template "${__pkg_f}"
+		done)
 	fi
 
-	# 4. libexec/ helpers -> LIBEXECDIR/<name>, verbatim.
+	# lib/ -> LIBDIR/shlib.  Enter lib/ so installed paths are relative to
+	# it (lib/array -> LIBDIR/shlib/array).  Each entry is handed to doshlib,
+	# which finds the *.shlib files beneath it and drops *_test.shlib; an
+	# entry with no libraries (e.g. deprecated/) simply installs nothing.
+	if test -d lib; then
+		(cd lib && for __pkg_e in *; do
+			test -e "${__pkg_e}" || continue
+			doshlib "${__pkg_e}"
+		done)
+	fi
+
+	# libexec/ -> LIBEXECDIR/<name>.
 	if test -d libexec; then
 		exeinto "${LIBEXECDIR}/${NAME}"
 		for __pkg_f in libexec/*; do
@@ -57,24 +60,9 @@ pkg_install_tree() {
 		done
 	fi
 
-	# 5. lib/ subtrees -> LIBDIR/shlib.  Enter lib/ so the installed paths
-	#    are relative to it (lib/array -> LIBDIR/shlib/array); skip the
-	#    deprecated subtree; doshlib itself drops *_test.shlib files.
-	if test -d lib; then
-		(cd lib && for __pkg_d in */; do
-			__pkg_d="${__pkg_d%/}"
-			test -d "${__pkg_d}" || continue
-			test "${__pkg_d}" != 'deprecated' || continue
-			doshlib "${__pkg_d}"
-		done)
-	fi
-
-	# 6. Documentation -> DOCDIR/<name>.
-	for __pkg_f in README* LICENSE*; do
-		test -f "${__pkg_f}" && dodoc "${__pkg_f}"
-	done
-	if test -d doc; then
-		for __pkg_f in doc/*; do
+	# docs/ -> DOCDIR/<name>.
+	if test -d docs; then
+		for __pkg_f in docs/*; do
 			test -f "${__pkg_f}" && dodoc "${__pkg_f}"
 		done
 	fi
