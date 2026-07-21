@@ -28,7 +28,7 @@ A remote shell interace library.  Currently supports OpenSSH Protocol v2, Rsh, a
 [arch]: arch.md
 [close]: close.md
 
-[core]: ../doc/__index__.md "core"
+[core]: ../docs/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [expect]: ../expect/__index__.md "expect"

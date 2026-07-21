@@ -3,7 +3,7 @@
 # Licensed under the MIT License, see LICENSE for details.
 #
 # Regression guard for the coexistence guarantee behind shlib package
-# versioning (see doc/packages.md): two versions of an interface, stamped into
+# versioning (see docs/packages.md): two versions of an interface, stamped into
 # version-distinct symbols at install time, live side by side in the one
 # global namespace, and a consumer resolved to a given version calls exactly
 # that version.

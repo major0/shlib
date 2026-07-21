@@ -19,7 +19,7 @@ and manipulation/editing.
 [tolower]: toupper.md
 [toupper]: tolower.md
 
-[core]: ../doc/__index__.md "core"
+[core]: ../docs/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [expect]: ../expect/__index__.md "expect"

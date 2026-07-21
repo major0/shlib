@@ -13,7 +13,7 @@ Routines for manipulating the underlying system environment.
 [mktemp]: mktemp.md
 [mktempdir]: mktempdir.md
 
-[core]: ../doc/__index__.md "core"
+[core]: ../docs/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [expect]: ../expect/__index__.md "expect"

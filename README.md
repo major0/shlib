@@ -206,7 +206,7 @@ See Also
 
  * [Examples](examples/)
  * [Development](CONTRIB.md)
- * [API Reference](doc/__index__.md)
+ * [API Reference](docs/__index__.md)
  * [Future features](TODO.md)
  * [License](LICENSE)
  * [Unix Shell Objects](https://www.biblio.com/9780764570049), ISBN-13: 978-0764570049, ISBN-10: 0764570048

@@ -37,7 +37,7 @@ a specific interface use `shlib --help <library>.<interface>`.
 [optarg]: optarg.md "optarg"
 [realpath]: realpath.md "realpath"
 
-[core]: ../doc/__index__.md "core"
+[core]: ../docs/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [expect]: ../expect/__index__.md "expect"

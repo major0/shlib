@@ -36,7 +36,7 @@ Routines for interfacing to interactive applications
 [timeout]: timeout.md
 [close]: close.md
 
-[core]: ../doc/__index__.md "core"
+[core]: ../docs/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [expect]: ../expect/__index__.md "expect"

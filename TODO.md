@@ -1,7 +1,7 @@
 # shlib TODO
 
 Tracked work for shlib, grouped by kind.  Items were surfaced while building
-the test framework and the package-versioning design (see doc/packages.md).
+the test framework and the package-versioning design (see docs/packages.md).
 
 ## Known bugs
 
@@ -80,7 +80,7 @@ the test framework and the package-versioning design (see doc/packages.md).
   sourced -- no per-package install code (the pip/npm/ebuild hole).  A static
   FHS walker (`pkg_install_tree`) drives the `do*` verbs from a fixed layout;
   the package gets no say (the Go stance), only the launcher is templated.  See
-  `doc/shpkg.md`.  Remaining:
+  `docs/shpkg.md`.  Remaining:
   - **Installer front-end.**  `shlib install [<options>] <source>` where
     `<source>` is a path or URL: normalise a local path to `file://`, dispatch
     by scheme (`file://` direct, `git` URLs cloned first), read the fixed
@@ -88,7 +88,7 @@ the test framework and the package-versioning design (see doc/packages.md).
     `pkg_install_tree`.  Wire it into `libexec/shlib-install` (which still
     reads a `.shlib` file and sources it -- replace with the
     data-only reader).
-  - **Versioning** per doc/packages.md: SLOT/DEPENDS, install-time slot
+  - **Versioning** per docs/packages.md: SLOT/DEPENDS, install-time slot
     mangling and dependency resolution to versioned symbols, the
     `<prefix>/lib/shlib/<package>/v<version>` layout, and `import
     <package>@v<version>`.

@@ -24,7 +24,7 @@ comparisons against floating point numbers.
 [sqrt]: sqrt.md
 [sum]: sum.md
 
-[core]: ../doc/__index__.md "core"
+[core]: ../docs/__index__.md "core"
 [math]: ../math/__index__.md "math"
 [string]: ../string/__index__.md "string"
 [expect]: ../expect/__index__.md "expect"
