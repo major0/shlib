@@ -52,24 +52,43 @@ HOMEPAGE='https://github.com/major0/shlib'
 LICENSE='MIT'
 ```
 
-## The fixed layout
+## The strict source structure
 
-`pkg_install_tree` walks the package source tree and installs it by the rules
-below, applied in order.  `shlib install` handles only shlib packages: every
+A package is a directory holding a `shpkg.vars` manifest and a strict subset of
+the standard unix layout.  Only these four directories are installed; anything
+else at the package root (`.github`, `Dockerfile`, `README.md`, `examples/`,
+...) is ignored.  `shlib install` handles only shlib packages -- every
 executable is a `#!/usr/bin/env shlib` script and every library is a `*.shlib`
-file, so the layout can be fixed with no per-package configuration.
+file -- so the layout is fixed with no per-package configuration.
+
+```
+<pkg>/
+  shpkg.vars        # manifest -- marks this directory as a package root
+  bin/              # CLI commands        -> BINDIR
+  lib/              # shlib libraries     -> LIBDIR/shlib
+  libexec/          # internal helpers    -> LIBEXECDIR/<name>
+  docs/             # documentation       -> DOCDIR/<name>
+  <subpkg>/         # nested package: its own shpkg.vars + the same structure
+```
 
 | Source (under the package root) | Destination | Mode |
 |---|---|---|
-| `<name>` (top-level launcher) | `BINDIR` (templated) | 0755 |
-| `bin/*` | `BINDIR` | 0755 |
-| `sbin/*` | `SBINDIR` | 0755 |
+| `bin/*` | `BINDIR` (templated) | 0755 |
+| `lib/*` | `LIBDIR/shlib` (drops `*_test.shlib`) | 0644 |
 | `libexec/*` | `LIBEXECDIR/<name>` | 0755 |
-| `lib/*/` (skips `deprecated/`) | `LIBDIR/shlib` (drops `*_test.shlib`) | 0644 |
-| `README*`, `LICENSE*`, `doc/*` | `DOCDIR/<name>` | 0644 |
+| `docs/*` | `DOCDIR/<name>` | 0644 |
 
 Libraries install into the *shared* `LIBDIR/shlib` namespace so that `import`
 finds libraries from any installed package.
+
+## Sub-packages
+
+A subdirectory that is not `bin`/`lib`/`libexec`/`docs` and carries its own
+`shpkg.vars` is a nested package with the same structure and its own `NAME` /
+`VERSION`.  As in Go, a nested package is **not** pulled in by its parent: the
+walker only installs the four structure directories, so a sub-package is
+installed only when it is addressed directly (`shlib install <src>/<subpkg>`).
+A subdirectory without a `shpkg.vars` is simply ignored.
 
 ## Where the destinations come from
 
@@ -82,12 +101,13 @@ time; the package layout above is expressed relative to those resolved dirs.
 
 ## Templating
 
-Only the top-level launcher is templated.  It is the one file that must know
-its own install paths, because it bootstraps `SHLIB_PATH` and the libexec
-directory *before* the shlib runtime exists.  The fixed transform rewrites the
-`@shlib_bindir@` / `@shlib_libdir@` / `@shlib_libexecdir@` / `@shlib_docdir@` /
-`@shlib_mandir@` tokens to the resolved directories.  Every other shlib script
-obtains its paths from the runtime at execution time and is installed verbatim.
+Only `bin/` is templated.  A launcher must know its own install paths because
+it bootstraps `SHLIB_PATH` and the libexec directory *before* the shlib runtime
+exists, and it is the sole place the `@shlib_bindir@` / `@shlib_libdir@` /
+`@shlib_libexecdir@` / `@shlib_docdir@` / `@shlib_mandir@` tokens appear.  The
+fixed transform rewrites those tokens to the resolved directories; a script
+with no tokens is copied unchanged.  Every library and doc obtains its paths
+from the runtime at execution time and is installed verbatim.
 
 ## Installing
 
