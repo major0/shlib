@@ -2,19 +2,31 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-import string.escape
+import array
 
+# array.pop <array>
+# Drop the last element and publish the remaining array in SHLIB_RESULT (the
+# complement of array.shift, which drops the first).  Peek the dropped value
+# with array.tail beforehand.  An empty array is an error.
 __shlib_array_pop()
 {
-	__shlib_array_pop_out=''
 	eval set -- "${1}"
-	while test "$#" -gt '0'; do
-		string.escape "$1"
-		__shlib_array_pop_out="${__shlib_array_pop_out}${SHLIB_RESULT} "
+	test "$#" -gt '0' || return 1
+
+	# Drop the last element: rotate the leading N-1 elements to the back so
+	# the last one lands in front, then shift it off.  What remains is the
+	# original order minus its final entry.
+	__shlib_array_pop_n=$(($# - 1))
+	while test "${__shlib_array_pop_n}" -gt '0'; do
+		set -- "$@" "${1}"
 		shift
+		__shlib_array_pop_n=$((__shlib_array_pop_n - 1))
 	done
-	SHLIB_RESULT="${__shlib_array_pop_out}"
-	unset __shlib_array_pop_out
+	shift
+	unset __shlib_array_pop_n
+
+	__shlib_array "$@"
 }
+alias array.pop='__shlib_array_pop '
 
 # vim: filetype=sh

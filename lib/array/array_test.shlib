@@ -78,6 +78,44 @@ test_shift_empty_errors() {
 	test.error __shlib_array_shift "${SHLIB_RESULT}"
 }
 
+test_pop() {
+	__shlib_array a b c
+	__shlib_array_pop "${SHLIB_RESULT}"
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_length "${__arr}"
+	test.eq '2' "${SHLIB_RESULT}" 'length after pop'
+	__shlib_array_head "${__arr}"
+	test.eq 'a' "${SHLIB_RESULT}" 'head unchanged after pop'
+	__shlib_array_tail "${__arr}"
+	test.eq 'b' "${SHLIB_RESULT}" 'last element dropped by pop'
+	unset __arr
+}
+
+test_pop_to_empty() {
+	__shlib_array only
+	__shlib_array_pop "${SHLIB_RESULT}"
+	__shlib_array_length "${SHLIB_RESULT}"
+	test.eq '0' "${SHLIB_RESULT}" 'pop of a one-element array is empty'
+}
+
+test_pop_empty_errors() {
+	__shlib_array
+	test.error __shlib_array_pop "${SHLIB_RESULT}"
+}
+
+test_pop_preserves_special_chars() {
+	__shlib_array 'a b' 'x*y' last
+	__shlib_array_pop "${SHLIB_RESULT}"
+	__arr="${SHLIB_RESULT}"
+	__shlib_array_length "${__arr}"
+	test.eq '2' "${SHLIB_RESULT}" 'length after pop with special chars'
+	__shlib_array_head "${__arr}"
+	test.eq 'a b' "${SHLIB_RESULT}" 'space preserved after pop'
+	__shlib_array_tail "${__arr}"
+	test.eq 'x*y' "${SHLIB_RESULT}" 'glob char preserved after pop'
+	unset __arr
+}
+
 test_join() {
 	__shlib_array a b
 	__x="${SHLIB_RESULT}"
