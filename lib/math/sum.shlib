@@ -19,7 +19,14 @@ __shlib_math_sum()
 		return
 	fi
 
-	IFS='+' calc "$@"
+	# Join the operands with '+' into a single expression and evaluate it.
+	__shlib_math_sum_ifs="${IFS}"
+	IFS='+'
+	set -- "$*"
+	IFS="${__shlib_math_sum_ifs}"
+	unset __shlib_math_sum_ifs
+
+	__shlib_math_calc "${1}"
 }
 alias math.sum='__shlib_math_sum '
 
