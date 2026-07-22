@@ -79,15 +79,15 @@ the test framework and the package-versioning design (see docs/packages.md).
   NAME/VERSION/DESCRIPTION/HOMEPAGE/LICENSE/DEPENDS) that is parsed, never
   sourced -- no per-package install code (the pip/npm/ebuild hole).  A static
   FHS walker (`pkg_install_tree`) drives the `do*` verbs from a fixed layout;
-  the package gets no say (the Go stance), only the launcher is templated.  See
+  the package gets no say (the Go stance); only `bin/` is templated.  See
   `docs/shpkg.md`.  Remaining:
-  - **Installer front-end.**  `shlib install [<options>] <source>` where
-    `<source>` is a path or URL: normalise a local path to `file://`, dispatch
-    by scheme (`file://` direct, `git` URLs cloned first), read the fixed
-    `shpkg.vars` at the addressed root, then `pkg_manifest` +
-    `pkg_install_tree`.  Wire it into `libexec/shlib-install` (which still
-    reads a `.shlib` file and sources it -- replace with the
-    data-only reader).
+  - **Installer front-end.**  *(local paths land)*  `shlib install
+    [<options>] <source>` reads `<source>/shpkg.vars` with `pkg_manifest` and
+    installs the fixed layout via `pkg_install_tree` (in
+    `libexec/shlib-install`); `shlib install .` self-installs.  Remaining:
+    accept a URL -- normalise a local path to `file://` and dispatch by scheme
+    (`file://` direct, `git` URLs cloned first) so `shlib install <git-url>`
+    works.
   - **Versioning** per docs/packages.md: SLOT/DEPENDS, install-time slot
     mangling and dependency resolution to versioned symbols, the
     `<prefix>/lib/shlib/<package>/v<version>` layout, and `import
