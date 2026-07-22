@@ -5,163 +5,10 @@
 #
 # Shlib Installer
 #
-# This command provides a sort of subset Gentoo's ebuild functionality as
-# documented here: https://devmanual.gentoo.org/eclass-reference/ebuild/index.html
-#
-# All of this code was written based on the documentation and w/out inspecting any
-# of Gentoo's upstream sources, so any bugs are purely a result of performing a
-# blind/cleanroom implementation. It is worth noting that this is a dramatic subset
-# of functionality when compared to ebuild. We make no support for destination
-# root installs, or working directories, or anything of the like. We really only
-# care about performing a basic install of packages into the target platform.
-#
-# Packages can leverage this install framework by adding a `shlib.install` file
-# into the `topdir` of their package. Realistically, this framework can be used
-# by any backage, not just shlib based packages.
-fperms() {
-	: "fprms: $*"
-	docmd chmod "${@}"
-}
-fowners() {
-	: "fowners: $*"
-	docmd chown "${@}"
-}
-docmd() {
-	: "docmd: $*"
-	if test "${DRYRUN}" != 'false'; then
-		echo "do: $*" >&2
-	else
-		"${@}"
-	fi
-}
-diropts() {
-	: "diropts: $*"
-	DIROPTS="$*"
-}
-dodir() {
-	: "dodir: $*"
-	docmd mkdir ${DIROPTS:=-m0755} -p "${1}"
-}
-
-into() { PREFIX="${1}"; }
-dobin() {
-	: "dobin: $*"
-	dodir "${BINDIR}"
-
-	if test "${1}" = '--template'; then
-		shift
-		while test "$#" -gt '0'; do
-			dotemplate "${1}" "${BINDIR}/${1}"
-			fperms 0755 "${BINDIR}/${1}"
-			shift
-		done
-	else
-		docmd install -m0755 -t "${BINDIR}" "${@}"
-	fi
-}
-dosbin() {
-	: "dosbin: $*"
-	dodir "${SBINDIR}"
-
-	if test "${1}" = '--template'; then
-		shift
-		while test "$#" -gt '0'; do
-			dotemplate "${1}" "${SBINDIR}/${1}"
-			fperms 0755 "${SBINDIR}/${1}"
-			shift
-		done
-	else
-		docmd install -m0755 -t "${SBINDIR}" "${@}"
-	fi
-}
-
-__cpio()
-{(
-	: "__cpio: $*"
-	# read __cpio_path from stdin and recreate said path at "${1}"
-	# We actually ignore any paths that are directories and only
-	# create directories that lead to files.
-	while read __cpio_path; do
-		! test -d "${__cpio_path}" || continue
-		test -d "${1}/${__cpio_path%/*}" || dodir "${1}/${__cpio_path%/*}"
-		docmd install -m0644 -t "${1}/${__cpio_path%/*}" "${__cpio_path}"
-	done
-	unset __cpio_path
-)}
-__doshlib_files() {
-	: "__doshlib_files: $*"
-	find "${1}" -type f -name '*.shlib' | grep -v '*-test.shlib'
-}
-doshlib() {
-	: "doshlib: $*"
-	# FIXME Should this _always_ be installed into our global shlib_path?
-	while test "$#" -gt '0'; do
-		__doshlib_files "${1}" | __cpio "${LIBDIR}"
-		shift
-	done
-}
-
-dotemplate() {
-	: "dotemplate: $*"
-	# Due to sed's redirection we can't use `docmd` here
-	if test "${DRYRUN}" = 'true'; then
-		echo do: sed \
-			-e "s|@shlib_bindir@|${BINDIR}|g" \
-			-e "s|@shlib_libdir@|${LIBDIR}|g" \
-			-e "s|@shlib_libexecdir@|${LIBEXECDIR}|g" \
-			-e "s|@shlib_docdir@|${DOCDIR}|g" \
-			-e "s|@shlib_mandir@|${MANDIR}|g" \
-			"${1}" "${2}"
-	else
-		sed \
-			-e "s|@shlib_bindir@|${BINDIR}|g" \
-			-e "s|@shlib_libdir@|${LIBDIR}|g" \
-			-e "s|@shlib_libexecdir@|${LIBEXECDIR}|g" \
-			-e "s|@shlib_docdir@|${DOCDIR}|g" \
-			-e "s|@shlib_mandir@|${MANDIR}|g" \
-			"${1}" > "${2}"
-	fi
-}
-
-exeinto() {
-	: "exeinto: $*"
-	EXEPREFIX="${1}"
-}
-exeopts() {
-	: "exeopts: $*"
-	EXEOPTS="$*" # FIXME capture multiple params?
-}
-doexe() {
-	: "doexe: $*"
-	dodir "${EXEPREFIX%%/}"
-	docmd install ${EXEOPTS:=-m0755} -t "${EXEPREFIX%%/}" "${@}"
-}
-
-insinto() {
-	: "insinto: $*"
-	INSPREFIX="${1}"
-}
-insopts() {
-	: "insopt: $*"
-	INSOPTS="$*" # FIXME mulptiple params?
-}
-doins() {
-	: "doins: $*"
-	dodir "${INSPREFIX%%/}"
-	docmd install ${INSOPTS:=-m0644} -t "${INSPREFIX%%/}" "${@}"
-}
-
-docinto() {
-	: "docinto: $*"
-	DOCINTO="${1}" # this will always be relative to `docdir`
-}
-dodoc() {
-	: "dodoc: $*"
-	__dodoc_dest="${DOCDIR%%/}/${DOCINTO%%/}/"
-	dodir "${__dodoc_dest%%/}"
-	docmd install -m 0644 -t "${__dodoc_dest%%/}" "${@}"
-	unset __dodoc_dest
-}
+# Installs a shlib package.  A package places a data-only `shpkg.vars` manifest
+# at its top and follows the strict source layout (bin/, lib/, libexec/,
+# docs/).  The manifest is parsed, never sourced, and the layout is fixed by
+# the installer -- the package gets no say in it (see docs/shpkg.md).
 
 usage() {
 	if test "$#" -gt '0'; then
@@ -171,7 +18,10 @@ usage() {
 	fi
 
 	sed -e 's/	//'<<EOF
-	usage: ${0} [options]
+	usage: ${PROGNAME} [options] [<source>]
+
+	<source> is the package directory to install (default: the current
+	directory).
 
 	options:
 	  -n, --dry-run		Don't do anything, just print what would be done
@@ -184,8 +34,10 @@ usage() {
 	  --sbindir=DIR		Install system binaries in DIR
 	  --libdir=DIR		Install libraries in DIR
 	  --libexecdir=DIR	Install library executables in DIR
-	  --docdir=DIR		Install documentation in DIR
-	  --mandir=DIR		Install man pages in DIR
+	  --docdir=DIR		Install documentation into DIR
+	  --mandir=DIR		Install man pages into DIR
+	--sysconfdir=DIR	Install config files into DIR
+	  --show-config		Show the current install config
 
 EOF
 	exit 0 # Requests for help are never an error
@@ -194,7 +46,8 @@ EOF
 main {
 	: "main: $*"
 	DRYRUN='false'
-	while getopts ':h:x' __opt_arg; do
+	SHOWCONFIG='false'
+	while getopts ':hnx' __opt_arg; do
 		# Traditional POSIX short-option handling
 		case "${__opt_arg}" in
 		(h)	usage;;
@@ -213,9 +66,14 @@ main {
 			: "extended arg: '${1}'"
 
 			case "${1}" in
-			(--dry-run) DRYRUN='true';;
-			(--trace) set -x;;
-			(help|--help) usage;;
+			(--dry-run)
+				DRYRUN='true';;
+			(--show-config|--showconfig)
+				SHOWCONFIG='true';;
+			(--trace|--debug)
+				set -x;;
+			(help|--help)
+				usage;;
 
 			(--prefix|--prefix=*)
 				OPTARG="$(optarg "${1}" "${2}")"
@@ -231,7 +89,6 @@ main {
 				OPTARG="$(optarg "${1}" "${2}")"
 				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
 				SBINDIR="${OPTARG}";;
-
 
 			(--libdir|--libdir=*)
 				OPTARG="$(optarg "${1}" "${2}")"
@@ -253,7 +110,10 @@ main {
 				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
 				MANDIR="${OPTARG}";;
 
-			(--debug) set -x;;
+			(--sysconfdir|--sysconfdir=*)
+				OPTARG="$(optarg "${1}" "${2}")"
+				test -n "${OPTARG}" || usage "option '${1}' requires an argument"
+				SYSCONFDIR="${OPTARG}";;
 
 			# Posixly Correct
 			(--)	OPTIND="$((OPTIND + 1))"; break;;
@@ -270,32 +130,86 @@ main {
 	OPTIND=1
 	unset OPTARG
 
-	PREFIX="${PREFIX:-/usr/local}"
-	BINDIR="${BINDIR:-${PREFIX}/bin}"
-	SBINDIR="${SBINDIR:-${PREFIX}/sbin}"
-	LIBDIR="${LIBDIR:-${PREFIX}/lib}"
-	LIBEXECDIR="${LIBEXECDIR:-${PREFIX}/libexec}"
-	DOCDIR="${DOCDIR:-${PREFIX}/share/doc}/"
-	MANDIR="${MANDIR:-${PREFIX}/share/man}"
-
-	if ! test -f "${PWD}/shlib.install"; then
-		die "no shlib.install in current directory"
+	if test "$(id -u)" -eq '0'; then
+		PREFIX="${PREFIX:-/usr/local}"
+	else
+		PREFIX="${PREFIX:-${HOME}/.local}"
 	fi
 
-	NAME=
-	DESCRIPTION=
-	VERSION=
-	pkg_install() { :; }
-	(
-		. "${PWD}/shlib.install"
+	## Normalize the prefix
+	# POSIX requires that all paths that are prefixed with `//` be allowed
+	# to be interpretted differently than paths prefixed with `/`. The
+	# specification further states that paths prefixed with 3-or-more `/`
+	# characters be treated as if only 1 `/` was provided.
+	#
+	# This means that we _must_ cleanly pass paths which are prefixed with
+	# 2 slashes, `//`, to the operation system w/out manipulation, since
+	# these paths may not end up in the traditional root, `/`, fileystem.
+	#
+	# In order to avoid manually parsing the entire path, we expect that all
+	# components "up to" the last path entry must exist. This is also a
+	# requirement of `realpath` resolution. This means that if a user wants
+	# to install something in `${HOME}/.local/<app>-<version>`, then the
+	# leading portion of the path; `"${HOME}/.local"`; must already exist.
+	#
+	# This seems a reasonable requirement.
+	PREFIX="$(__shlib_realpath "${PREFIX}")"
 
-		if test -z "${NAME}"; then
-		die "missing NAME in shlib.install"
-		fi
+	case "${PREFIX}" in
+	(/|//)	SYSCONFDIR="${SYSCONFDIR:-${PREFIX}etc}"
+		BINDIR="${BINDIR:-${PREFIX}bin}"
+		SBINDIR="${SBINDIR:-${PREFIX}sbin}"
+		LIBDIR="${LIBDIR:-${PREFIX}lib}"
+		LIBEXECDIR="${LIBEXECDIR:-${PREFIX}libexec}"
+		DOCDIR="${DOCDIR:-${PREFIX}share/doc}"
+		MANDIR="${MANDIR:-${PREFIX}share/man}"
+		;;
+	(*)
+		SYSCONFDIR="${SYSCONFDIR:-${PREFIX}/etc}"
+		BINDIR="${BINDIR:-${PREFIX}/bin}"
+		SBINDIR="${SBINDIR:-${PREFIX}/sbin}"
+		LIBDIR="${LIBDIR:-${PREFIX}/lib}"
+		LIBEXECDIR="${LIBEXECDIR:-${PREFIX}/libexec}"
+		DOCDIR="${DOCDIR:-${PREFIX}/share/doc}"
+		MANDIR="${MANDIR:-${PREFIX}/share/man}"
+		;;
+	esac
 
-		DOCDIR="${DOCDIR%%/}/${NAME}"
-		pkg_install
-	)
+	## Strip trailing slashes.
+	# WARNING: this will break should anyone have set any of these paths
+	# to `//`; for whatever reason.
+	SYSCONFDIR="${SYSCONFDIR%%/}"
+	BINDIR="${BINDIR%%/}"
+	SBINDIR="${SBINDIR%%/}"
+	LIBDIR="${LIBDIR%%/}"
+	LIBEXECDIR="${LIBEXECDIR%%/}"
+	DOCDIR="${DOCDIR%%/}"
+	MANDIR="${MANDIR%%/}"
+
+	if "${SHOWCONFIG}"; then
+		printf "%15s '%s'\n" 'prefix:' "${PREFIX}"
+		printf "%15s '%s'\n" 'sysconfdir:' "${SYSCONFDIR}"
+		printf "%15s '%s'\n" 'bindir:' "${BINDIR}"
+		printf "%15s '%s'\n" 'sbindir:' "${SBINDIR}"
+		printf "%15s '%s'\n" 'libdir:' "${LIBDIR}"
+		printf "%15s '%s'\n" 'libexecdir:' "${LIBEXECDIR}"
+		printf "%15s '%s'\n" 'docdir:' "${DOCDIR}"
+		printf "%15s '%s'\n" 'mandir:' "${MANDIR}"
+		exit 0
+	fi
+
+	# The remaining operand is the package source; default to the cwd.
+	SOURCE="${1:-.}"
+	test -d "${SOURCE}" || die "not a package directory: '${SOURCE}'"
+	test -f "${SOURCE}/shpkg.vars" || die "no 'shpkg.vars' in '${SOURCE}'"
+
+	import package
+
+	# Read the data-only manifest (parsed, never sourced), then walk the
+	# package's fixed layout.  Both run in this shell so the fields set by
+	# pkg_manifest are visible to pkg_install_tree.
+	pkg_manifest "${SOURCE}/shpkg.vars"
+	pkg_install_tree "${SOURCE}"
 }
 
 # vim: filetype=sh
