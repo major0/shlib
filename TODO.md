@@ -21,21 +21,8 @@ the test framework and the package-versioning design (see docs/packages.md).
   <topic>` and interface `-h` fail.  Folds into the documentation-system work
   below.
 
-- **`math.calc` cannot reject malformed input cleanly.**  It reads `$?` after a
-  `set --` (always 0), so a bad expression relies on a fatal shell arithmetic
-  error instead of returning non-zero.
-
-- **`math.sum` calls a bare `calc`** (undefined) instead of `math.calc`.
-
 - **`hostinfo` uses a relative `./config.guess`** (works only from the right
   cwd) and depends on `nproc`.
-
-- **`array.pop` has no alias and wrong semantics.**  `array/pop.shlib` defines
-  `__shlib_array_pop` but never aliases it (like the insert/join bug that was
-  fixed), and its body re-serializes the whole array rather than removing and
-  returning the last element.  Decide the intended `pop` semantics, implement
-  them, and add the `array.pop` alias -- or remove the file if `pop` is not
-  wanted.
 
 ## Core enhancements
 
@@ -95,14 +82,21 @@ the test framework and the package-versioning design (see docs/packages.md).
   - **Staging + uninstall.**  `DESTDIR`/`${ED}`-style staging and a `CONTENTS`
     manifest recorded at install so a package can be removed cleanly.
 
-- **Pure-shell math.**  Replace the remaining `awk`/`zsh` external fallbacks and
-  the zsh native `$(( fn() ))` branches in the math library with pure-shell
-  fixed-point implementations.  (The ksh93 native `.sh.math.*` branches and the
-  external `ksh -c` per-call forks are already gone with the ksh93 block.)
-  Removes fork-per-call, works on every shell, and clears the ShellCheck `-s
-  sh` parse errors the `$(( fn() ))` branches cause.  `calc.shlib`/`cmp.shlib`
-  still carry generic ksh integer `$(())`/`(())` fallbacks (valid on mksh/lksh);
-  fold those in here too.
+- **Pure-shell math.**  *(integer evaluator landed)*  A fork-free tokenizer
+  (`token`) and integer expression evaluator (`math.eval`) now back `math.calc`
+  and the integer path of `math.cmp`: malformed input is rejected cleanly (no
+  fatal `$(( ))`, no fork).  See the `parse-toolkit` spec.  Remaining is the
+  *float* half, which the integer evaluator cannot cover: `math.int`,
+  `math.seq`'s float path, and the transcendental functions (`sin`, `cos`,
+  `exp`, `log`, `sqrt`, `atan2`, `rand`) still fall back to `awk`/`zsh`, and it
+  is their zsh native `$(( fn() ))` branches that cause the ShellCheck `-s sh`
+  parse errors.  A pure-shell fixed-point *float* evaluator (a second consumer
+  of `token`) is the follow-on that removes those forks and parse errors.
+
+- **SHLIB_RESULT rollout for math.**  `math.calc`/`math.sum`/`math.cmp` still
+  echo/return-status rather than publishing `SHLIB_RESULT`.  Migrating them is
+  deferred to the project-wide SHLIB_RESULT rollout so all of `math` flips
+  together, rather than leaving the library half-migrated.
 
 ## Portability
 
