@@ -1,0 +1,28 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Tests for the core documentation display (shlib.doc / __shlib_doc), defined
+# by the launcher.  Full source-extracted docs are future work; these guard
+# that the function exists, displays a resolvable topic, and fails cleanly on
+# an unknown one (it used to be undefined, so -h/--help hard-failed).
+
+import test
+
+test_doc_displays_resolved_topic() {
+	# 'math' resolves to lib/math/__index__.md on the source SHLIB_PATH.
+	__out="$(__shlib_doc 'math')"
+	test.ne '' "${__out}" 'documentation for math is non-empty'
+}
+
+test_doc_alias_defined() {
+	# The interface main{} blocks call the shlib.doc alias; it must exist.
+	__out="$(shlib.doc 'math')"
+	test.ne '' "${__out}" 'shlib.doc alias resolves'
+}
+
+test_doc_unknown_topic_is_clean_error() {
+	test.error __shlib_doc 'no-such-topic-xyz'
+}
+
+# vim: filetype=sh

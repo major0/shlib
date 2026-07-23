@@ -380,6 +380,29 @@ __shlib_doc_resolv()
 	unset __shlib_doc_resolv_file
 }
 
+# __shlib_doc [<topic>]
+# Display the documentation for <topic> (a lib, a lib.iface, or a core topic),
+# resolved via SHLIB_PATH by __shlib_doc_resolv.  Prints the resolved markdown
+# to stdout with no fork; a topic with no documentation is a clean non-zero
+# return, not a hard failure.  (A richer, source-extracted doc system is future
+# work; this makes -h/--help usable in the meantime.)
+__shlib_doc()
+{
+	: "__shlib_doc($*)"
+	__shlib_doc_file="$(__shlib_doc_resolv "${1}")"
+	if test -n "${__shlib_doc_file}"; then
+		while IFS= read -r __shlib_doc_line || test -n "${__shlib_doc_line}"; do
+			printf '%s\n' "${__shlib_doc_line}"
+		done < "${__shlib_doc_file}"
+		unset __shlib_doc_file __shlib_doc_line
+		return 0
+	fi
+	unset __shlib_doc_file
+	error "no documentation for '${1:-shlib}'"
+	return 1
+}
+alias shlib.doc='__shlib_doc '
+
 __shlib_imported()
 {
 	: "__shlib_imported($#): $*"
