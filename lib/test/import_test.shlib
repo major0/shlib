@@ -1,0 +1,37 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Tests for the core import machinery (defined by the shlib launcher, always
+# present in the runtime).
+
+import test
+
+test_imported_guard_plain() {
+	# Register a plain name, then confirm the guard reports it imported.
+	__shlib_imported 'plainlib' 'x'
+	test.ok __shlib_imported 'plainlib'
+}
+
+test_imported_guard_hyphenated() {
+	# A hyphenated name must map to a valid guard-function name; before the
+	# fix the '-' produced an invalid function name, so the guard was never
+	# defined and the dedup check below reported "not imported".
+	__shlib_imported 'foo-bar' 'x'
+	test.ok __shlib_imported 'foo-bar'
+}
+
+test_imported_guard_dotted_and_slashed() {
+	# '.' and '/' have always mapped to '_'; keep them covered.
+	__shlib_imported 'a.b' 'x'
+	test.ok __shlib_imported 'a.b'
+	__shlib_imported 'c/d' 'x'
+	test.ok __shlib_imported 'c/d'
+}
+
+test_unimported_name_is_not_reported() {
+	# A name never registered must report "not imported" (non-zero).
+	test.error __shlib_imported 'never-registered-xyz'
+}
+
+# vim: filetype=sh

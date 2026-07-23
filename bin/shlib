@@ -383,7 +383,10 @@ __shlib_doc_resolv()
 __shlib_imported()
 {
 	: "__shlib_imported($#): $*"
-	__shlib_imported_lib="$(printf '%s' "$1"|tr '/.' '_')"
+	# Map the library name to an identifier-safe guard token: '/', '.' and
+	# '-' all become '_' so a hyphenated name (import foo-bar) yields a valid
+	# function name rather than a syntax error.
+	__shlib_imported_lib="$(printf '%s' "$1"|tr '/.-' '_')"
 	shift
 	set -- "${__shlib_imported_lib}" "$@"
 	unset __shlib_imported_lib
