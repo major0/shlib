@@ -1,0 +1,83 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Fork-free tokenizer core.  Scans a string into a space-separated token stream
+# using only parameter expansion and `case` -- no sed/awk/expr/grep, no
+# subshell.  Each token is '<type><lexeme>':
+#
+#   n<digits>   an integer (a maximal run of decimal digits)
+#   o<lexeme>   an operator/punctuation lexeme drawn from the caller's set
+#
+# The operator set is supplied by the caller, so the same scanner serves any
+# grammar whose lexemes are space-free (arithmetic here; a text grammar with
+# space-bearing lexemes would need an escape-aware variant).  Whitespace
+# separates tokens and is discarded.  A byte that is neither a digit, ASCII
+# whitespace, nor the start of an operator is a lexical error: token.scan
+# returns non-zero (it never aborts the caller).
+
+# token.scan <ops> <input>
+# <ops> is a space-separated list of operator lexemes (longest match wins).
+# Publishes the token stream in SHLIB_RESULT.
+__shlib_token_scan()
+{
+	: "__shlib_token_scan($*)"
+	__shlib_token_ops="${1}"
+	__shlib_token_in="${2}"
+	__shlib_token_out=''
+
+	while test -n "${__shlib_token_in}"; do
+		__shlib_token_c="${__shlib_token_in%"${__shlib_token_in#?}"}"
+		case "${__shlib_token_c}" in
+		(' '|'	')
+			# Discard a whitespace byte.
+			__shlib_token_in="${__shlib_token_in#?}"
+			continue
+			;;
+		([0-9])
+			# Peel the maximal leading run of digits.
+			__shlib_token_lex="${__shlib_token_in%%[!0-9]*}"
+			__shlib_token_in="${__shlib_token_in#"${__shlib_token_lex}"}"
+			__shlib_token_out="${__shlib_token_out} n${__shlib_token_lex}"
+			continue
+			;;
+		esac
+
+		# Longest-match an operator lexeme from the caller's set.  The set
+		# is peeled a word at a time with parameter expansion rather than
+		# `for op in ${ops}`, because an unquoted split would pathname-expand
+		# glob-special operators (*, ?, [).  Quoting the op in the pattern
+		# keeps it a literal prefix.
+		__shlib_token_best=''
+		__shlib_token_rest="${__shlib_token_ops}"
+		while test -n "${__shlib_token_rest}"; do
+			__shlib_token_op="${__shlib_token_rest%% *}"
+			case "${__shlib_token_rest}" in
+			(*' '*)	__shlib_token_rest="${__shlib_token_rest#* }";;
+			(*)	__shlib_token_rest='';;
+			esac
+			test -n "${__shlib_token_op}" || continue
+			case "${__shlib_token_in}" in
+			("${__shlib_token_op}"*)
+				if test "${#__shlib_token_op}" -gt "${#__shlib_token_best}"; then
+					__shlib_token_best="${__shlib_token_op}"
+				fi
+				;;
+			esac
+		done
+
+		test -n "${__shlib_token_best}" || return 1
+
+		__shlib_token_in="${__shlib_token_in#"${__shlib_token_best}"}"
+		__shlib_token_out="${__shlib_token_out} o${__shlib_token_best}"
+	done
+
+	# Drop the single leading space accumulated by the joins.
+	SHLIB_RESULT="${__shlib_token_out# }"
+	unset __shlib_token_ops __shlib_token_in __shlib_token_c \
+		__shlib_token_lex __shlib_token_best __shlib_token_op \
+		__shlib_token_rest __shlib_token_out
+}
+alias token.scan='__shlib_token_scan '
+
+# vim: filetype=sh

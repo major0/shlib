@@ -1,0 +1,66 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import token
+
+setup() {
+	# The arithmetic operator set (parens included; longest match wins).
+	OPS='( ) + - * / % << >> <= >= == != && || < > & | ^ ~ !'
+}
+
+test_single_number() {
+	__shlib_token_scan "${OPS}" '42'
+	test.eq 'n42' "${SHLIB_RESULT}" 'single number'
+}
+
+test_addition_spaced() {
+	__shlib_token_scan "${OPS}" '1 + 2'
+	test.eq 'n1 o+ n2' "${SHLIB_RESULT}" 'spaced addition'
+}
+
+test_addition_unspaced() {
+	__shlib_token_scan "${OPS}" '1+2'
+	test.eq 'n1 o+ n2' "${SHLIB_RESULT}" 'unspaced addition'
+}
+
+test_parentheses() {
+	__shlib_token_scan "${OPS}" '(1+2)*3'
+	test.eq 'o( n1 o+ n2 o) o* n3' "${SHLIB_RESULT}" 'parentheses'
+}
+
+test_multibyte_operator() {
+	__shlib_token_scan "${OPS}" '1 << 3'
+	test.eq 'n1 o<< n3' "${SHLIB_RESULT}" 'multi-byte operator'
+}
+
+test_multibyte_longest_match() {
+	__shlib_token_scan "${OPS}" '1<=2'
+	test.eq 'n1 o<= n2' "${SHLIB_RESULT}" 'longest match prefers <= over <'
+}
+
+test_unary_is_tokenized_as_op_then_number() {
+	__shlib_token_scan "${OPS}" '-5'
+	test.eq 'o- n5' "${SHLIB_RESULT}" 'unary minus is op + number (parser disambiguates)'
+}
+
+test_whitespace_runs_collapse() {
+	__shlib_token_scan "${OPS}" '   1   +   2   '
+	test.eq 'n1 o+ n2' "${SHLIB_RESULT}" 'runs of whitespace are discarded'
+}
+
+test_tab_whitespace() {
+	__shlib_token_scan "${OPS}" '1	+	2'
+	test.eq 'n1 o+ n2' "${SHLIB_RESULT}" 'tabs are whitespace'
+}
+
+test_empty_input() {
+	__shlib_token_scan "${OPS}" ''
+	test.eq '' "${SHLIB_RESULT}" 'empty input yields empty stream'
+}
+
+test_lexical_error() {
+	test.error __shlib_token_scan "${OPS}" '1 @ 2'
+}
+
+# vim: filetype=sh
