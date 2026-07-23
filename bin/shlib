@@ -599,7 +599,10 @@ if test "$(basename "${0}")" = 'shlib'; then
 		(V)	echo "shlib version $(__shlib_version)"; exit 0;;
 		(L)	test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
 			test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
-			SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
+			# Resolve to an absolute path: import cd's into a library's
+			# directory, so a relative entry would stop resolving after
+			# the first import.
+			SHLIB_PATH="$(__shlib_realpath "${OPTARG}"):${SHLIB_PATH}";;
 		(I)	SHLIB_IMPORTS="${SHLIB_IMPORTS} ${OPTARG}";;
 
 		# Support some traditional sh arguments.
@@ -641,7 +644,8 @@ if test "$(basename "${0}")" = 'shlib'; then
 				OPTARG="$(__shlib_getarg "${1}" "${2}")"
 				test -e "${OPTARG}" || die "no such directory '${OPTARG}'"
 				test -d "${OPTARG}" || die "not a directory '${OPTARG}'"
-				SHLIB_PATH="${OPTARG}:${SHLIB_PATH}";;
+				# Resolve to an absolute path (see -L above).
+				SHLIB_PATH="$(__shlib_realpath "${OPTARG}"):${SHLIB_PATH}";;
 
 			(--import|--import=*)
 				SHLIB_IMPORTS="${SHLIB_IMPORTS} $(__shlib_getarg "${1}" "${2}")";;
