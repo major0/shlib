@@ -36,4 +36,28 @@ test_multiplication() {
 	test.eq 15 "$(__shlib_math_calc '3 * 5')" 'multiplication'
 }
 
+test_precedence() {
+	test.eq 7 "$(__shlib_math_calc '1 + 2 * 3')" 'precedence'
+}
+
+test_parentheses() {
+	test.eq 9 "$(__shlib_math_calc '(1 + 2) * 3')" 'parentheses'
+}
+
+test_reject_trailing_operator() {
+	test.error __shlib_math_calc '1 +'
+}
+
+test_reject_divide_by_zero() {
+	test.error __shlib_math_calc '1 / 0'
+}
+
+test_malformed_does_not_abort() {
+	# In-process (not subshelled): a malformed expression must return, not
+	# abort, so the final assertion is reached.
+	__shlib_math_calc '1 +' || true
+	__shlib_math_calc '5 / 0' || true
+	test.ok true
+}
+
 # vim: filetype=sh

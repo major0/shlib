@@ -1,27 +1,14 @@
 # Copyright (c) 2014-2025 Mark Ferrell
 #
 # Licensed under the MIT License, see LICENSE for details.
+#
+# math.calc evaluates an integer arithmetic expression.  It is a thin front end
+# over the pure-shell evaluator (math.eval): all operands and operators are
+# joined into one expression, which the evaluator parses and computes without
+# forking and without ever hitting a fatal $(( )).  A malformed expression is
+# rejected with a non-zero status.
 
-if test $((1*1+1-1/1)) -eq '1'; then
-	__shlib_math_calc_cmd() { set +e;set -- "$(($*))"; set -- "${1}" "$?";set -e;test "$2" -eq '0' || return 1;echo "${1}"; }
-elif test "${SHLIB_SHELL}" = 'ksh'; then
-	__shlib_math_calc_cmd() { set +e;set -- "$(($*))"; set -- "${1}" "$?";set -e;test "$2" -eq '0' || return 1;echo "${1}"; }
-elif test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_calc_cmd() { set +e;set -- "$(($*))"; set -- "${1}" "$?";set -e;test "$?" -eq '0' || return 1;echo "${1%.}"; }
-elif shlib.hascmd calc; then
-	__shlib_math_calc_cmd() { command calc -p "$*"; }
-elif shlib.hascmd gawk; then
-	__shlib_math_calc_cmd() { command awk "BEGIN{ print $*; }"; }
-elif shlib.hascmd awk; then
-	__shlib_math_calc_cmd() { command awk "BEGIN{ print $*; }"; }
-elif shlib.hascmd ksh; then
-	__shlib_math_calc_cmd() { command ksh -c "echo \$(($*))"; }
-elif shlib.hascmd zsh; then
-	__shlib_math_calc_cmd() { command zsh -c "result=\$(($*));echo \${result%.}"; }
-else
-	shlib.error 'no suitable method for doing math'
-	return 1
-fi
+import math.eval
 
 __shlib_math_calc()
 {
@@ -38,7 +25,8 @@ __shlib_math_calc()
 		return 1
 	fi
 
-	__shlib_math_calc_cmd "${@}"
+	__shlib_math_eval "$*" || return 1
+	echo "${SHLIB_RESULT}"
 }
 alias math.calc='__shlib_math_calc '
 
