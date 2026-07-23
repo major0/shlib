@@ -20,4 +20,16 @@ test_floating_point_comparison() {
 	test.ok __shlib_math_cmp '0 == 0.0'
 }
 
+test_integer_comparison_true() {
+	test.ok __shlib_math_cmp '3 > 2'
+}
+
+test_integer_comparison_false() {
+	test.error __shlib_math_cmp '2 > 3'
+}
+
+test_integer_malformed_is_error() {
+	test.error __shlib_math_cmp '1 +'
+}
+
 # vim: filetype=sh

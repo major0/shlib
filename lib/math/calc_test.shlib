@@ -60,4 +60,10 @@ test_malformed_does_not_abort() {
 	test.ok true
 }
 
+test_float_still_supported() {
+	# Floating-point expressions route to the float backend, not the
+	# integer evaluator; they must keep working.
+	test.ok __shlib_math_calc '0.5 + 0.5'
+}
+
 # vim: filetype=sh

@@ -1,19 +1,39 @@
 # Copyright (c) 2014-2025 Mark Ferrell
 #
 # Licensed under the MIT License, see LICENSE for details.
+#
+# math.cmp evaluates a comparison and returns success (0) when it is true.  An
+# integer comparison uses the pure-shell evaluator -- fork-free on every shell,
+# where previously non-ksh/zsh shells forked awk.  A comparison involving a
+# floating-point operand ('.') falls back to a per-shell float backend, since
+# the evaluator is integer-only.
 
-if test "${SHLIB_SHELL}" = 'ksh' || test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cmp_cmd() { set +e;(($*)); set -e; }
-elif shlib.hascmd awk; then
-	__shlib_math_cmp_cmd() { awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
+import math.eval
+
+# awk is preferred (broad float support, and a clean failure on bad input).
+# Native $(( )) float is used only on shells that actually do floats -- ksh93
+# and zsh, NOT mksh/lksh, which are integer-only despite reporting the ksh
+# family.
+if shlib.hascmd awk; then
+	__shlib_math_cmp_float() { command awk "BEGIN{ if ($*) { exit 0;} else { exit 1;} }"; }
+elif test "${SHLIB_SHELL_IMPL}" = 'ksh93' || test "${SHLIB_SHELL_IMPL}" = 'zsh'; then
+	__shlib_math_cmp_float() { test "$(($*))" -ne 0; }
 elif shlib.hascmd ksh; then
-	__shlib_math_cmp_cmd() { ksh -c "(($*))"; }
+	__shlib_math_cmp_float() { command ksh -c "(($*))"; }
 elif shlib.hascmd zsh; then
-	__shlib_math_cmp_cmd() { zsh -c "(($*))"; }
+	__shlib_math_cmp_float() { command zsh -c "(($*))"; }
 else
-	shlib.error 'no suitable method for float equality'
-	return 1
+	__shlib_math_cmp_float() { shlib.error 'math.cmp: no floating-point backend'; return 1; }
 fi
+
+__shlib_math_cmp_cmd()
+{
+	case "$*" in
+	(*.*)	__shlib_math_cmp_float "$*";;
+	(*)	__shlib_math_eval "$*" || return 1
+		test "${SHLIB_RESULT}" -ne 0;;
+	esac
+}
 
 __shlib_math_cmp()
 {

@@ -2,13 +2,30 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 #
-# math.calc evaluates an integer arithmetic expression.  It is a thin front end
-# over the pure-shell evaluator (math.eval): all operands and operators are
-# joined into one expression, which the evaluator parses and computes without
-# forking and without ever hitting a fatal $(( )).  A malformed expression is
-# rejected with a non-zero status.
+# math.calc evaluates an arithmetic expression.  An integer expression is
+# handled by the pure-shell evaluator (math.eval): fork-free, and a malformed
+# expression is rejected with a non-zero status instead of the fatal $(( ))
+# that would otherwise abort the caller.  An expression containing a floating
+# point operand ('.') falls back to a float backend, since the evaluator is
+# integer-only.
 
 import math.eval
+
+# Float backend, selected once per shell.  awk is preferred: it is widely
+# present and, being a separate process, a malformed float expression fails
+# cleanly rather than aborting.  Native $(( )) float support (zsh, ksh93) is
+# used only when awk is absent.
+if shlib.hascmd awk; then
+	__shlib_math_calc_float() { command awk "BEGIN{ print $* }"; }
+elif test "${SHLIB_SHELL_IMPL}" = 'zsh' || test "${SHLIB_SHELL_IMPL}" = 'ksh93'; then
+	__shlib_math_calc_float() { set -- "$(($*))"; echo "${1%.}"; }
+elif shlib.hascmd ksh; then
+	__shlib_math_calc_float() { command ksh -c "echo \$(($*))"; }
+elif shlib.hascmd zsh; then
+	__shlib_math_calc_float() { command zsh -c "__r=\$(($*)); echo \"\${__r%.}\""; }
+else
+	__shlib_math_calc_float() { shlib.error 'math.calc: no floating-point backend'; return 1; }
+fi
 
 __shlib_math_calc()
 {
@@ -25,8 +42,11 @@ __shlib_math_calc()
 		return 1
 	fi
 
-	__shlib_math_eval "$*" || return 1
-	echo "${SHLIB_RESULT}"
+	case "$*" in
+	(*.*)	__shlib_math_calc_float "$*";;
+	(*)	__shlib_math_eval "$*" || return 1
+		echo "${SHLIB_RESULT}";;
+	esac
 }
 alias math.calc='__shlib_math_calc '
 
