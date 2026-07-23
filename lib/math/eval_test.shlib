@@ -1,0 +1,120 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.eval
+
+# --- values ---------------------------------------------------------------
+
+test_number() {
+	__shlib_math_eval '42'
+	test.eq '42' "${SHLIB_RESULT}" 'a bare number'
+}
+
+test_addition() {
+	__shlib_math_eval '1 + 2'
+	test.eq '3' "${SHLIB_RESULT}" 'addition'
+}
+
+test_precedence() {
+	__shlib_math_eval '1 + 2 * 3'
+	test.eq '7' "${SHLIB_RESULT}" 'multiplication binds tighter than addition'
+}
+
+test_parentheses_override_precedence() {
+	__shlib_math_eval '(1 + 2) * 3'
+	test.eq '9' "${SHLIB_RESULT}" 'parentheses override precedence'
+}
+
+test_nested_parentheses() {
+	__shlib_math_eval '((1 + 2) * (3 + 4))'
+	test.eq '21' "${SHLIB_RESULT}" 'nested parentheses'
+}
+
+test_unary_plus() {
+	__shlib_math_eval '+1'
+	test.eq '1' "${SHLIB_RESULT}" 'unary plus'
+}
+
+test_unary_minus() {
+	__shlib_math_eval '-3'
+	test.eq '-3' "${SHLIB_RESULT}" 'unary minus'
+}
+
+test_binary_then_unary() {
+	__shlib_math_eval '1 + -2'
+	test.eq '-1' "${SHLIB_RESULT}" 'binary plus, unary minus operand'
+}
+
+test_double_negation() {
+	__shlib_math_eval '- -5'
+	test.eq '5' "${SHLIB_RESULT}" 'double negation'
+}
+
+test_division() {
+	__shlib_math_eval '20 / 4'
+	test.eq '5' "${SHLIB_RESULT}" 'division'
+}
+
+test_modulus() {
+	__shlib_math_eval '17 % 5'
+	test.eq '2' "${SHLIB_RESULT}" 'modulus'
+}
+
+test_shift() {
+	__shlib_math_eval '1 << 4'
+	test.eq '16' "${SHLIB_RESULT}" 'left shift'
+}
+
+test_bitwise_and() {
+	__shlib_math_eval '6 & 3'
+	test.eq '2' "${SHLIB_RESULT}" 'bitwise and'
+}
+
+test_comparison_true() {
+	__shlib_math_eval '3 > 2'
+	test.eq '1' "${SHLIB_RESULT}" 'comparison true is 1'
+}
+
+test_comparison_false() {
+	__shlib_math_eval '2 > 3'
+	test.eq '0' "${SHLIB_RESULT}" 'comparison false is 0'
+}
+
+test_logical_and() {
+	__shlib_math_eval '1 && 0'
+	test.eq '0' "${SHLIB_RESULT}" 'logical and'
+}
+
+test_leading_zero_is_decimal() {
+	__shlib_math_eval '08 + 1'
+	test.eq '9' "${SHLIB_RESULT}" 'leading zero treated as decimal, not octal'
+}
+
+# --- clean rejections (subshelled by test.error) --------------------------
+
+test_reject_trailing_operator() { test.error __shlib_math_eval '1 +'; }
+test_reject_leading_binary()    { test.error __shlib_math_eval '* 3'; }
+test_reject_empty_parens()      { test.error __shlib_math_eval '()'; }
+test_reject_unbalanced_open()   { test.error __shlib_math_eval '(1'; }
+test_reject_unbalanced_close()  { test.error __shlib_math_eval '1)'; }
+test_reject_adjacent_operands() { test.error __shlib_math_eval '1 2'; }
+test_reject_empty()             { test.error __shlib_math_eval ''; }
+test_reject_bad_char()          { test.error __shlib_math_eval '1 @ 2'; }
+test_reject_div_by_zero()       { test.error __shlib_math_eval '1 / 0'; }
+test_reject_mod_by_zero()       { test.error __shlib_math_eval '5 % 0'; }
+
+# --- the whole point: malformed input must NOT abort the caller -----------
+
+test_malformed_does_not_abort() {
+	# These run in-process (not via test.error's subshell).  If any aborted
+	# the shell instead of returning non-zero, the test would die here and
+	# never reach the final assertion.
+	__shlib_math_eval '1 +' || true
+	__shlib_math_eval '1 / 0' || true
+	__shlib_math_eval '1 @ 2' || true
+	__shlib_math_eval '(1' || true
+	test.ok true
+}
+
+# vim: filetype=sh

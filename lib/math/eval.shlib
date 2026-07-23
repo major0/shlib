@@ -1,0 +1,202 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+#
+# Pure-shell integer expression evaluator.
+#
+# math.eval <expr> tokenizes <expr> (via token.scan) and evaluates it with an
+# iterative two-stack (shunting-yard) algorithm: operator precedence and
+# parentheses are honoured, and the arithmetic is done with $(( )) on
+# already-validated single integer operands only, so no path can hit a fatal
+# arithmetic error.  A malformed expression returns non-zero and sets no result
+# -- it neither aborts the caller nor forks a subshell.  The value is published
+# in SHLIB_RESULT.
+#
+# Integers are decimal; a leading-zero run is stripped so "08" is 8 rather than
+# a fatal octal parse.  Hex/octal and floats are out of scope for this evaluator.
+
+import token
+
+# The arithmetic operator set handed to the tokenizer (longest match wins).
+__shlib_math_ops='( ) + - * / % << >> <= >= == != && || < > & | ^ ~ !'
+
+# __shlib_math_prec <op-on-stack>
+# Set __shlib_math_p to the precedence of a stacked operator (higher binds
+# tighter).  Unary markers are 'u<op>'; '(' and unknowns are 0.
+__shlib_math_prec()
+{
+	case "${1}" in
+	(u+|u-|u~|u!)		__shlib_math_p=11;;
+	('*'|/|%)		__shlib_math_p=10;;
+	(+|-)			__shlib_math_p=9;;
+	('<<'|'>>')		__shlib_math_p=8;;
+	('<'|'<='|'>'|'>=')	__shlib_math_p=7;;
+	('=='|'!=')		__shlib_math_p=6;;
+	(\&)			__shlib_math_p=5;;
+	(^)			__shlib_math_p=4;;
+	('|')			__shlib_math_p=3;;
+	('&&')			__shlib_math_p=2;;
+	('||')			__shlib_math_p=1;;
+	(*)			__shlib_math_p=0;;
+	esac
+}
+
+# __shlib_math_apply <op-on-stack>
+# Pop operand(s) off the value stack, apply the operator, push the result.
+# Returns non-zero on a stack underflow or a division/modulus by zero.
+__shlib_math_apply()
+{
+	case "${1}" in
+	(u*)
+		test -n "${__shlib_math_vs}" || return 1
+		__shlib_math_a="${__shlib_math_vs%% *}"
+		__shlib_math_vs="${__shlib_math_vs#* }"
+		case "${1#u}" in
+		(+)	__shlib_math_r=$((+__shlib_math_a));;
+		(-)	__shlib_math_r=$((-__shlib_math_a));;
+		(~)	__shlib_math_r=$((~__shlib_math_a));;
+		(!)	__shlib_math_r=$((!__shlib_math_a));;
+		(*)	return 1;;
+		esac
+		;;
+	(*)
+		test -n "${__shlib_math_vs}" || return 1
+		__shlib_math_b="${__shlib_math_vs%% *}"
+		__shlib_math_vs="${__shlib_math_vs#* }"
+		test -n "${__shlib_math_vs}" || return 1
+		__shlib_math_a="${__shlib_math_vs%% *}"
+		__shlib_math_vs="${__shlib_math_vs#* }"
+		case "${1}" in
+		(+)	__shlib_math_r=$((__shlib_math_a + __shlib_math_b));;
+		(-)	__shlib_math_r=$((__shlib_math_a - __shlib_math_b));;
+		('*')	__shlib_math_r=$((__shlib_math_a * __shlib_math_b));;
+		(/)	test "${__shlib_math_b}" -ne 0 || return 1
+			__shlib_math_r=$((__shlib_math_a / __shlib_math_b));;
+		(%)	test "${__shlib_math_b}" -ne 0 || return 1
+			__shlib_math_r=$((__shlib_math_a % __shlib_math_b));;
+		('<<')	__shlib_math_r=$((__shlib_math_a << __shlib_math_b));;
+		('>>')	__shlib_math_r=$((__shlib_math_a >> __shlib_math_b));;
+		('<')	__shlib_math_r=$((__shlib_math_a < __shlib_math_b));;
+		('<=')	__shlib_math_r=$((__shlib_math_a <= __shlib_math_b));;
+		('>')	__shlib_math_r=$((__shlib_math_a > __shlib_math_b));;
+		('>=')	__shlib_math_r=$((__shlib_math_a >= __shlib_math_b));;
+		('==')	__shlib_math_r=$((__shlib_math_a == __shlib_math_b));;
+		('!=')	__shlib_math_r=$((__shlib_math_a != __shlib_math_b));;
+		(\&)	__shlib_math_r=$((__shlib_math_a & __shlib_math_b));;
+		(^)	__shlib_math_r=$((__shlib_math_a ^ __shlib_math_b));;
+		('|')	__shlib_math_r=$((__shlib_math_a | __shlib_math_b));;
+		('&&')	__shlib_math_r=$((__shlib_math_a && __shlib_math_b));;
+		('||')	__shlib_math_r=$((__shlib_math_a || __shlib_math_b));;
+		(*)	return 1;;
+		esac
+		;;
+	esac
+	__shlib_math_vs="${__shlib_math_r} ${__shlib_math_vs}"
+}
+
+# math.eval <expr>
+# Evaluate an integer arithmetic expression; SHLIB_RESULT gets the value.
+__shlib_math_eval()
+{
+	: "__shlib_math_eval($*)"
+	__shlib_token_scan "${__shlib_math_ops}" "${1}" || return 1
+	__shlib_math_toks="${SHLIB_RESULT}"
+
+	__shlib_math_vs=''		# value stack (top first, trailing space)
+	__shlib_math_os=''		# operator stack (top first, trailing space)
+	__shlib_math_expect='operand'
+
+	while test -n "${__shlib_math_toks}"; do
+		__shlib_math_t="${__shlib_math_toks%% *}"
+		case "${__shlib_math_toks}" in
+		(*' '*)	__shlib_math_toks="${__shlib_math_toks#* }";;
+		(*)	__shlib_math_toks='';;
+		esac
+
+		case "${__shlib_math_t}" in
+		(n*)
+			test "${__shlib_math_expect}" = 'operand' || return 1
+			__shlib_math_num="${__shlib_math_t#n}"
+			# Force decimal: strip leading zeros ("08" -> "8", "0" -> "0").
+			while :; do
+				case "${__shlib_math_num}" in
+				(0?*)	__shlib_math_num="${__shlib_math_num#0}";;
+				(*)	break;;
+				esac
+			done
+			__shlib_math_vs="${__shlib_math_num} ${__shlib_math_vs}"
+			__shlib_math_expect='operator'
+			;;
+		(o*)
+			__shlib_math_o="${__shlib_math_t#o}"
+			case "${__shlib_math_o}" in
+			('(')
+				test "${__shlib_math_expect}" = 'operand' || return 1
+				__shlib_math_os="( ${__shlib_math_os}"
+				;;
+			(')')
+				test "${__shlib_math_expect}" = 'operator' || return 1
+				while :; do
+					test -n "${__shlib_math_os}" || return 1
+					__shlib_math_top="${__shlib_math_os%% *}"
+					case "${__shlib_math_top}" in ('(') break;; esac
+					__shlib_math_apply "${__shlib_math_top}" || return 1
+					__shlib_math_os="${__shlib_math_os#* }"
+				done
+				__shlib_math_os="${__shlib_math_os#* }"
+				;;
+			(*)
+				if test "${__shlib_math_expect}" = 'operand'; then
+					# Only + - ~ ! are valid in prefix position.
+					case "${__shlib_math_o}" in
+					(+|-|~|!)	;;
+					(*)		return 1;;
+					esac
+					__shlib_math_os="u${__shlib_math_o} ${__shlib_math_os}"
+				else
+					__shlib_math_prec "${__shlib_math_o}"
+					__shlib_math_cur="${__shlib_math_p}"
+					while test -n "${__shlib_math_os}"; do
+						__shlib_math_top="${__shlib_math_os%% *}"
+						case "${__shlib_math_top}" in ('(') break;; esac
+						__shlib_math_prec "${__shlib_math_top}"
+						test "${__shlib_math_p}" -ge "${__shlib_math_cur}" || break
+						__shlib_math_apply "${__shlib_math_top}" || return 1
+						__shlib_math_os="${__shlib_math_os#* }"
+					done
+					__shlib_math_os="${__shlib_math_o} ${__shlib_math_os}"
+					__shlib_math_expect='operand'
+				fi
+				;;
+			esac
+			;;
+		(*)	return 1;;
+		esac
+	done
+
+	# A complete expression ends expecting an operator (last token was an
+	# operand or a close-paren), never mid-operator.
+	test "${__shlib_math_expect}" = 'operator' || return 1
+
+	# Drain the operator stack.
+	while test -n "${__shlib_math_os}"; do
+		__shlib_math_top="${__shlib_math_os%% *}"
+		case "${__shlib_math_top}" in ('(') return 1;; esac
+		__shlib_math_apply "${__shlib_math_top}" || return 1
+		__shlib_math_os="${__shlib_math_os#* }"
+	done
+
+	# Exactly one value must remain.
+	test -n "${__shlib_math_vs}" || return 1
+	__shlib_math_res="${__shlib_math_vs%% *}"
+	__shlib_math_vs="${__shlib_math_vs#* }"
+	test -z "${__shlib_math_vs}" || return 1
+
+	SHLIB_RESULT="${__shlib_math_res}"
+	unset __shlib_math_toks __shlib_math_t __shlib_math_o __shlib_math_vs \
+		__shlib_math_os __shlib_math_expect __shlib_math_num __shlib_math_top \
+		__shlib_math_cur __shlib_math_res
+}
+alias math.eval='__shlib_math_eval '
+
+# vim: filetype=sh
