@@ -5,24 +5,10 @@ the test framework and the package-versioning design (see docs/packages.md).
 
 ## Known bugs
 
-- **Hyphens break library names.**  `__shlib_imported` maps a library name to
-  `__shlib_<name>_imported` with `tr '/.' '_'`, which does not sanitize `-`
-  (or other non-identifier characters), yielding an invalid function name and a
-  hard failure on `import foo-bar`.  Either sanitize such characters or require
-  and document identifier-safe library names.
-
-- **`-L <relative-dir>` stops resolving after an import.**  Importing a library
-  `cd`s into that library's directory, so a relative entry in `SHLIB_PATH` no
-  longer resolves afterward.  `-L` should be resolved to an absolute path
-  before being added to `SHLIB_PATH`.
-
-- **`shlib.doc` / `__shlib_doc` is undefined.**  The core `-h`/`--help`
-  handling and every interface's `main {}` block call it, so `shlib --help
-  <topic>` and interface `-h` fail.  Folds into the documentation-system work
-  below.
-
-- **`hostinfo` uses a relative `./config.guess`** (works only from the right
-  cwd) and depends on `nproc`.
+None currently tracked.  The Phase A foundation bugs -- hyphenated imports,
+relative `-L` resolution, the undefined `shlib.doc`, the `hostinfo`
+config.guess/nproc handling, and the `math` calc/sum/pop defects -- are fixed.
+Remaining shortfalls are captured under Core enhancements / Portability below.
 
 ## Core enhancements
 
