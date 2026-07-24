@@ -1,0 +1,25 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import hostinfo
+
+test_arch_nonempty() {
+	test.ne '' "$(hostinfo_arch)" 'arch is reported'
+}
+
+test_os_nonempty() {
+	test.ne '' "$(hostinfo_os)" 'os is reported'
+}
+
+test_full_triple_nonempty() {
+	test.ne '' "$(hostinfo_full)" 'full triple is reported'
+}
+
+test_nproc_is_positive_integer() {
+	__n="$(hostinfo_nproc)"
+	test.ok test "${__n}" -ge 1
+	unset __n
+}
+
+# vim: filetype=sh

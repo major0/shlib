@@ -2,7 +2,33 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-HOSTINFO="$(./config.guess)"
+# Locate config.guess beside this library on SHLIB_PATH (not via the current
+# directory), and run it through sh so it needs no execute bit.
+__hostinfo_guess=
+__hostinfo_ifs="${IFS}"
+IFS=':'
+# shellcheck disable=SC2086  # intentional word-split of the :-list SHLIB_PATH
+for __hostinfo_dir in ${SHLIB_PATH}; do
+	if test -f "${__hostinfo_dir}/hostinfo/config.guess"; then
+		__hostinfo_guess="${__hostinfo_dir}/hostinfo/config.guess"
+		break
+	fi
+done
+IFS="${__hostinfo_ifs}"
+unset __hostinfo_ifs __hostinfo_dir
+
+HOSTINFO=
+test -z "${__hostinfo_guess}" || HOSTINFO="$(sh "${__hostinfo_guess}" 2>/dev/null)"
+unset __hostinfo_guess
+
+# Fall back to uname when config.guess is unavailable or produced nothing.
+if test -z "${HOSTINFO}"; then
+	__hostinfo_m="$(uname -m 2>/dev/null)"
+	__hostinfo_s="$(uname -s 2>/dev/null)"
+	HOSTINFO="${__hostinfo_m:-unknown}-unknown-${__hostinfo_s:-unknown}"
+	unset __hostinfo_m __hostinfo_s
+fi
+
 HOSTINFO_ARCH="${HOSTINFO%%-*}"
 HOSTINFO_VENDOR="${HOSTINFO#*-}"
 HOSTINFO_VENDOR="${HOSTINFO_VENDOR%%-*}"
@@ -20,13 +46,20 @@ eval "hostinfo_vendor() { echo '${HOSTINFO_VENDOR}'; }"
 eval "hostinfo_os() { echo '${HOSTINFO_OS}'; }"
 eval "hostinfo_libc() { echo '${HOSTINFO_LIBC}'; }"
 
-# Number of procossors on system
-case "${HOSTINFO}" in
-(*linux*)	eval "hostinfo_nproc() { echo `nproc`; }";;
-
-# Default to returning 1 CPU if we do not know how to handle the platform.
-(*)	eval 'hostinfo_nproc() { echo 1; }';;
-esac
+# Number of processors on the system, computed on demand with portable
+# fallbacks and no hard dependency on nproc.
+hostinfo_nproc()
+{
+	if __shlib_hascmd nproc; then
+		nproc
+	elif test -r /proc/cpuinfo; then
+		grep -c '^processor' /proc/cpuinfo
+	elif __shlib_hascmd sysctl; then
+		sysctl -n hw.ncpu 2>/dev/null || echo 1
+	else
+		echo 1
+	fi
+}
 
 hostinfo()
 {
@@ -38,10 +71,10 @@ hostinfo()
 		(-o|--os)	hostinfo_os; return;;
 		(-l|--libc)	hostinfo_libc; return;;
 		(-n|--nproc)	hostinfo_nproc; return;;
+		(--)		shift; break;;
 		(-*)		error "unknown option '${1}'"
 				echo "try 'hostinfo --help'" >&2
 				return 1;;
-		(--)		shift; break;;
 		(*)		break;;
 		esac
 	done
