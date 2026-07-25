@@ -2,9 +2,7 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-if test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_cos_cmd() { set -- "$((cos($*)))"; echo "${1%.}"; }
-elif shlib.hascmd 'gawk'; then
+if shlib.hascmd 'gawk'; then
 	__shlib_math_cos_cmd() { command gawk "BEGIN{ printf(\"%0.20f\n\",cos($*)); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_cos_cmd() { command awk "BEGIN{ printf(\"%0.20f\n\",cos($*)); }"; }
@@ -34,7 +32,7 @@ __shlib_math_cos()
 		return 1
 	fi
 
-	__shlib_math_cos_cmd "${@}"
+	SHLIB_RESULT="$(__shlib_math_cos_cmd "${@}")"
 }
 alias math.cos='__shlib_math_cos '
 
@@ -43,6 +41,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.cos';; esac
 	done
 	__shlib_math_cos "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

@@ -17,7 +17,8 @@ test_exec() {
 }
 
 test_value() {
-	test.eq '0.5403023059' "$(shlib.printf '%0.10f' "$(__shlib_math_cos 1)")" 'cos(1)'
+	__shlib_math_cos 1
+	test.eq '0.5403023059' "$(shlib.printf '%0.10f' "${SHLIB_RESULT}")" 'cos(1)'
 }
 
 # vim: filetype=sh

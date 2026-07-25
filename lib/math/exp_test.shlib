@@ -17,7 +17,8 @@ test_exec() {
 }
 
 test_value() {
-	test.eq '2.71828' "$(__shlib_math_exp 1)" 'exp(1)'
+	__shlib_math_exp 1
+	test.eq '2.71828' "${SHLIB_RESULT}" 'exp(1)'
 }
 
 # vim: filetype=sh

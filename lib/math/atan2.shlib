@@ -30,7 +30,7 @@ __shlib_math_atan2()
 		return 1
 	fi
 
-	__shlib_math_atan2_cmd "${@}"
+	SHLIB_RESULT="$(__shlib_math_atan2_cmd "${@}")"
 }
 alias math.atan2='__shlib_math_atan2 '
 
@@ -39,6 +39,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.atan2';; esac
 	done
 	__shlib_math_atan2 "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

@@ -13,7 +13,8 @@ test_exec() {
 }
 
 test_float_to_int() {
-	test.eq 2 "$(__shlib_math_int 2.0)" 'float to int'
+	__shlib_math_int 2.0
+	test.eq 2 "${SHLIB_RESULT}" 'float to int'
 }
 
 # vim: filetype=sh

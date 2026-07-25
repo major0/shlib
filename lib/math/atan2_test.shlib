@@ -21,7 +21,8 @@ test_exec() {
 }
 
 test_value() {
-	test.eq '1.5707963' "$(shlib.printf '%0.7f' "$(__shlib_math_atan2 1 0)")" 'atan2(1, 0)'
+	__shlib_math_atan2 1 0
+	test.eq '1.5707963' "$(shlib.printf '%0.7f' "${SHLIB_RESULT}")" 'atan2(1, 0)'
 }
 
 # vim: filetype=sh
