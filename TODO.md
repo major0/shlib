@@ -28,15 +28,21 @@ Remaining shortfalls are captured under Core enhancements / Portability below.
   timing as `$?`/`$!`), interfaces emit nothing to stdout, and only the CLI
   boundary (`shlib.main`) prints it.  There is no `shlib.return` helper -- a
   function's `return` cannot set its caller's `$?` (proven), so it is a plain
-  assignment plus native `return`.  Piloted on `string.escape` and the `array`
-  lib (leak filter already exempts `SHLIB_RESULT`).  Remaining: (1) pin the
-  convention in a `doc/` note and a steering rule before it spreads; (2) roll it
-  out to the rest of `string`, then `math`, etc. -- each interface is a
-  flag-day migration that must move together with its callers and tests, since
-  the moment it stops echoing every `$(...)` caller breaks; (3) a fork-free
-  interface can only build its result with pure parameter expansion, so libs
-  that lean on external tools (e.g. anything needing `printf`/`sed`) want a
-  pure-shell rewrite first.
+  assignment plus native `return`.  Migrated so far: the `array`, `math`, and
+  `string` libs (value-returning interfaces publish `SHLIB_RESULT`; status
+  predicates such as `math.cmp`, `string.compare`, and `string.regexp` keep
+  using the exit status; `math.seq` stays a documented stream generator).  The
+  convention is pinned in `docs/result.md` + a steering rule.  Remaining: (1)
+  the `system`, `hostinfo`, and `experimental` libs; (2) a fork-free interface
+  can only build its result with pure parameter expansion, so the libs that
+  still lean on external tools want a pure-shell rewrite -- see the follow-ups
+  below.
+
+- **Pure-shell string backends.**  `string.tolower`/`toupper` still shell out
+  to `tr`, and `string.match`/`sub`/`regexp` to `awk`.  Case conversion has a
+  straightforward fork-free rewrite (a character-class map); the regex-based
+  interfaces need the same regex engine a broader BRE/ERE capability would
+  provide.  (`string.compare`/`index`/`escape` are already fork-free.)
 
 - **Documentation system.**  Extract documentation from the `.shlib` sources
   instead of maintaining parallel `.md` files.  Expose via `shlib doc
