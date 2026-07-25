@@ -1,0 +1,21 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import string.sub
+
+test_too_few_arguments() {
+	test.error __shlib_string_sub a b
+}
+
+test_substitute_first() {
+	__shlib_string_sub l L hello
+	test.eq 'heLlo' "${SHLIB_RESULT}" 'substitute the first match'
+}
+
+test_no_match_unchanged() {
+	__shlib_string_sub z Z hello
+	test.eq 'hello' "${SHLIB_RESULT}" 'no match leaves the string unchanged'
+}
+
+# vim: filetype=sh

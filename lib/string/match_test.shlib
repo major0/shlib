@@ -1,0 +1,21 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import string.match
+
+test_too_few_arguments() {
+	test.error __shlib_string_match a
+}
+
+test_found() {
+	__shlib_string_match l hello
+	test.eq 3 "${SHLIB_RESULT}" 'match l in hello'
+}
+
+test_not_found() {
+	__shlib_string_match z hello
+	test.eq 0 "${SHLIB_RESULT}" 'no match is 0'
+}
+
+# vim: filetype=sh

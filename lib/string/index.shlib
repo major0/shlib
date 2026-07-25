@@ -4,11 +4,11 @@
 
 __shlib_string_index_cmd()
 {
-	set -- "${2%%${1}*}" "${@}"
+	set -- "${2%%"${1}"*}" "${@}"
 	if test "${1}" = "${3}"; then
-		echo 0
+		SHLIB_RESULT=0
 	else
-		echo $((${#1} + 1))
+		SHLIB_RESULT=$((${#1} + 1))
 	fi
 }
 
@@ -39,9 +39,10 @@ alias string.index='__shlib_string_index '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help) string.doc 'string.index';; esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.index';; esac
 	done
 	__shlib_string_index "$@"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

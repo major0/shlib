@@ -28,15 +28,16 @@ __shlib_string_match()
 		return 1
 	fi
 
-	__shlib_string_match_cmd "$@"
+	SHLIB_RESULT="$(__shlib_string_match_cmd "$@")"
 }
 alias string.match='__shlib_string_match '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help) string.doc 'string.match';; esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.match';; esac
 	done
 	__shlib_string_match "${1}" "${2}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

@@ -34,15 +34,16 @@ __shlib_string_sub()
 		return 1
 	fi
 
-	__shlib_string_sub_cmd "$@"
+	SHLIB_RESULT="$(__shlib_string_sub_cmd "$@")"
 }
 alias string.sub='__shlib_string_sub '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help) string.doc 'string.sub';; esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.sub';; esac
 	done
-	__shlib_string_sub "${1}" "${2}"
+	__shlib_string_sub "$@"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh
