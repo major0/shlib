@@ -14,7 +14,6 @@ else
 	shlib.error 'no way to implement string.regexp'
 	return 1
 fi
-alias string.regexp='__shlib_string_regexp '
 
 __shlib_string_regexp()
 {
@@ -50,7 +49,7 @@ alias string.regexp='__shlib_string_regexp '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help) string.doc 'string.regexp';; esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.regexp';; esac
 	done
 	__shlib_string_regexp "${1}" "${2}"
 }
