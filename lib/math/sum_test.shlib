@@ -5,19 +5,23 @@
 import math.sum
 
 test_no_arguments_is_zero() {
-	test.eq '0' "$(__shlib_math_sum)" 'empty sum is 0'
+	__shlib_math_sum
+	test.eq '0' "${SHLIB_RESULT}" 'empty sum is 0'
 }
 
 test_single_operand() {
-	test.eq '5' "$(__shlib_math_sum 5)" 'single operand'
+	__shlib_math_sum 5
+	test.eq '5' "${SHLIB_RESULT}" 'single operand'
 }
 
 test_sum_of_several() {
-	test.eq '6' "$(__shlib_math_sum 1 2 3)" 'sum of three operands'
+	__shlib_math_sum 1 2 3
+	test.eq '6' "${SHLIB_RESULT}" 'sum of three operands'
 }
 
 test_sum_with_negative() {
-	test.eq '0' "$(__shlib_math_sum 5 -5)" 'sum including a negative'
+	__shlib_math_sum 5 -5
+	test.eq '0' "${SHLIB_RESULT}" 'sum including a negative'
 }
 
 # vim: filetype=sh

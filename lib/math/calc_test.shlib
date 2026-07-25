@@ -21,27 +21,33 @@ test_expression() {
 }
 
 test_addition() {
-	test.eq 2 "$(__shlib_math_calc '1 + 1')" 'addition'
+	__shlib_math_calc '1 + 1'
+	test.eq 2 "${SHLIB_RESULT}" 'addition'
 }
 
 test_subtraction() {
-	test.eq 1 "$(__shlib_math_calc '2 - 1')" 'subtraction'
+	__shlib_math_calc '2 - 1'
+	test.eq 1 "${SHLIB_RESULT}" 'subtraction'
 }
 
 test_division() {
-	test.eq 10 "$(__shlib_math_calc '20 / 2')" 'division'
+	__shlib_math_calc '20 / 2'
+	test.eq 10 "${SHLIB_RESULT}" 'division'
 }
 
 test_multiplication() {
-	test.eq 15 "$(__shlib_math_calc '3 * 5')" 'multiplication'
+	__shlib_math_calc '3 * 5'
+	test.eq 15 "${SHLIB_RESULT}" 'multiplication'
 }
 
 test_precedence() {
-	test.eq 7 "$(__shlib_math_calc '1 + 2 * 3')" 'precedence'
+	__shlib_math_calc '1 + 2 * 3'
+	test.eq 7 "${SHLIB_RESULT}" 'precedence'
 }
 
 test_parentheses() {
-	test.eq 9 "$(__shlib_math_calc '(1 + 2) * 3')" 'parentheses'
+	__shlib_math_calc '(1 + 2) * 3'
+	test.eq 9 "${SHLIB_RESULT}" 'parentheses'
 }
 
 test_reject_trailing_operator() {

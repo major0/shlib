@@ -43,9 +43,8 @@ __shlib_math_calc()
 	fi
 
 	case "$*" in
-	(*.*)	__shlib_math_calc_float "$*";;
-	(*)	__shlib_math_eval "$*" || return 1
-		echo "${SHLIB_RESULT}";;
+	(*.*)	SHLIB_RESULT="$(__shlib_math_calc_float "$*")" || return 1;;
+	(*)	__shlib_math_eval "$*" || return 1;;
 	esac
 }
 alias math.calc='__shlib_math_calc '
@@ -55,6 +54,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.calc';; esac
 	done
 	__shlib_math_calc "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

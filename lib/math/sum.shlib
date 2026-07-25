@@ -15,7 +15,7 @@ __shlib_math_sum()
 	done
 
 	if test "$#" -lt '1'; then
-		echo 0
+		SHLIB_RESULT=0
 		return
 	fi
 
@@ -35,6 +35,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sum';; esac
 	done
 	__shlib_math_sum "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh
