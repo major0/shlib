@@ -4,7 +4,12 @@
 
 import string.toupper
 
-__shlib_string_casecmp_cmd() { test "$(string.toupper "${1}")" = "$(string.toupper "${2}")"; }
+__shlib_string_casecmp_cmd() {
+	__shlib_string_toupper "${1}"
+	__shlib_string_casecmp_a="${SHLIB_RESULT}"
+	__shlib_string_toupper "${2}"
+	test "${__shlib_string_casecmp_a}" = "${SHLIB_RESULT}"
+}
 __shlib_string_compare_cmd() { test "${1}" = "${2}"; }
 __shlib_string_compare()
 {

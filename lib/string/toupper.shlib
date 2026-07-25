@@ -4,7 +4,7 @@
 
 if shlib.hascmd tr; then
 	__shlib_string_toupper_cmd() {
-		tr '[a-z]' '[A-Z]' <<EOF
+		tr '[:lower:]' '[:upper:]' <<EOF
 $*
 EOF
 	}
@@ -29,15 +29,16 @@ __shlib_string_toupper()
 		return 1
 	fi
 
-	__shlib_string_toupper_cmd "$@"
+	SHLIB_RESULT="$(__shlib_string_toupper_cmd "$@")"
 }
 alias string.toupper='__shlib_string_toupper '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help) string.doc 'string.toupper';; esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.toupper';; esac
 	done
-	__shlib_string_toupper "${1}" "${2}"
+	__shlib_string_toupper "$@"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

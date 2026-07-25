@@ -1,0 +1,27 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import string.tolower
+
+test_too_few_arguments() {
+	test.error __shlib_string_tolower
+}
+
+test_lowercases() {
+	__shlib_string_tolower 'Hello World'
+	test.eq 'hello world' "${SHLIB_RESULT}" 'mixed case to lower'
+}
+
+test_already_lower() {
+	__shlib_string_tolower 'abc'
+	test.eq 'abc' "${SHLIB_RESULT}" 'already lowercase'
+}
+
+test_brackets_preserved() {
+	# Regression for the SC2021 `tr '[A-Z]'` form: brackets must pass through.
+	__shlib_string_tolower '[ABC]'
+	test.eq '[abc]' "${SHLIB_RESULT}" 'brackets preserved'
+}
+
+# vim: filetype=sh

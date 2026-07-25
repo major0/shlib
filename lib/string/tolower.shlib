@@ -4,7 +4,7 @@
 
 if shlib.hascmd tr; then
 	__shlib_string_tolower_cmd() {
-		tr '[A-Z]' '[a-z]' <<EOF
+		tr '[:upper:]' '[:lower:]' <<EOF
 $*
 EOF
 	}
@@ -29,15 +29,16 @@ __shlib_string_tolower()
 		return 1
 	fi
 
-	__shlib_string_tolower_cmd "$@"
+	SHLIB_RESULT="$(__shlib_string_tolower_cmd "$@")"
 }
 alias string.tolower='__shlib_string_tolower '
 
 shlib.main {
 	for arg; do
-		case "${arg}" in (-h|-help|--help) string.doc 'string.tolower';; esac
+		case "${arg}" in (-h|-help|--help) shlib.doc 'string.tolower';; esac
 	done
-	__shlib_string_tolower "${1}" "${2}"
+	__shlib_string_tolower "$@"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh
