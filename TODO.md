@@ -68,21 +68,21 @@ Remaining shortfalls are captured under Core enhancements / Portability below.
   - **Staging + uninstall.**  `DESTDIR`/`${ED}`-style staging and a `CONTENTS`
     manifest recorded at install so a package can be removed cleanly.
 
-- **Pure-shell math.**  *(integer evaluator landed)*  A fork-free tokenizer
-  (`token`) and integer expression evaluator (`math.eval`) now back `math.calc`
-  and the integer path of `math.cmp`: malformed input is rejected cleanly (no
-  fatal `$(( ))`, no fork).  See the `parse-toolkit` spec.  Remaining is the
-  *float* half, which the integer evaluator cannot cover: `math.int`,
-  `math.seq`'s float path, and the transcendental functions (`sin`, `cos`,
-  `exp`, `log`, `sqrt`, `atan2`, `rand`) still fall back to `awk`/`zsh`, and it
-  is their zsh native `$(( fn() ))` branches that cause the ShellCheck `-s sh`
-  parse errors.  A pure-shell fixed-point *float* evaluator (a second consumer
-  of `token`) is the follow-on that removes those forks and parse errors.
+- **Pure-shell float evaluator.**  *(integer half + cleanup landed)*  A
+  fork-free tokenizer (`token`) and integer evaluator (`math.eval`) back
+  `math.calc` and the integer path of `math.cmp` (see the `parse-toolkit`
+  spec), and all of `math.*` now publishes via `SHLIB_RESULT`, is
+  `shellcheck -s sh` clean, and is tested.  What remains is the *float* half,
+  which an integer evaluator cannot cover: `math.int`, `math.seq`'s float path,
+  and the transcendental functions (`sin`, `cos`, `exp`, `log`, `sqrt`,
+  `atan2`, `rand`) still shell out to `awk`/`zsh`.  A pure-shell fixed-point
+  float evaluator (a second consumer of `token`) is the follow-on that removes
+  those forks.
 
-- **SHLIB_RESULT rollout for math.**  `math.calc`/`math.sum`/`math.cmp` still
-  echo/return-status rather than publishing `SHLIB_RESULT`.  Migrating them is
-  deferred to the project-wide SHLIB_RESULT rollout so all of `math` flips
-  together, rather than leaving the library half-migrated.
+- **Unify math output precision.**  The float backends are inconsistent:
+  `cos`/`atan2` print via `printf "%0.20f"` while `sin`/`sqrt`/`log`/`exp`/
+  `int`/`rand` use `print` (awk's `%.6g`).  Settle a single precision policy
+  (naturally, as part of the float-evaluator work).
 
 ## Portability
 
