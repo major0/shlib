@@ -1,0 +1,24 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.sin
+
+test_no_arguments() {
+	test.error __shlib_math_sin
+}
+
+test_too_many_arguments() {
+	test.error __shlib_math_sin 1 2
+}
+
+test_exec() {
+	test.ok __shlib_math_sin 1
+}
+
+test_value() {
+	__shlib_math_sin 0
+	test.eq '0' "${SHLIB_RESULT}" 'sin(0) = 0'
+}
+
+# vim: filetype=sh

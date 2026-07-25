@@ -2,9 +2,7 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-if test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_sin_cmd() { set -- "$((sin($*)))"; echo "${1%.}"; }
-elif shlib.hascmd 'gawk'; then
+if shlib.hascmd 'gawk'; then
 	__shlib_math_sin_cmd() { command gawk "BEGIN{ print sin($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_sin_cmd() { command awk "BEGIN{ print sin($*); }"; }
@@ -34,7 +32,7 @@ __shlib_math_sin()
 		return 1
 	fi
 
-	__shlib_math_sin_cmd "${@}"
+	SHLIB_RESULT="$(__shlib_math_sin_cmd "${@}")"
 }
 alias math.sin='__shlib_math_sin '
 
@@ -43,6 +41,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sin';; esac
 	done
 	__shlib_math_sin "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

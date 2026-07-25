@@ -4,9 +4,7 @@
 ## log <number>
 # Return the natural logarithm of `<number>`.
 
-if test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_log_cmd() { set -- "$((log($*)))"; echo "${1%.}"; }
-elif shlib.hascmd 'gawk'; then
+if shlib.hascmd 'gawk'; then
 	__shlib_math_log_cmd() { command gawk "BEGIN{ print log($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_log_cmd() { command awk "BEGIN{ print log($*); }"; }
@@ -36,7 +34,7 @@ __shlib_math_log()
 		return 1
 	fi
 
-	__shlib_math_log_cmd "${@}"
+	SHLIB_RESULT="$(__shlib_math_log_cmd "${@}")"
 }
 alias math.log='__shlib_math_log '
 
@@ -45,6 +43,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.log';; esac
 	done
 	__shlib_math_log "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh

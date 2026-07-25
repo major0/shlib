@@ -1,0 +1,20 @@
+# Copyright (c) 2014-2025 Mark Ferrell
+#
+# Licensed under the MIT License, see LICENSE for details.
+
+import math.rand
+
+test_too_many_arguments() {
+	test.error __shlib_math_rand 1
+}
+
+test_exec() {
+	test.ok __shlib_math_rand
+}
+
+test_produces_a_value() {
+	__shlib_math_rand
+	test.ne '' "${SHLIB_RESULT}" 'rand produces a value'
+}
+
+# vim: filetype=sh

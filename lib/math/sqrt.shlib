@@ -2,9 +2,7 @@
 #
 # Licensed under the MIT License, see LICENSE for details.
 
-if test "${SHLIB_SHELL}" = 'zsh'; then
-	__shlib_math_sqrt_cmd() { set -- "$((sqrt($*)))"; echo "${1%.}"; }
-elif shlib.hascmd 'gawk'; then
+if shlib.hascmd 'gawk'; then
 	__shlib_math_sqrt_cmd() { command gawk "BEGIN{ print sqrt($*); }"; }
 elif shlib.hascmd 'awk'; then
 	__shlib_math_sqrt_cmd() { command awk "BEGIN{ print sqrt($*); }"; }
@@ -34,7 +32,7 @@ __shlib_math_sqrt()
 		return 1
 	fi
 
-	__shlib_math_sqrt_cmd "${@}"
+	SHLIB_RESULT="$(__shlib_math_sqrt_cmd "${@}")"
 }
 alias math.sqrt='__shlib_math_sqrt '
 
@@ -43,6 +41,7 @@ main {
 		case "${arg}" in (-h|-help|--help) shlib.doc 'math.sqrt';; esac
 	done
 	__shlib_math_sqrt "${@}"
+	printf '%s\n' "${SHLIB_RESULT}"
 }
 
 # vim: filetype=sh
